@@ -1,6 +1,6 @@
 {
   "name": "soarwx",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Soaring weather conditions derived from numerical models",
   "type": "module",
   "license": "MIT",
