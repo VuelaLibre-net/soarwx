@@ -20,6 +20,8 @@ export default tseslint.config(
       "dist/**",
       "coverage/**",
       "node_modules/**",
+      ".claude/**",
+      ".gstack/**",
       "test/docs/examples/**",
       // Script suelto del generador de documentación: no entra en el tsconfig
       // del paquete, así que tampoco en el linter con tipos.
