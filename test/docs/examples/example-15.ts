@@ -34,7 +34,7 @@ import { GLIDER_CLUB } from "../../../src/aircraft/index.js";
 
 /** `soarwx/openmeteo` */
 export async function example(): Promise<unknown> {
-  // Varios modelos + confianza por dispersión, en una llamada:
+  // Multiple models + spread-based confidence, in one call:
   const result = await fetchSoaringDay(site, "2026-08-19", {
     models: ["icon_eu", "gfs_seamless"],
     profile: GLIDER_CLUB,
@@ -43,20 +43,20 @@ export async function example(): Promise<unknown> {
     cache: memoryCache(),
   });
   if (result.ok) {
-    result.value.day;       // SoaringDay ya calculado
-    result.value.failed;    // modelos que no respondieron: fallo parcial, no total
+    result.value.day;       // SoaringDay, already computed
+    result.value.failed;    // models that didn't respond: partial failure, not total
   }
   
-  // En pruebas, sin red: se inyecta el fetch.
+  // In tests, no network: inject the fetch.
   await fetchSoaringDay(site, "2026-08-19", {
     fetch: async () => new Response(JSON.stringify(fixture), { status: 200 }),
   });
   
-  // Qué sirve cada modelo, verificado en vivo y no copiado de la documentación:
-  MODEL_CAPABILITIES.icon_eu.hasBoundaryLayerHeight;   // false — ICON no la sirve
-  MODEL_CAPABILITIES.icon_eu.hasLiftedIndex;           // false — se calcula del sondeo
-  MODEL_CAPABILITIES.icon_eu.pressureLevelsHpa;        // los que existen de verdad
-  soundingModels();                                    // los que sirven perfil vertical
+  // What each model serves, verified live and not copied from the docs:
+  MODEL_CAPABILITIES.icon_eu.hasBoundaryLayerHeight;   // false — ICON doesn't serve it
+  MODEL_CAPABILITIES.icon_eu.hasLiftedIndex;           // false — computed from the sounding
+  MODEL_CAPABILITIES.icon_eu.pressureLevelsHpa;        // the ones that actually exist
+  soundingModels();                                    // models that serve vertical profiles
   void [fetchSoaringDay, memoryCache, MODEL_CAPABILITIES, soundingModels, GLIDER_CLUB, result];
   return undefined;
 }

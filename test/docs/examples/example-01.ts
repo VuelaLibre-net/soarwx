@@ -31,11 +31,11 @@ declare const container: { innerHTML: string };
 
 import { fetchSoaringDay } from "../../../src/openmeteo/index.js";
 import { GLIDER_CLUB } from "../../../src/aircraft/index.js";
-import * as es from "../../../src/i18n/es.js";
+import * as en from "../../../src/i18n/en.js";
 import { m } from "../../../src/units/index.js";
 import type { Site } from "../../../src/index.js";
 
-/** El camino corto */
+/** The short path */
 export async function example(): Promise<unknown> {
   const fuentemilanos: Site = {
     name: "Fuentemilanos",
@@ -57,11 +57,11 @@ export async function example(): Promise<unknown> {
   const { day } = result.value;
   const best = day.best;
   if (best !== null) {
-    console.log(`${es.describeLevel(best.score.level)} a las ${es.formatHour(best.timeUtc, fuentemilanos.timezone)}`);
-    console.log(`techo ${Math.round(best.ceiling.aglM)} m AGL, ${es.describeCeilingLimit(best.ceiling.limitedBy)}`);
-    for (const veto of best.score.vetoes) console.log("⚠", es.describeVeto(veto.id));
+    console.log(`${en.describeLevel(best.score.level)} at ${en.formatHour(best.timeUtc, fuentemilanos.timezone)}`);
+    console.log(`ceiling ${Math.round(best.ceiling.aglM)} m AGL, ${en.describeCeilingLimit(best.ceiling.limitedBy)}`);
+    for (const veto of best.score.vetoes) console.log("⚠", en.describeVeto(veto.id));
   }
-  console.log(day.attribution);   // obligatorio mostrarlo: CC BY 4.0
-  void [fetchSoaringDay, GLIDER_CLUB, es, m, fuentemilanos, result, best, day];
+  console.log(day.attribution);   // must be displayed: CC BY 4.0
+  void [fetchSoaringDay, GLIDER_CLUB, en, m, fuentemilanos, result, best, day];
   return undefined;
 }

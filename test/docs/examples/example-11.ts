@@ -37,15 +37,15 @@ export async function example(): Promise<unknown> {
   const mujerMuerta = { name: "La Mujer Muerta", bearingDeg: deg(68), slopeDeg: deg(16), crestMslM: m(2197) };
   
   const lift = ridgeLift(mujerMuerta, { speedMs: mps(9), fromDeg: deg(340) });
-  lift.perpendicularMs;  // componente del viento perpendicular a la cresta
-  lift.verticalMs;       // U_perp * sin(pendiente)
-  lift.incidenceDeg;     // 0 = de frente
+  lift.perpendicularMs;  // wind component perpendicular to the ridge
+  lift.verticalMs;       // U_perp * sin(slope)
+  lift.incidenceDeg;     // 0 = head-on
   lift.band;             // "insufficient" | "marginal" | "optimal" | "dangerous"
   
   const wave = wavePotential(sounding, mujerMuerta);
   if (wave.ok) {
     wave.value.potential;         // "none" | "marginal" | "likely" | "strong"
-    wave.value.method;            // "scorer" o "heuristic": nunca se oculta cuál se usó
+    wave.value.method;            // "scorer" or "heuristic": never hidden
     wave.value.trappedLeeWave;
     wave.value.estimatedWavelengthM;
   }

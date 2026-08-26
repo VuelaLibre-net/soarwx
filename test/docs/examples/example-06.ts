@@ -34,20 +34,20 @@ import { K, Pa, celsiusToK, hPaToPa } from "../../../src/units/index.js";
 
 /** `soarwx/thermo` */
 export async function example(): Promise<unknown> {
-  saturationVapourPressure(K(273.15));       // 611.2 Pa — el valor de manual
+  saturationVapourPressure(K(273.15));       // 611.2 Pa — the textbook value
   
   const t = celsiusToK(34.6);
   const td = celsiusToK(6.8);
   const p = hPaToPa(909);
   
   const base = lcl(t, td, p);
-  base.heightAboveParcelM;                   // 3461 m sobre el punto de partida
+  base.heightAboveParcelM;                   // 3461 m above the starting point
   base.pressurePa;                           // 60660 Pa
   
-  // La regla de Espy que usaba el predecesor daba 3392 m para el mismo caso:
-  // (34.6 - 6.8) * 122. Con spreads de 28 °C la aproximación ya no vale.
+  // The Espy rule the predecessor used gave 3392 m for the same case:
+  // (34.6 - 6.8) * 122. At spreads of 28 °C the approximation breaks down.
   
-  potentialTemperature(t, p);                // 316.3 K — casi 9 K por encima de T
+  potentialTemperature(t, p);                // 316.3 K — nearly 9 K above T
   void [lcl, saturationVapourPressure, potentialTemperature, moistAdiabaticLift, K, Pa, celsiusToK, hPaToPa, t, td, p, base];
   return undefined;
 }

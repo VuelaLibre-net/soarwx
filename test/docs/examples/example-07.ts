@@ -38,21 +38,21 @@ export async function example(): Promise<unknown> {
   if (!built.ok) throw new Error(built.error.code);
   const sounding = built.value;
   
-  sounding.quality.levelsDiscardedBelowGround;  // cuántos cayeron bajo el terreno
-  sounding.quality.maxVerticalGapM;             // el hueco más grande que queda
+  sounding.quality.levelsDiscardedBelowGround;  // how many fell below the terrain
+  sounding.quality.maxVerticalGapM;             // the largest remaining gap
   
-  // Temperatura a 1500 m sobre el campo, interpolando lineal en log-p:
+  // Temperature at 1500 m above the field, interpolating linearly in log-p:
   const level = interpolateAtAgl(sounding, m(1500));
   if (level.ok) level.value.tempK;
   
-  // Inversiones y capas estables en los primeros 5 km, con espesor mínimo de 100 m:
+  // Inversions and stable layers in the first 5 km, with 100 m minimum thickness:
   for (const layer of findInversions(sounding)) {
     layer.kind;          // "inversion" | "isothermal" | "stable"
     layer.baseMslM;
     layer.strengthK;
   }
   
-  // Viento medio de la capa mezclada, promediando componentes U/V y no grados:
+  // Mixed-layer mean wind, averaging U/V components rather than degrees:
   const mean = meanWind(
     sounding.levels
       .filter((l) => l.geopotentialMslM < 3000)

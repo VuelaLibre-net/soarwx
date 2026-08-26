@@ -33,11 +33,11 @@ import { computeDay } from "../../../src/report/index.js";
 import { renderSkewT } from "../../../src/render/index.js";
 import { m } from "../../../src/units/index.js";
 
-/** El camino largo */
+/** The long path */
 export async function example(): Promise<unknown> {
   const day = computeDay({
     site: fuentemilanos,
-    hourly,                       // HourlyObservation[], ya en SI
+    hourly,                       // HourlyObservation[], already in SI
     dateLocal: "2026-08-19",
     sunriseUtc: "2026-08-19T05:31",
     sunsetUtc: "2026-08-19T19:09",

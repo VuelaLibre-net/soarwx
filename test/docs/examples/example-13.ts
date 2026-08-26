@@ -44,29 +44,29 @@ export async function example(): Promise<unknown> {
     hasConvection: true,
     overcast: false,
     usableCeilingAglM: m(2364),
-    liftedIndex: 1.5,          // positivo, pero la capa da de sí: NO veta
+    liftedIndex: 1.5,          // positive, but the layer has depth: does NOT veto
     cape: capeRisk(800),
     kIndex: 18,
     surfaceWindMs: 4,
   });
   
   const score = aggregate(factors, vetoes);
-  score.level;              // 1..5 tras aplicar los topes
-  score.levelBeforeVetoes;  // el nivel que habría sacado sin ellos
-  score.factors;            // cada uno con valor, puntuación, peso y banda
-  score.limitingFactors;    // los que puntúan por debajo de 0.6, peor primero
+  score.level;              // 1..5 after applying the caps
+  score.levelBeforeVetoes;  // the level it would have scored without them
+  score.factors;            // each with value, score, weight and band
+  score.limitingFactors;    // those scoring below 0.6, worst first
   
-  // Ventanas de al menos dos horas seguidas por encima de nivel 3:
+  // Windows of at least two consecutive hours above level 3:
   const windows = findWindows(hours, 3);
   
-  // Confianza como dispersión entre modelos, no como un número inventado:
+  // Confidence as spread between models, not as a made-up number:
   const confidence = confidenceFrom([
     { model: "icon_eu", ceilingAglM: m(2364), wStarMs: mps(3.28) },
     { model: "gfs_seamless", ceilingAglM: m(2537), wStarMs: mps(3.11) },
   ]);
   confidence?.level;             // "low" | "medium" | "high"
   confidence?.ceilingSpreadM;    // 173
-  confidence?.modelsUsed;        // null entero si solo hubo un modelo
+  confidence?.modelsUsed;        // null altogether if only one model was available
   void [evaluateVetoes, aggregate, findWindows, bestHour, confidenceFrom, DEFAULT_FACTORS, buildFactor, capeRisk, m, mps, factors, vetoes, score, windows, confidence];
   return undefined;
 }

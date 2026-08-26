@@ -35,14 +35,14 @@ import { liftedIndex, liftedIndexBand, kIndex, totalTotals, capeRisk } from "../
 export async function example(): Promise<unknown> {
   const li = liftedIndex(sounding, maxSurfaceTempK);
   if (li.ok) liftedIndexBand(li.value);      // "stable" | "marginally_unstable" | ...
-  // li.error.code === "MISSING_VARIABLE" cuando falta el nivel de 500 hPa.
-  // Nunca devuelve 0.0 por un dato ausente: 0.0 real y ausente son distinguibles.
+  // li.error.code === "MISSING_VARIABLE" when the 500 hPa level is missing.
+  // Never returns 0.0 for absent data: a real 0.0 and absent are distinguishable.
   
-  const risk = capeRisk(2800, 15);   // (CAPE, CIN) — ambos pueden ser null
+  const risk = capeRisk(2800, 15);   // (CAPE, CIN) — both can be null
   risk.band;            // "moderate"
-  risk.stormPotential;  // entra en los vetos, nunca en los factores
-  risk.inhibited;       // hay CIN suficiente para tapar la convección profunda
-  risk.capeJkg;         // null si el modelo no la sirvió
+  risk.stormPotential;  // feeds the vetoes, never the factors
+  risk.inhibited;       // enough CIN to cap deep convection
+  risk.capeJkg;         // null if the model didn't serve it
   void [liftedIndex, liftedIndexBand, kIndex, totalTotals, capeRisk, li, risk];
   return undefined;
 }

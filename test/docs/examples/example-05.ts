@@ -38,11 +38,11 @@ export async function example(): Promise<unknown> {
   const p = hPaToPa(909);                    // 90900 Pa
   const wind: MPerS = mps(5.2);
   
-  msToKnots(wind);                           // 10.1 — solo para presentar
-  GAMMA_D === G / CP;                        // true: derivada, no tabulada
+  msToKnots(wind);                           // 10.1 — for display only
+  GAMMA_D === G / CP;                        // true: derived, not tabulated
   
-  // El marcado es lo que evita el bug de unidades:
-  // saturationVapourPressure(p)   ← no compila: Pascal donde se espera Kelvin
+  // Branding is what prevents the unit bug:
+  // saturationVapourPressure(p)   ← won't compile: Pascal where Kelvin expected
   void [K, Pa, m, mps, celsiusToK, msToKnots, hPaToPa, GAMMA_D, CP, G, t, p, wind];
   return undefined;
 }

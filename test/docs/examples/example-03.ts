@@ -33,11 +33,11 @@ import { isErr } from "../../../src/index.js";
 import { criticalHeight } from "../../../src/convection/index.js";
 import { GLIDER_CLUB } from "../../../src/aircraft/index.js";
 
-/** Errores */
+/** Errors */
 export async function example(): Promise<unknown> {
   const climb = criticalHeight(wStarMs, ziAglM, GLIDER_CLUB);
   if (isErr(climb)) {
-    if (climb.error.code === "NO_CONVECTION") return "es de noche";  // estado válido
+    if (climb.error.code === "NO_CONVECTION") return "it's night";  // valid state
     throw new Error(climb.error.code);
   }
   void [isErr, criticalHeight, GLIDER_CLUB, climb];

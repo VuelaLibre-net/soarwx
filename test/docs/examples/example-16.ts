@@ -37,17 +37,17 @@ import { m } from "../../../src/units/index.js";
 export async function example(): Promise<unknown> {
   const best = day.best!;
   
-  // Diagrama oblicuo con la parcela, el techo y el panel de viento a la derecha.
+  // Skew-T with the parcel, the ceiling, and the wind panel on the right.
   const skewt = renderSkewT(best.sounding, {
     parcelFromK: best.sounding.surface.tempK,
     ceilingMslM: m(site.elevationMslM + best.ceiling.aglM),
     windUnit: "kmh",
-    // `exactOptionalPropertyTypes` está activo: una opción ausente se omite,
-    // no se pasa como `undefined`.
+    // `exactOptionalPropertyTypes` is enabled: an absent option is omitted,
+    // not passed as `undefined`.
     ...(best.cloud.baseAglM === null ? {} : { lclMslM: m(site.elevationMslM + best.cloud.baseAglM) }),
   });
   
-  // Ascendencia frente a altura: el núcleo y lo que marcaría el variómetro.
+  // Updraft vs. height: the core and what the vario would show.
   const profile = renderUpdraftProfile(best.thermal.wStarMs, best.thermal.thermalTopAglM, GLIDER_CLUB, {
     marks: {
       hcritAglM: best.ceiling.aglM,
@@ -55,10 +55,10 @@ export async function example(): Promise<unknown> {
     },
   });
   
-  // Evolución del techo a lo largo del día, con la ventana y el mejor momento.
+  // Ceiling evolution throughout the day, with the window and the best moment.
   const timeline = renderDayTimeline(day);
   
-  container.innerHTML = skewt;   // son cadenas, no nodos
+  container.innerHTML = skewt;   // they're strings, not nodes
   void [profile, timeline];
   void [renderSkewT, renderUpdraftProfile, renderDayTimeline, GLIDER_CLUB, m, best, skewt, profile, timeline];
   return undefined;

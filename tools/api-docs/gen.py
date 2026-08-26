@@ -1,5 +1,5 @@
-"""Genera docs/API.md a partir de api.json (extraído de dist/**/*.d.ts) más la
-prosa y los ejemplos escritos a mano de MODULES."""
+"""Generates docs/API.md from api.json (extracted from dist/**/*.d.ts) plus the
+hand-written prose and examples from MODULES."""
 
 import json, re, pathlib
 
@@ -27,7 +27,7 @@ def summary(doc):
 
 
 def described(doc):
-    """Descripción para la tabla. La raya marca que el símbolo se explica solo."""
+    """Description for the table. The dash marks self-explanatory symbols."""
     return summary(doc) or "—"
 
 
@@ -69,7 +69,7 @@ def type_shape(item):
     fields = len(re.findall(r"^\s{4}(?:readonly\s+)?[\w\[\]\"']+[?]?:", sig, re.M))
     extends = re.search(r"interface \w+ extends ([\w, ]+)", sig)
     ext = f" extends {extends.group(1).strip()}" if extends else ""
-    return f"interface {name}{ext} — {fields} campos"
+    return f"interface {name}{ext} — {fields} fields"
 
 
 def tables(sub):
@@ -82,9 +82,9 @@ def tables(sub):
     out = []
     if funcs:
         has_src = any(source(i["doc"]) for i in funcs)
-        head = "| Firma | Qué hace |" + (" Fuente |" if has_src else "")
+        head = "| Signature | What it does |" + (" Source |" if has_src else "")
         rule = "|---|---|" + ("---|" if has_src else "")
-        out.append("**Funciones**\n\n" + head + "\n" + rule)
+        out.append("**Functions**\n\n" + head + "\n" + rule)
         for i in funcs:
             row = f"| {code(one_line(i['sig']))} | {cell(described(i["doc"]))} |"
             if has_src:
@@ -92,12 +92,12 @@ def tables(sub):
             out.append(row)
         out.append("")
     if consts:
-        out.append("**Constantes**\n\n| Nombre | Declaración | Qué es |\n|---|---|---|")
+        out.append("**Constants**\n\n| Name | Declaration | What it is |\n|---|---|---|")
         for i in consts:
             out.append(f"| `{i['name']}` | {code(one_line(i['sig']))} | {cell(described(i["doc"]))} |")
         out.append("")
     if types:
-        out.append("**Tipos**\n\n| Nombre | Forma | Para qué |\n|---|---|---|")
+        out.append("**Types**\n\n| Name | Shape | Purpose |\n|---|---|---|")
         for i in types:
             out.append(f"| `{i['name']}` | {code(type_shape(i))} | {cell(described(i["doc"]))} |")
         out.append("")
@@ -110,7 +110,7 @@ MODULES = json.loads((HERE / "prose.json").read_text())
 
 HEADER = (HERE / "header.md").read_text()
 
-parts = [HEADER.rstrip(), "", "---", "", "## Referencia por módulo", ""]
+parts = [HEADER.rstrip(), "", "---", "", "## Module reference", ""]
 for sub, meta in MODULES.items():
     parts.append(f"### `{meta['import']}`")
     parts.append("")
@@ -127,10 +127,10 @@ for sub, meta in MODULES.items():
 total = sum(len(v) for v in API.values())
 parts.append("---")
 parts.append("")
-parts.append(f"Esta referencia cubre los **{total} símbolos exportados** por los "
-             "catorce puntos de entrada del paquete. Se genera a partir de los "
-             "`.d.ts` publicados, así que no puede desviarse de lo que compila.")
+parts.append(f"This reference covers the **{total} exported symbols** across the "
+             "fifteen entry points of the package. It is generated from the "
+             "published `.d.ts` files, so it cannot deviate from what compiles.")
 parts.append("")
 
 (ROOT / "docs/API.md").write_text("\n".join(parts))
-print("escrito docs/API.md", total, "símbolos")
+print("wrote docs/API.md", total, "symbols")

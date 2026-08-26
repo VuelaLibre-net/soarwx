@@ -34,10 +34,10 @@ import { m } from "../../../src/units/index.js";
 
 /** `soarwx/clouds` */
 export async function example(): Promise<unknown> {
-  // Promedios ponderados por masa de la capa mezclada.
+  // Mass-weighted averages of the mixed layer.
   const ml = mixedLayerMean(sounding, m(2400));
   
-  // La base es el CCL de la parcela de capa mezclada, no el LCL de los 2 m.
+  // The base is the CCL of the mixed-layer parcel, not the 2 m LCL.
   const base = cumulusBase(sounding, m(2400), maxSurfaceTempK, m(2777));
   const cloudBaseAglM = base.ok && base.value.sufficientMoisture ? base.value.baseAglM : null;
   
@@ -49,12 +49,12 @@ export async function example(): Promise<unknown> {
     elevationMslM: m(1013),
   });
   ceiling.aglM;        // 2364
-  ceiling.limitedBy;   // "hcrit" — el motivo va con el número, siempre
+  ceiling.limitedBy;   // "hcrit" — the reason always comes with the number
   
-  // Día azul: la capa se acaba antes de que la parcela condense.
+  // Blue day: the layer ends before the parcel condenses.
   cloudBaseAglM === null || isBlueDay(cloudBaseAglM, m(2777));
   
-  // Sobredesarrollo como escala ordinal, con los indicadores que lo empujan.
+  // Overdevelopment as an ordinal scale, with the drivers that push it up.
   const od = overdevelopmentRisk({
     cumulusDepthM: m(1200),
     midLevelHumidityFrac: 0.55,
@@ -63,7 +63,7 @@ export async function example(): Promise<unknown> {
     cloudCoverMidFrac: 0.3,
   });
   od.level;     // "none" | "low" | "moderate" | "high" | "severe"
-  od.drivers;   // ["depth", "midlevel_moisture", ...] — qué lo está subiendo
+  od.drivers;   // ["depth", "midlevel_moisture", ...] — what's pushing it up
   void [mixedLayerMean, cumulusBase, cumulusDepth, isBlueDay, usableCeiling, overdevelopmentRisk, m, ml, base, cloudBaseAglM, ceiling, od];
   return undefined;
 }

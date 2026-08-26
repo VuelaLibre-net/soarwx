@@ -36,10 +36,10 @@ import { K, Pa, m, mps, wm2, celsiusToK, hPaToPa } from "../../../src/units/inde
 
 /** `soarwx/convection` */
 export async function example(): Promise<unknown> {
-  // 1. Signo del flujo, deducido de la serie del día, no tabulado.
+  // 1. Flux sign, inferred from the day's series, not hard-coded.
   const convention = detectFluxSign(samples);      // "up_positive" | "down_positive"
   
-  // 2. Cadena energética completa: Rn -> G -> H -> Qov.
+  // 2. Full energy chain: Rn -> G -> H -> Qov.
   const flux = surfaceHeatFlux({
     shortwaveDownWm2: wm2(894),
     surfaceTempK: celsiusToK(34.6),
@@ -49,10 +49,10 @@ export async function example(): Promise<unknown> {
     surfaceType: "cropland",
   });
   flux.netRadiationWm2;    // 617 W/m2
-  flux.sensibleHeatWm2;    // 346 W/m2   (el predecesor usaba 0.30 * 894 = 268)
-  flux.source;             // "model" | "energy_balance" — siempre declarado
+  flux.sensibleHeatWm2;    // 346 W/m2   (the predecessor used 0.30 * 894 = 268)
+  flux.source;             // "model" | "energy_balance" — always declared
   
-  // 3. Velocidad convectiva de Deardorff.
+  // 3. Deardorff's convective velocity scale.
   const w = convectiveVelocityScale({
     virtualHeatFluxKMs: flux.virtualHeatFluxKMs,
     mixingHeightAglM: m(3365),
@@ -60,19 +60,19 @@ export async function example(): Promise<unknown> {
     surfaceWindMs: mps(2.57),
     profile: GLIDER_CLUB,
   });
-  if (!w.ok) throw new Error(w.error.code);       // NO_CONVECTION es de noche
+  if (!w.ok) throw new Error(w.error.code);       // NO_CONVECTION means it's night
   w.value.wStarMs;          // 3.28 m/s
-  w.value.suppressedByWind; // true si el viento superó el corte
+  w.value.suppressedByWind; // true if wind exceeded the cutoff
   
-  // 4. Techo práctico: donde el núcleo deja de compensar la caída virando.
+  // 4. Practical ceiling: where the core stops offsetting the sink while circling.
   const h = criticalHeight(w.value.wStarMs, m(3365), GLIDER_CLUB);
   if (h.ok) {
     h.value.hcritAglM;      // 2364 m AGL
-    h.value.peakHeightAglM; // 642 m — el máximo está bajo, no a media capa
+    h.value.peakHeightAglM; // 642 m — the peak is low, not at mid-layer
     h.value.peakClimbMs;    // 2.79 m/s
   }
   
-  // 5. Lo que marcaría el variómetro, promediado sobre la banda de trabajo.
+  // 5. What the vario would show, averaged over the working band.
   const climb = meanClimbOverBand(w.value.wStarMs, m(3365), GLIDER_CLUB);
   if (climb.ok) climb.value;   // 1.11 m/s
   void [surfaceHeatFlux, convectiveVelocityScale, criticalHeight, meanClimbOverBand, detectFluxSign, potentialTemperature, GLIDER_CLUB, K, Pa, m, mps, wm2, celsiusToK, hPaToPa, convention, flux, w, h, climb];

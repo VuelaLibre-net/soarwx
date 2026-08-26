@@ -5,7 +5,7 @@ Soaring weather conditions derived from numerical models via
 critical height, cumulus base, overdevelopment risk and thermal quality against
 shear — what a pilot needs that the raw model doesn't give you.
 
-> Status: 0.11.0. Unstable API until 1.0.0.
+> Status: 0.12.0. Unstable API until 1.0.0.
 
 ```bash
 pnpm add soarwx

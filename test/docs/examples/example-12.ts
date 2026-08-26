@@ -34,17 +34,17 @@ import { criticalHeight, expectedVarioAt } from "../../../src/convection/index.j
 
 /** `soarwx/aircraft` */
 export async function example(): Promise<unknown> {
-  // El techo no depende del velero: lo fija el criterio de los 225 fpm.
+  // The ceiling does not depend on the glider: the 225 fpm criterion fixes it.
   criticalHeight(wStarMs, ziAglM, GLIDER_CLUB);       // 2364 m AGL
-  criticalHeight(wStarMs, ziAglM, ASH_25);            // los mismos 2364 m AGL
+  criticalHeight(wStarMs, ziAglM, ASH_25);            // the same 2364 m AGL
   
-  // Lo que sí depende del velero es lo que marca el variómetro.
-  expectedVarioAt(wStarMs, ziAglM, ziAglM, ASH_25);   // más que con GLIDER_CLUB
+  // What does depend on the glider is what the vario shows.
+  expectedVarioAt(wStarMs, ziAglM, ziAglM, ASH_25);   // more than with GLIDER_CLUB
   
-  // Con la referencia de RASP, el variómetro cae a cero justo en hcrit.
+  // With RASP's reference, the vario drops to zero right at hcrit.
   RASP_REFERENCE.circlingSinkMs === RASP_REFERENCE.hcritThresholdMs;
   
-  findAircraftProfile("duo-discus");                  // uno del catálogo
+  findAircraftProfile("duo-discus");                  // one from the catalogue
   AIRCRAFT_PROFILES.length;                           // 12
   void [GLIDER_CLUB, ASH_25, RASP_REFERENCE, AIRCRAFT_PROFILES, findAircraftProfile, criticalHeight, expectedVarioAt];
   return undefined;

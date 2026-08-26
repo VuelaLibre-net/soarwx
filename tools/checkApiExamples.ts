@@ -22,6 +22,7 @@ const OUT_DIR = resolve(ROOT, "test/docs/examples");
 function rewriteImport(spec: string): string {
   if (spec === "soarwx") return "../../src/index.js";
   if (spec === "soarwx/i18n/es") return "../../src/i18n/es.js";
+  if (spec === "soarwx/i18n/en") return "../../src/i18n/en.js";
   const m = /^soarwx\/(.+)$/.exec(spec);
   return m?.[1] === undefined ? spec : `../../src/${m[1]}/index.js`;
 }

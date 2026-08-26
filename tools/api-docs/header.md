@@ -1,66 +1,68 @@
-# API — referencia de `soarwx`
+# API reference for `soarwx`
 
-**Versión 0.8.0.** La API es inestable hasta la 1.0.0.
+**Version 0.12.0.** The API is unstable until 1.0.0.
 
-`SPEC.md` define el contrato y qué queda fuera de él. Este documento lista **todo
-lo que el paquete exporta**, con la firma real y un ejemplo por módulo. Las tablas
-se generan desde los `.d.ts` publicados: si una firma cambia, este documento
-cambia con ella.
+`SPEC.md` defines the contract and what falls outside it. This document lists
+**everything the package exports**, with the actual signature and one example per
+module. The tables are generated from the published `.d.ts` files: if a signature
+changes, this document changes with it.
 
-## Cómo leer esta referencia
+## How to read this reference
 
-**Todo es SI, y el nombre lo dice.** `tempK`, `pressurePa`, `zAglM`, `wStarMs`,
-`capeJkg`. Una propiedad que se llame `alt` o `temp` no existe. Las alturas son
-`AglM` (sobre el terreno) o `MslM` (sobre el nivel del mar), nunca a secas. Las
-conversiones a nudos, pies o km/h viven en `soarwx/units` y son para la
-presentación, no para el cálculo.
+**Everything is SI, and the name says so.** `tempK`, `pressurePa`, `zAglM`, `wStarMs`,
+`capeJkg`. A property called `alt` or `temp` does not exist. Heights are
+`AglM` (above ground level) or `MslM` (above mean sea level), never bare. Conversions
+to knots, feet or km/h live in `soarwx/units` and are for display, not for
+computation.
 
-**Los tipos van marcados.** `Kelvin` no es `number`: es `number & { [brand]: "K" }`.
-Pasar pascales donde se esperan kelvin no compila. Para construir un valor marcado
-se usan los constructores cortos: `K(300)`, `Pa(90900)`, `m(1500)`, `mps(3.2)`.
+**Types are branded.** `Kelvin` is not `number`: it is `number & { [brand]: "K" }`.
+Passing pascals where kelvin is expected does not compile. To build a branded
+value, use the short constructors: `K(300)`, `Pa(90900)`, `m(1500)`, `mps(3.2)`.
 
-**Lo esperable devuelve `Result`, no lanza.** Una noche sin convección, un sondeo
-sin niveles altos o una variable que el modelo no sirve son estados válidos, no
-fallos. Se devuelven como `{ ok: false, error }` con un `code` estable. Solo lo
-imposible —un argumento fuera de dominio— lanza.
+**Expected conditions return `Result`, they don't throw.** A night without convection,
+a sounding missing upper levels, or a variable the model does not serve are valid
+states, not failures. They come back as `{ ok: false, error }` with a stable `code`.
+Only the impossible — an out-of-domain argument — throws.
 
-**El núcleo no toca la red y no devuelve texto.** Todo devuelve números y enums.
-Las cadenas en español están en `soarwx/i18n/es`, y la única función que hace
-peticiones está en `soarwx/openmeteo`.
+**The core never touches the network and never returns text.** Everything returns
+numbers and enums. Spanish strings live in `soarwx/i18n/es`, English strings in
+`soarwx/i18n/en`, and the only function that makes HTTP requests is in
+`soarwx/openmeteo`.
 
-## Instalación
+## Installation
 
 ```bash
 pnpm add soarwx
 ```
 
-ESM puro, `sideEffects: false`, catorce puntos de entrada con `types` propios:
+Pure ESM, `sideEffects: false`, fifteen entry points with their own `types`:
 
-| Import | Qué trae |
+| Import | What it provides |
 |---|---|
-| `soarwx` | `Result`, `Site`, `RidgeSpec`, atribución, versión |
-| `soarwx/units` | Tipos marcados, constantes físicas, conversiones |
-| `soarwx/thermo` | Saturación, LCL, ascenso de parcela, θ y θe |
-| `soarwx/sounding` | Ensamblado del perfil, interpolación, inversiones, viento |
-| `soarwx/convection` | Flujo de calor, `w*`, perfil de ascendencia, `hcrit`, disparo |
-| `soarwx/clouds` | Capa mezclada, base de cumulus, sobredesarrollo, techo |
-| `soarwx/stability` | LI, KI, Total Totals, CAPE como riesgo |
-| `soarwx/orographic` | Ladera, parámetro de Scorer, onda |
-| `soarwx/aircraft` | `AircraftProfile` y el preajuste `GLIDER_CLUB` |
-| `soarwx/forecast` | Factores, vetos, índice, ventanas, confianza |
-| `soarwx/report` | `computeDay`: el día completo, puro |
-| `soarwx/openmeteo` | **El único módulo con red** |
-| `soarwx/render` | Generadores de SVG, sin dependencias |
-| `soarwx/i18n/es` | Enum → texto en español |
+| `soarwx` | `Result`, `Site`, `RidgeSpec`, attribution, version |
+| `soarwx/units` | Branded types, physical constants, conversions |
+| `soarwx/thermo` | Saturation, LCL, parcel ascent, θ and θe |
+| `soarwx/sounding` | Profile assembly, interpolation, inversions, wind |
+| `soarwx/convection` | Heat flux, `w*`, updraft profile, `hcrit`, trigger |
+| `soarwx/clouds` | Mixed layer, cumulus base, overdevelopment, ceiling |
+| `soarwx/stability` | LI, KI, Total Totals, CAPE as risk |
+| `soarwx/orographic` | Ridge lift, Scorer parameter, wave |
+| `soarwx/aircraft` | `AircraftProfile` and the `GLIDER_CLUB` preset |
+| `soarwx/forecast` | Factors, vetoes, score, windows, confidence |
+| `soarwx/report` | `computeDay`: the full day, pure |
+| `soarwx/openmeteo` | **The only module with network access** |
+| `soarwx/render` | SVG string generators, zero dependencies |
+| `soarwx/i18n/es` | Enum → Spanish text |
+| `soarwx/i18n/en` | Enum → English text |
 
-## El camino corto
+## The short path
 
-Una previsión completa desde el navegador, con dos modelos y medida de confianza:
+A full forecast from the browser, with two models and a confidence measure:
 
 ```ts
 import { fetchSoaringDay } from "soarwx/openmeteo";
 import { GLIDER_CLUB } from "soarwx/aircraft";
-import * as es from "soarwx/i18n/es";
+import * as en from "soarwx/i18n/en";
 import { m } from "soarwx/units";
 import type { Site } from "soarwx";
 
@@ -84,18 +86,18 @@ if (!result.ok) throw new Error(result.error.code);
 const { day } = result.value;
 const best = day.best;
 if (best !== null) {
-  console.log(`${es.describeLevel(best.score.level)} a las ${es.formatHour(best.timeUtc, fuentemilanos.timezone)}`);
-  console.log(`techo ${Math.round(best.ceiling.aglM)} m AGL, ${es.describeCeilingLimit(best.ceiling.limitedBy)}`);
-  for (const veto of best.score.vetoes) console.log("⚠", es.describeVeto(veto.id));
+  console.log(`${en.describeLevel(best.score.level)} at ${en.formatHour(best.timeUtc, fuentemilanos.timezone)}`);
+  console.log(`ceiling ${Math.round(best.ceiling.aglM)} m AGL, ${en.describeCeilingLimit(best.ceiling.limitedBy)}`);
+  for (const veto of best.score.vetoes) console.log("⚠", en.describeVeto(veto.id));
 }
-console.log(day.attribution);   // obligatorio mostrarlo: CC BY 4.0
+console.log(day.attribution);   // must be displayed: CC BY 4.0
 ```
 
-## El camino largo
+## The long path
 
-`fetchSoaringDay` es azúcar sobre dos piezas separables. Si ya tienes los datos
-—de una caché, de un fixture, de otro proveedor— salta la red y llama a
-`computeDay`, que es puro:
+`fetchSoaringDay` is sugar over two separable pieces. If you already have the data
+— from a cache, a fixture, or another provider — skip the network and call
+`computeDay`, which is pure:
 
 ```ts
 import { computeDay } from "soarwx/report";
@@ -104,7 +106,7 @@ import { m } from "soarwx/units";
 
 const day = computeDay({
   site: fuentemilanos,
-  hourly,                       // HourlyObservation[], ya en SI
+  hourly,                       // HourlyObservation[], already in SI
   dateLocal: "2026-08-19",
   sunriseUtc: "2026-08-19T05:31",
   sunsetUtc: "2026-08-19T19:09",
@@ -119,13 +121,13 @@ if (day.ok && day.value.best !== null) {
 }
 ```
 
-Esa separación es el motivo de que la librería exista: todo lo que está por encima
-de `computeDay` se prueba desde fixtures, sin red y sin reloj.
+That separation is why this library exists: everything above `computeDay` is
+tested from fixtures, with no network and no clock.
 
-## Errores
+## Errors
 
-Cada `SoarwxError` lleva un `code` estable —el `message` es inglés para registros
-y puede cambiar— y un `detail` opcional con los valores que lo provocaron.
+Each `SoarwxError` carries a stable `code` — the `message` is English prose for
+logs and may change — plus an optional `detail` with the values that caused it.
 
 ```ts
 import { isErr } from "soarwx";
@@ -134,11 +136,11 @@ import { GLIDER_CLUB } from "soarwx/aircraft";
 
 const climb = criticalHeight(wStarMs, ziAglM, GLIDER_CLUB);
 if (isErr(climb)) {
-  if (climb.error.code === "NO_CONVECTION") return "es de noche";  // estado válido
+  if (climb.error.code === "NO_CONVECTION") return "it's night";  // valid state
   throw new Error(climb.error.code);
 }
 ```
 
-`NO_CONVECTION` no es un fallo: es que no hay térmicas. `MISSING_VARIABLE` significa
-que el modelo no sirvió el dato, y **nunca** se sustituye por cero en silencio: la
-sustitución, si la hay, queda declarada en `quality.estimated`.
+`NO_CONVECTION` is not a failure: there are just no thermals. `MISSING_VARIABLE`
+means the model did not serve the data, and it is **never** silently replaced by
+zero: the substitution, if any, is declared in `quality.estimated`.

@@ -46,7 +46,7 @@ export async function example(): Promise<unknown> {
     ridges: [
       {
         name: "La Mujer Muerta",
-        bearingDeg: deg(68),      // rumbo del eje de la cresta, 0..180
+        bearingDeg: deg(68),      // bearing along the ridge axis, 0..180
         slopeDeg: deg(16),
         crestMslM: m(2197),
         lengthM: m(11000),
@@ -54,8 +54,8 @@ export async function example(): Promise<unknown> {
     ],
   };
   
-  // El terreno entra como dato. No hay ni un emplazamiento codificado en la
-  // librería: `grep -ri "guadarrama" src/` está vacío, y hay una prueba que lo exige.
+  // Terrain enters as data. There is not a single hardcoded site in the
+  // library: `grep -ri "guadarrama" src/` is empty, and a test enforces it.
   
   function height<T extends { aglM: number }>(r: Result<T>): number | null {
     return isOk(r) ? r.value.aglM : null;

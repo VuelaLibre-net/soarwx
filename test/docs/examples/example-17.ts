@@ -33,16 +33,16 @@ import * as es from "../../../src/i18n/es.js";
 
 /** `soarwx/i18n/es` */
 export async function example(): Promise<unknown> {
-  es.describeLevel(4);                       // el nivel, en palabras
-  es.describeCeilingLimit("hcrit");          // por qué el techo es ese
+  es.describeLevel(4);                       // the level, in words
+  es.describeCeilingLimit("hcrit");          // why the ceiling is what it is
   es.describeVeto("stable_atmosphere");      // "Atmósfera estable sobre una capa convectiva corta"
   es.describeThermalQuality("organised");
   es.describeConfidence("medium");
   
-  es.formatHour("2026-08-19T14:00", site.timezone);      // "16:00" en verano
-  es.formatInstant("2026-08-19T14:00", site.timezone);   // con día y mes
+  es.formatHour("2026-08-19T14:00", site.timezone);      // "16:00" in summer
+  es.formatInstant("2026-08-19T14:00", site.timezone);   // with day and month
   
-  es.DISCLAIMER;   // no sustituye al briefing oficial ni a la decisión del piloto
+  es.DISCLAIMER;   // does not replace an official briefing or the pilot's judgment
   void [es];
   return undefined;
 }

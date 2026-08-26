@@ -41,15 +41,15 @@ export async function example(): Promise<unknown> {
     dateLocal: "2026-08-19",
     sunriseUtc: "2026-08-19T05:31",
     sunsetUtc: "2026-08-19T19:09",
-    profile: GLIDER_CLUB,         // opcional
+    profile: GLIDER_CLUB,         // optional
   });
   if (!result.ok) throw new Error(result.error.code);
   
   const day: SoaringDay = result.value;
-  day.best;            // SoaringHour | null — null es un día sin ventana, no un fallo
-  day.windows;         // tramos continuos volables
-  day.attribution;     // hay que mostrarlo: Open-Meteo es CC BY 4.0
-  day.confidence;      // null con un solo modelo, no un valor fingido
+  day.best;            // SoaringHour | null — null is a day with no window, not a failure
+  day.windows;         // continuous flyable spans
+  day.attribution;     // must be displayed: Open-Meteo is CC BY 4.0
+  day.confidence;      // null with a single model, not a made-up value
   
   for (const hour of day.hours as readonly SoaringHour[]) {
     hour.thermal.wStarMs;
@@ -57,8 +57,8 @@ export async function example(): Promise<unknown> {
     hour.ceiling.aglM;
     hour.ceiling.limitedBy;
     hour.cloud.blue;
-    hour.quality.heatFluxSource;      // "model" o "energy_balance"
-    hour.quality.pressureLevelsUsed;  // cuántos niveles sobrevivieron a la poda
+    hour.quality.heatFluxSource;      // "model" or "energy_balance"
+    hour.quality.pressureLevelsUsed;  // how many levels survived the pruning
   }
   void [computeDay, GLIDER_CLUB, result, day];
   return undefined;
