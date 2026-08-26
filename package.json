@@ -14,7 +14,7 @@
   "homepage": "https://github.com/VuelaLibre-net/soarwx#readme",
   "sideEffects": false,
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.13.0"
   },
   "packageManager": "pnpm@11.21.0",
   "files": [

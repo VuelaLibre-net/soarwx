@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-pure%20ESM-3178c6.svg)](tsconfig.json)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen.svg)](package.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22.13-brightgreen.svg)](package.json)
 
 Soaring weather conditions derived from numerical models via
 [Open-Meteo](https://open-meteo.com): usable thermal ceiling, climb strength,

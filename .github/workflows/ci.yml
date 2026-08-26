@@ -13,17 +13,17 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22.12
+          node-version: 22.x
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      # La suite @network queda fuera: la API es de terceros y no debe romper el build.
+      # Network suite is excluded from CI: third-party API availability must not break the build.
       - run: pnpm test:coverage
       - run: pnpm build
       - run: pnpm size
