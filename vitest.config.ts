@@ -10,8 +10,9 @@ export default defineConfig({
       // and including them skews the average of modules that do.
       exclude: ["src/**/types.ts", "src/types/site.ts", "src/**/index.ts"],
       reporter: ["text", "lcov"],
-      // Thresholds from docs/ACCEPTANCE.md §2. Raised per directory as each
-      // module gains implementation; those remaining at 0 are empty barrels.
+      // Thresholds from the ACCEPTANCE document §2 (not in the repo; see CLAUDE.md).
+      // Raised per directory as each module gains implementation; those
+      // remaining at 0 are empty barrels.
       thresholds: {
         "src/units/**": { lines: 90, branches: 90, functions: 90, statements: 90 },
         "src/thermo/**": { lines: 90, branches: 90, functions: 90, statements: 90 },

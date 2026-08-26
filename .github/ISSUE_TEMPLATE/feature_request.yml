@@ -1,0 +1,25 @@
+name: Feature request
+description: A missing computation, export or diagnostic.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What decision can't you make today
+      description: The flying question you cannot answer with what the library returns now.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The shape you have in mind — signature, module, returned values.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: >
+        If it is a formula, cite it: author, year, equation number. Uncited formulas cannot
+        be merged, so a request without a source needs one before it can be built.

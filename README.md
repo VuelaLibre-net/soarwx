@@ -17,6 +17,10 @@ pnpm add soarwx
 
 TypeScript, pure ESM, no runtime dependencies. The core never touches the network.
 
+Requires Node 20.11+ or any modern browser. The package is **ESM only** — there is no
+CommonJS build, so a `require()` consumer needs `await import("soarwx")`. Bundlers and
+`"type": "module"` projects need nothing special.
+
 ## Usage
 
 ```ts
@@ -72,6 +76,11 @@ declared; an estimated value is never presented as measured.
 pnpm check   # format, lint, types, tests, build and size — the full gate
 pnpm test    # vitest, no network
 ```
+
+Development needs Node 22.13+ and the pinned pnpm. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the gate, the invariants it enforces and how to add
+a public export, [`CHANGELOG.md`](CHANGELOG.md) for what moved between versions, and
+[`SECURITY.md`](SECURITY.md) to report a vulnerability.
 
 ## Attribution
 

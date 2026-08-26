@@ -1,0 +1,49 @@
+name: Bug report
+description: A value that looks wrong, an error that should not happen, or a broken build.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A number that disagrees with your own judgment of the day is worth reporting —
+        this library exists to fix exactly that kind of defect. Include the site, so the
+        computation can be reproduced.
+  - type: input
+    id: version
+    attributes:
+      label: soarwx version
+      placeholder: "0.12.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Node
+        - Browser
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The value or error you got, and the value you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >
+        Minimal code. If it involves fetched data, include the site coordinates, elevation,
+        timezone, date and models, so the request can be replayed.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Model used, `quality.estimated` contents, the full `Result` error, logs.
