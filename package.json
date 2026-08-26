@@ -4,6 +4,14 @@
   "description": "Soaring weather conditions derived from numerical models",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VuelaLibre-net/soarwx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VuelaLibre-net/soarwx/issues"
+  },
+  "homepage": "https://github.com/VuelaLibre-net/soarwx#readme",
   "sideEffects": false,
   "engines": {
     "node": ">=22.12"
