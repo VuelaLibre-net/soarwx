@@ -1,6 +1,4 @@
 # soarwx
-
-[![npm version](https://img.shields.io/npm/v/soarwx.svg)](https://www.npmjs.com/package/soarwx)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-pure%20ESM-3178c6.svg)](tsconfig.json)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](#)
