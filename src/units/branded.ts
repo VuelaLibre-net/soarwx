@@ -1,16 +1,16 @@
 /**
- * Tipos marcados para magnitudes físicas.
+ * Branded types for physical quantities.
  *
- * El compilador impide sumar kelvin con pascales o pasar metros donde se
- * esperan metros por segundo. La marca se borra en tiempo de ejecución: los
- * constructores son la identidad.
+ * The compiler prevents adding kelvin to pascals or passing metres where
+ * metres per second are expected. The brand is erased at runtime:
+ * constructors are identity functions.
  *
- * Ver docs/SPEC.md §2.1.
+ * See docs/SPEC.md §2.1.
  */
 
 declare const brand: unique symbol;
 
-/** Número con una marca de unidad que solo existe en tiempo de compilación. */
+/** Number carrying a compile-time unit brand. */
 export type Branded<T, B extends string> = T & { readonly [brand]: B };
 
 export type Kelvin = Branded<number, "K">;

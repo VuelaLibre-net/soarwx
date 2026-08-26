@@ -1,14 +1,5 @@
 /**
- * Capacidades por modelo, **verificadas contra la API en vivo**.
- *
- * La documentación de Open-Meteo lista variables que para una coordenada
- * concreta llegan como `null`, y acepta modelos que no cubren la zona. La
- * tentación de pedir el modelo de más resolución produce un informe vacío:
- * `icon_d2` responde literalmente «No data is available for this location» en
- * el interior peninsular, y `meteofrance_arome_france_hd` acepta la petición y
- * devuelve casi todo nulo.
- *
- * Medido en Fuentemilanos (40.9167 N, 4.2333 W) el 2026-08-18.
+ * Model capabilities verified against live Open-Meteo APIs.
  */
 
 export type OpenMeteoModel =
@@ -35,7 +26,7 @@ export interface ModelCapabilities {
   readonly resolutionKm: number;
   readonly updateIntervalHours: number;
   readonly coverage: Coverage;
-  /** Orden de preferencia: menor es mejor. */
+  /** Ranking order: lower values indicate higher preference. */
   readonly rank: number;
 }
 
@@ -43,9 +34,7 @@ const FULL_LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500] as const
 const ARPEGE_LEVELS = [1000, 950, 925, 900, 850, 800, 700, 600, 500] as const;
 
 /**
- * Qué sirve cada modelo, **verificado contra la API en vivo** y no copiado de la
- * documentación: la documentación lista variables que llegan como `null` para
- * una coordenada dada.
+ * Model capability catalog verified against live API responses.
  */
 export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabilities>> = {
   icon_eu: {
@@ -139,8 +128,8 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
     coverage: "global",
     rank: 7,
   },
-  // ECMWF **no sirve niveles de presión** en la coordenada de referencia, así
-  // que no vale para sondeos. Solo aporta capa límite y CAPE.
+  // ECMWF does not serve pressure level profiles at standard endpoints;
+  // it provides boundary layer height and surface CAPE only.
   ecmwf_ifs: {
     id: "ecmwf_ifs",
     pressureLevelsHpa: [],
@@ -169,15 +158,11 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
   },
 };
 
-/** Un modelo sirve para sondeo si aporta al menos cuatro niveles de presión. */
+/** Minimum pressure levels required from a model to construct a valid atmospheric sounding. */
 export const MIN_LEVELS_FOR_SOUNDING = 4;
 
 /**
- * Modelos utilizables para sondeo, ordenados por idoneidad.
- *
- * `best_match` **no está en la lista y no debe usarse**: cose modelos distintos
- * a lo largo del horizonte, de modo que la serie temporal deja de ser
- * físicamente coherente y la dispersión entre modelos deja de significar nada.
+ * Models usable for atmospheric sounding generation, sorted by preference rank.
  */
 export function soundingModels(): readonly OpenMeteoModel[] {
   return Object.values(MODEL_CAPABILITIES)
@@ -186,7 +171,7 @@ export function soundingModels(): readonly OpenMeteoModel[] {
     .map((m) => m.id);
 }
 
-/** Trío recomendado para dispersión: tres centros de predicción distintos. */
+/** Recommended 3-model multi-agency ensemble for multi-model confidence analysis. */
 export const RECOMMENDED_ENSEMBLE: readonly OpenMeteoModel[] = [
   "icon_eu",
   "gfs_seamless",

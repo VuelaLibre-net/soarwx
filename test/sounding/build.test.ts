@@ -14,15 +14,15 @@ const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
 const noon = indexOfLocalHour(fixture, 14);
 const input = toSoundingInput(fixture, noon);
 
-describe("buildSounding sobre datos reales de Fuentemilanos", () => {
+describe("buildSounding on real Fuentemilanos forecast data", () => {
   const built = buildSounding(input);
 
-  it("se construye", () => {
+  it("builds successfully", () => {
     expect(built.ok).toBe(true);
   });
 
   // S-01
-  it("descarta los cuatro niveles bajo tierra y conserva seis", () => {
+  it("discards four sub-surface levels and retains six aloft levels", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     expect(built.value.quality.levelsDiscardedBelowGround).toBe(4);
@@ -30,10 +30,10 @@ describe("buildSounding sobre datos reales de Fuentemilanos", () => {
   });
 
   // S-02
-  it("los 38 °C del nivel de 1000 hPa no entran en el sondeo", () => {
+  it("38 °C value from 1000 hPa level never enters the sounding", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // Ese nivel está a 136 m de altura geopotencial, muy por debajo de los 1001 m.
+    // That level sits at 136 m geopotential height, far below site elevation (1001 m).
     for (const level of built.value.levels) {
       expect(level.geopotentialMslM).toBeGreaterThanOrEqual(FUENTEMILANOS.elevationMslM);
       expect(level.pressurePa).toBeLessThanOrEqual(input.surface.pressurePa);
@@ -46,7 +46,7 @@ describe("buildSounding sobre datos reales de Fuentemilanos", () => {
   });
 
   // S-03
-  it("los niveles quedan en presión estrictamente descendente", () => {
+  it("levels are ordered by strictly descending pressure", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     for (let i = 1; i < built.value.levels.length; i++) {
@@ -56,15 +56,15 @@ describe("buildSounding sobre datos reales de Fuentemilanos", () => {
     }
   });
 
-  it("incorpora los tres niveles de altura sobre el terreno", () => {
+  it("incorporates all three AGL height levels", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     expect(built.value.quality.heightLevelsUsed).toBe(3);
-    expect(built.value.quality.levelsUsed).toBe(10); // 1 superficie + 3 altura + 6 presión
+    expect(built.value.quality.levelsUsed).toBe(10); // 1 surface + 3 height + 6 pressure
     expect(built.value.quality.estimated).toContain("height_level_dewpoint");
   });
 
-  it("los niveles de altura se intercalan entre superficie y 850 hPa", () => {
+  it("height levels are interleaved between surface and 850 hPa", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     const heights = built.value.levels
@@ -74,51 +74,45 @@ describe("buildSounding sobre datos reales de Fuentemilanos", () => {
   });
 
   // S-02b
-  it("declara el mayor hueco vertical, y es grande", () => {
+  it("declares maximum vertical gap correctly", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // Entre 700 hPa (3225 m) y 600 hPa (4485 m) no hay nada: 1260 m de hueco.
-    // Es la resolución vertical real con la que hay que trabajar, y por eso se
-    // declara en vez de disimularse.
+    // Between 700 hPa (3225 m) and 600 hPa (4485 m): 1260 m gap.
+    // This represents actual vertical resolution and is declared explicitly.
     expect(built.value.quality.maxVerticalGapM).toBeCloseTo(1260, 0);
     expect(built.value.quality.gapWindowTopAglM).toBe(3500);
   });
 
-  it("el hueco se puede recalcular con un techo concreto", () => {
+  it("gap can be re-evaluated below a specific ceiling", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // Dentro de la capa límite probable de ese día (hasta ~2100 m MSL) el
-    // mayor hueco es el de 850 a 800 hPa: 528 m.
+    // Below expected boundary layer (~2100 m MSL) largest gap is 850 to 800 hPa: 528 m.
     expect(maxGapBelow(built.value, m(2094))).toBeCloseTo(528, 0);
-    // Y en los primeros 200 m, los niveles de altura lo reducen a decenas.
+    // In lowest 200 m, height levels reduce gap to tens of metres.
     expect(maxGapBelow(built.value, m(1181))).toBeLessThan(80);
   });
 
-  it("declara el desfase entre presión de superficie y columna geopotencial", () => {
+  it("declares offset between surface pressure and model geopotential column", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // Open-Meteo reescala `surface_pressure` a la elevación pedida pero no
-    // `geopotential_height_*hPa`: la presión de superficie queda 37 m por
-    // debajo de donde la columna del modelo la situaría. Se declara, no se
-    // corrige, y los niveles de altura se anclan a la columna para que el
-    // perfil no salga no monótono.
+    // Open-Meteo downscales `surface_pressure` to requested elevation but not
+    // `geopotential_height_*hPa`: surface pressure sits ~37 m below where model
+    // column places it. Declared explicitly without silent mutation.
     expect(built.value.quality.surfacePressureOffsetM).toBeCloseTo(36.9, 0);
   });
 
-  it("conserva presión de estación y QNH por separado", () => {
+  it("stores station surface pressure and sea-level pressure (QNH) separately", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // 909.8 hPa de estación frente a un QNH cercano a 1013: confundirlos
-    // desplaza la densidad y toda la parcela.
     expect(built.value.surface.pressurePa).toBeLessThan(
       built.value.surface.mslPressurePa,
     );
   });
 });
 
-describe("buildSounding, casos límite", () => {
+describe("buildSounding edge cases", () => {
   // S-04
-  it("con menos de tres niveles sobre el terreno devuelve INSUFFICIENT_LEVELS", () => {
+  it("returns INSUFFICIENT_LEVELS with fewer than three pressure levels aloft", () => {
     const scarce = {
       ...input,
       pressureLevels: input.pressureLevels.filter((l) => l.pressurePa <= hPaToPa(600)),
@@ -132,21 +126,20 @@ describe("buildSounding, casos límite", () => {
     expect(quality.pressureLevelsUsed).toBe(2);
   });
 
-  it("un emplazamiento más alto descarta más niveles", () => {
+  it("higher elevation site filters out more isobaric levels", () => {
     const high = buildSounding({
       ...input,
       site: { ...FUENTEMILANOS, elevationMslM: m(1600) },
     });
     expect(high.ok).toBe(true);
     if (!high.ok) return;
-    // A 1600 m también cae el nivel de 850 hPa, que está a 1566 m.
-    // A 1600 m caen también 900 hPa (1060 m) y 850 hPa (1566 m): quedan cuatro.
+    // At 1600 m MSL, 900 hPa (1060 m) and 850 hPa (1566 m) are also discarded.
     expect(high.value.quality.levelsDiscardedBelowGround).toBe(6);
     expect(high.value.quality.pressureLevelsUsed).toBe(4);
   });
 
   // P-09
-  it("el orden de entrada no cambia el resultado", () => {
+  it("input ordering does not affect resulting sounding", () => {
     const shuffled = {
       ...input,
       pressureLevels: [...input.pressureLevels].reverse(),
@@ -160,7 +153,7 @@ describe("buildSounding, casos límite", () => {
     expect(b.value.quality).toEqual(a.value.quality);
   });
 
-  it("sin niveles de altura el sondeo sigue siendo válido", () => {
+  it("sounding remains valid without height levels", () => {
     const r = buildSounding({ ...input, heightLevels: [] });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -169,8 +162,8 @@ describe("buildSounding, casos límite", () => {
   });
 });
 
-describe("opciones y casos degenerados", () => {
-  it("acepta un mínimo de niveles distinto", () => {
+describe("options and degenerate cases", () => {
+  it("accepts custom minimum pressure level count", () => {
     const scarce = {
       ...input,
       pressureLevels: input.pressureLevels.filter((l) => l.pressurePa <= hPaToPa(600)),
@@ -181,16 +174,16 @@ describe("opciones y casos degenerados", () => {
     if (r.ok) expect(r.value.quality.pressureLevelsUsed).toBe(2);
   });
 
-  it("acepta una ventana de hueco distinta", () => {
+  it("accepts custom gap analysis window top", () => {
     const r = buildSounding({ ...input, options: { gapWindowTopAglM: m(1200) } });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.quality.gapWindowTopAglM).toBe(1200);
-    // Hasta 2201 m MSL el mayor hueco es el de 850 a 800 hPa: 528 m.
+    // Up to 2201 m MSL largest gap is 850 to 800 hPa: 528 m.
     expect(r.value.quality.maxVerticalGapM).toBeCloseTo(528, 0);
   });
 
-  it("con niveles a la misma presión el desfase no divide por cero", () => {
+  it("duplicate pressure levels do not cause division by zero in offset", () => {
     const duplicated = input.pressureLevels.map((l) =>
       l.pressurePa < hPaToPa(900) ? l : { ...l, pressurePa: hPaToPa(900) },
     );
@@ -199,7 +192,7 @@ describe("opciones y casos degenerados", () => {
     if (r.ok) expect(Number.isFinite(r.value.quality.surfacePressureOffsetM)).toBe(true);
   });
 
-  it("propaga la lista de variables ausentes", () => {
+  it("propagates list of missing variables", () => {
     const r = buildSounding({ ...input, missing: ["lifted_index"] });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.quality.missing).toEqual(["lifted_index"]);

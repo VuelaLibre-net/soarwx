@@ -1,9 +1,8 @@
 /**
- * Puntuación por bandas.
+ * Piecewise-linear scoring band interpolation.
  *
- * Una banda define dónde un factor vale 1 (entre `idealMin` e `idealMax`) y
- * dónde vale 0 (por debajo de `zeroMin` o por encima de `zeroMax`), con rampa
- * lineal entre medias.
+ * A band defines where a parameter scores 1 (between `idealMin` and `idealMax`)
+ * and where it scores 0 (below `zeroMin` or above `zeroMax`), with linear interpolation in between.
  */
 
 export interface Band {
@@ -14,10 +13,7 @@ export interface Band {
 }
 
 /**
- * Puntuación de un valor dentro de su banda, en el intervalo [0, 1].
- *
- * @source Versión pura del criterio de bandas del predecesor
- *         (`calculations.py:686-694`), sin marcado ni efectos.
+ * Evaluates parameter score within specified band, normalized to [0, 1].
  */
 export function scoreBand(value: number, band: Band): number {
   if (value >= band.idealMin && value <= band.idealMax) return 1;

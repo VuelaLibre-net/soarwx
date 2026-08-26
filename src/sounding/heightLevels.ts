@@ -1,13 +1,13 @@
 /**
- * Niveles de altura sobre el terreno (80, 120, 180 m) como niveles del sondeo.
+ * Above-ground-level (AGL) height levels (e.g. 80, 120, 180 m) as sounding levels.
  *
- * En un emplazamiento a 1000 m la mitad de los niveles de presión cae bajo
- * tierra y el primero que sobrevive está a unos 60 m sobre el suelo: sin estos
- * niveles, los primeros cientos de metros del perfil son una recta entre dos
- * puntos, justo donde la capa superficial es superadiabática (R-1.1b).
+ * At high elevation sites (e.g. 1000 m MSL), standard isobaric levels below ground
+ * are discarded. Without AGL height levels, the lower profile would be a straight
+ * chord between surface and the first aloft isobaric level, missing the superadiabatic
+ * surface layer (R-1.1b).
  *
- * Open-Meteo sirve temperatura y viento a estas alturas, **pero no humedad ni
- * presión**, así que ambas hay que derivarlas.
+ * Open-Meteo provides temperature and wind at these heights, **but not moisture or pressure**,
+ * so both must be derived.
  */
 
 import { K, Pa, kgkg, m } from "../units/branded.js";
@@ -25,22 +25,20 @@ export interface RawHeightLevel {
   readonly windFromDeg: Degrees;
 }
 
-/** Par (presión, altura) del que se deduce la relación p(z) del modelo. */
+/** (pressure, height) pair defining model p(z) relation. */
 export interface PressureHeightPair {
   readonly pressurePa: Pascal;
   readonly geopotentialMslM: Metres;
 }
 
 /**
- * Presión a una altura sobre la superficie por la ecuación hipsométrica.
+ * Pressure at height above surface via the hypsometric equation.
  *
- *     p(z) = p_sfc · exp( −g·Δz / (Rd·Tv_media) )
+ *     p(z) = p_sfc · exp( −g·Δz / (Rd·Tv_mean) )
  *
- * Solo se usa como respaldo: la vía principal es
- * {@link pressureFromGeopotentialProfile}, que mantiene el perfil coherente con
- * la propia columna del modelo.
+ * Used only as fallback: primary method is {@link pressureFromGeopotentialProfile}.
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.23 (ecuación hipsométrica).
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.23 (hypsometric equation).
  */
 export function pressureAtHeight(
   surfacePressurePa: Pascal,
@@ -56,18 +54,11 @@ export function pressureAtHeight(
 }
 
 /**
- * Presión a una altura, interpolando linealmente `ln(p)` frente a la altura
- * geopotencial **del propio modelo**.
+ * Pressure at height by linearly interpolating `ln(p)` against model geopotential height.
  *
- * Esta es la vía principal, y no por elegancia. En Open-Meteo `surface_pressure`
- * está reescalado a la elevación pedida mientras que `geopotential_height_*hPa`
- * no lo está, y las dos familias no son mutuamente coherentes: medido en
- * Fuentemilanos, la presión de superficie cae 37 m por debajo de donde la
- * columna geopotencial la situaría. Derivar la presión de los niveles de altura
- * desde la de superficie produce un perfil **no monótono**, con un nivel de
- * 80 m por encima del suelo pero a más presión que el nivel de 900 hPa.
+ * This is the primary method to maintain monotonicity with model isobaric columns.
  *
- * @source Relación hidrostática log-lineal; ver docs/OPEN_METEO_INTEGRATION.md §4.
+ * @source Hydrostatic log-linear relation; see docs/OPEN_METEO_INTEGRATION.md §4.
  */
 export function pressureFromGeopotentialProfile(
   column: readonly PressureHeightPair[],
@@ -100,19 +91,17 @@ export interface HeightLevelContext {
   readonly surfaceTempK: Kelvin;
   readonly surfaceMixingRatioKgKg: number;
   readonly elevationMslM: Metres;
-  /** Columna de presión del modelo, ya podada de niveles bajo tierra. */
+  /** Model pressure column with sub-surface levels pruned. */
   readonly column: readonly PressureHeightPair[];
 }
 
 /**
- * Convierte niveles de altura en niveles del sondeo.
+ * Converts raw AGL height levels into sounding levels.
  *
- * El punto de rocío se deriva conservando la razón de mezcla de superficie, que
- * es lo correcto en una capa mezclada, saturándolo a la temperatura del nivel
- * para no producir un rocío imposible. Esa derivación es una **suposición** y
- * el sondeo la declara en `quality.estimated`.
+ * Dewpoint is derived by conserving surface mixing ratio (valid in a mixed layer)
+ * capped at saturation temperature. Flagged in `quality.estimated`.
  *
- * @source Conservación de la razón de mezcla en la capa mezclada (Stull, cap. 18).
+ * @source Mixing ratio conservation in convective mixed layer (Stull, ch. 18).
  */
 export function heightLevelsToLevels(
   context: HeightLevelContext,

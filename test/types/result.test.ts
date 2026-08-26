@@ -14,18 +14,18 @@ const good: Result<number> = ok(3);
 const bad: Result<number> = err("MISSING_VARIABLE", "no data");
 
 describe("Result", () => {
-  it("distingue éxito de fallo", () => {
+  it("distinguishes success from failure", () => {
     expect(isOk(good)).toBe(true);
     expect(isErr(good)).toBe(false);
     expect(isOk(bad)).toBe(false);
     expect(isErr(bad)).toBe(true);
   });
 
-  it("err conserva el código como identificador estable", () => {
+  it("err preserves the code as a stable identifier", () => {
     expect(isErr(bad) && bad.error.code).toBe("MISSING_VARIABLE");
   });
 
-  it("el detalle es opcional y no se inventa", () => {
+  it("detail is optional and never fabricated", () => {
     const withoutDetail = err("NO_CONVECTION", "night");
     expect(isErr(withoutDetail) && "detail" in withoutDetail.error).toBe(false);
 
@@ -33,7 +33,7 @@ describe("Result", () => {
     expect(isErr(withDetail) && withDetail.error.detail).toEqual({ tempK: 200 });
   });
 
-  it("map transforma el valor y deja pasar el error", () => {
+  it("map transforms the value and propagates the error", () => {
     expect(
       unwrapOr(
         mapResult(good, (v) => v * 2),
@@ -48,7 +48,7 @@ describe("Result", () => {
     ).toBe(-1);
   });
 
-  it("andThen encadena y corta en el primer fallo", () => {
+  it("andThen chains and short-circuits on first failure", () => {
     expect(
       unwrapOr(
         andThen(good, (v) => ok(v + 1)),
@@ -69,7 +69,7 @@ describe("Result", () => {
     ).toBe(-1);
   });
 
-  it("unwrapOr devuelve el respaldo solo en fallo", () => {
+  it("unwrapOr returns fallback only on failure", () => {
     expect(unwrapOr(good, 0)).toBe(3);
     expect(unwrapOr(bad, 0)).toBe(0);
   });

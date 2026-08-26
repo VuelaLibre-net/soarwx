@@ -38,8 +38,8 @@ const raw = [
   },
 ];
 
-describe("presión desde la columna geopotencial", () => {
-  it("reproduce los niveles de la propia columna", () => {
+describe("pressure from geopotential column", () => {
+  it("reproduces levels existing in the column", () => {
     expect(paToHPa(pressureFromGeopotentialProfile(column, m(1566))!)).toBeCloseTo(
       850,
       6,
@@ -50,29 +50,29 @@ describe("presión desde la columna geopotencial", () => {
     );
   });
 
-  it("interpola dentro de la columna", () => {
+  it("interpolates within column bounds", () => {
     const p = paToHPa(pressureFromGeopotentialProfile(column, m(1300))!);
     expect(p).toBeGreaterThan(850);
     expect(p).toBeLessThan(900);
   });
 
-  it("extrapola por debajo del primer nivel", () => {
+  it("extrapolates below lowest level", () => {
     const p = paToHPa(pressureFromGeopotentialProfile(column, m(1001))!);
     expect(p).toBeGreaterThan(900);
     expect(p).toBeLessThan(915);
   });
 
-  it("extrapola por encima del último nivel", () => {
+  it("extrapolates above highest level", () => {
     const p = paToHPa(pressureFromGeopotentialProfile(column, m(2400))!);
     expect(p).toBeLessThan(800);
   });
 
-  it("con menos de dos niveles no puede hacer nada", () => {
+  it("returns null with fewer than two levels", () => {
     expect(pressureFromGeopotentialProfile([], m(1500))).toBeNull();
     expect(pressureFromGeopotentialProfile([column[0]!], m(1500))).toBeNull();
   });
 
-  it("tolera dos niveles a la misma altura", () => {
+  it("tolerates duplicate levels at identical altitude", () => {
     const degenerate = [
       { pressurePa: hPaToPa(900), geopotentialMslM: m(1060) },
       { pressurePa: hPaToPa(900), geopotentialMslM: m(1060) },
@@ -84,8 +84,8 @@ describe("presión desde la columna geopotencial", () => {
   });
 });
 
-describe("hipsométrica (respaldo)", () => {
-  it("da unos 10 Pa por metro cerca del suelo", () => {
+describe("hypsometric formula (fallback)", () => {
+  it("yields approximately 10 Pa per metre near ground", () => {
     const p = pressureAtHeight(
       hPaToPa(909.8),
       celsiusToK(33.9),
@@ -98,7 +98,7 @@ describe("hipsométrica (respaldo)", () => {
     expect(dropHpaPerM).toBeLessThan(0.11);
   });
 
-  it("decrece con la altura", () => {
+  it("decreases monotonically with altitude", () => {
     const a = pressureAtHeight(
       hPaToPa(1013),
       celsiusToK(15),
@@ -117,24 +117,24 @@ describe("hipsométrica (respaldo)", () => {
   });
 });
 
-describe("niveles de altura como niveles del sondeo", () => {
-  it("usa la columna del modelo y sale monótono con ella", () => {
+describe("height levels as sounding levels", () => {
+  it("anchors to model column and preserves monotonicity", () => {
     const levels = heightLevelsToLevels(baseContext, raw);
     expect(levels).toHaveLength(2);
     expect(levels[0]!.geopotentialMslM).toBe(1081);
-    // Por encima de 1060 m (900 hPa) la presión debe ser menor que 900 hPa.
+    // Above 1060 m (900 hPa) pressure must be less than 900 hPa.
     expect(paToHPa(levels[0]!.pressurePa)).toBeLessThan(900);
     expect(levels[1]!.pressurePa).toBeLessThan(levels[0]!.pressurePa);
     expect(levels[0]!.source).toBe("height_level");
   });
 
-  it("sin columna cae a la hipsométrica y sigue produciendo niveles", () => {
+  it("falls back to hypsometric formula when column is absent", () => {
     const levels = heightLevelsToLevels({ ...baseContext, column: [] }, raw);
     expect(levels).toHaveLength(2);
     expect(Number.isFinite(levels[0]!.pressurePa)).toBe(true);
   });
 
-  it("el rocío derivado nunca supera la temperatura del nivel", () => {
+  it("derived dewpoint never exceeds level temperature", () => {
     const humid = heightLevelsToLevels({ ...baseContext, surfaceMixingRatioKgKg: 0.03 }, [
       {
         heightAglM: m(80),
@@ -146,7 +146,7 @@ describe("niveles de altura como niveles del sondeo", () => {
     expect(humid[0]!.dewpointK).toBeLessThanOrEqual(humid[0]!.tempK);
   });
 
-  it("una lista vacía devuelve una lista vacía", () => {
+  it("empty list returns empty list", () => {
     expect(heightLevelsToLevels(baseContext, [])).toHaveLength(0);
   });
 });

@@ -1,8 +1,8 @@
 /**
- * Reglas de lint propias de soarwx.
+ * Custom lint rules for soarwx.
  *
- * No son estilo: codifican dos invariantes del diseño que un cambio plausible
- * rompe en silencio (ver docs/REQUIREMENTS.md NF-5 y NF-6).
+ * These are not style preferences: they enforce two core design invariants
+ * that plausible-looking changes would silently break (see docs/REQUIREMENTS.md NF-5 and NF-6).
  */
 import requireSourceCitation from "./rules/require-source-citation.js";
 import unitSuffix from "./rules/unit-suffix.js";

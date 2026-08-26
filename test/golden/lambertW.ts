@@ -1,30 +1,30 @@
 /**
- * Rama W₋₁ de la función W de Lambert, para el LCL exacto de Romps (2017).
+ * Branch W₋₁ of the Lambert W function for exact Romps (2017) LCL.
  *
- * Solo para pruebas. Definida en [−1/e, 0).
+ * Test helper only. Defined on [−1/e, 0).
  */
 
 const INV_E = 1 / Math.E;
 
 export function lambertWm1(x: number): number {
   if (x >= 0 || x < -INV_E) {
-    throw new RangeError(`lambertWm1 fuera de dominio: ${String(x)}`);
+    throw new RangeError(`lambertWm1 out of domain: ${String(x)}`);
   }
   if (x === -INV_E) return -1;
 
   let w: number;
   if (x < -0.3) {
-    // Serie alrededor de la rama en x = −1/e.
+    // Series expansion around branch point at x = −1/e.
     const p = -Math.sqrt(2 * (Math.E * x + 1));
     w = -1 + p - (p * p) / 3 + (11 * p * p * p) / 72;
   } else {
-    // Asintótica para x → 0⁻.
+    // Asymptotic expansion for x → 0⁻.
     const l1 = Math.log(-x);
     const l2 = Math.log(-l1);
     w = l1 - l2 + l2 / l1;
   }
 
-  // Halley.
+  // Halley iteration.
   for (let i = 0; i < 100; i++) {
     const ew = Math.exp(w);
     const f = w * ew - x;

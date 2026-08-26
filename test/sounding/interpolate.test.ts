@@ -14,8 +14,8 @@ const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 1
 if (!built.ok) throw new Error(built.error.message);
 const sounding = built.value;
 
-describe("interpolación por presión", () => {
-  it("en un nivel existente devuelve ese nivel", () => {
+describe("interpolation by pressure", () => {
+  it("returns existing level when queried at exact pressure", () => {
     const r = interpolateAtPressure(sounding, hPaToPa(850));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -24,7 +24,7 @@ describe("interpolación por presión", () => {
   });
 
   // S-05
-  it("a media capa cae entre los dos niveles que la acotan", () => {
+  it("mid-layer level falls between bracketing levels", () => {
     const r = interpolateAtPressure(sounding, hPaToPa(825));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -35,7 +35,7 @@ describe("interpolación por presión", () => {
     expect(r.value.source).toBe("interpolated");
   });
 
-  it("es monótona entre dos niveles", () => {
+  it("is monotonic between two levels", () => {
     let previous = Infinity;
     for (let hpa = 850; hpa >= 800; hpa -= 5) {
       const r = interpolateAtPressure(sounding, hPaToPa(hpa));
@@ -46,21 +46,21 @@ describe("interpolación por presión", () => {
     }
   });
 
-  it("por debajo de la superficie es LEVEL_BELOW_GROUND", () => {
+  it("below surface returns LEVEL_BELOW_GROUND", () => {
     const r = interpolateAtPressure(sounding, hPaToPa(950));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("LEVEL_BELOW_GROUND");
   });
 
-  it("por encima del techo del sondeo es OUT_OF_VALID_RANGE", () => {
+  it("above sounding top returns OUT_OF_VALID_RANGE", () => {
     const r = interpolateAtPressure(sounding, hPaToPa(300));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("OUT_OF_VALID_RANGE");
   });
 });
 
-describe("interpolación por altura", () => {
-  it("coincide con la interpolación por presión en el mismo punto", () => {
+describe("interpolation by height", () => {
+  it("matches pressure interpolation at equivalent point", () => {
     const byHeight = interpolateAtHeight(sounding, m(1800));
     expect(byHeight.ok).toBe(true);
     if (!byHeight.ok) return;
@@ -71,27 +71,27 @@ describe("interpolación por altura", () => {
     expect(byPressure.value.tempK).toBeCloseTo(byHeight.value.tempK, 6);
   });
 
-  it("interpolateAtAgl ancla en la elevación del emplazamiento", () => {
+  it("interpolateAtAgl anchors to site elevation", () => {
     const agl = interpolateAtAgl(sounding, m(565));
     expect(agl.ok).toBe(true);
     if (agl.ok) expect(agl.value.geopotentialMslM).toBeCloseTo(1566, 6);
   });
 
-  it("bajo el terreno es LEVEL_BELOW_GROUND", () => {
+  it("below ground returns LEVEL_BELOW_GROUND", () => {
     const r = interpolateAtHeight(sounding, m(500));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("LEVEL_BELOW_GROUND");
   });
 
-  it("por encima del techo es OUT_OF_VALID_RANGE", () => {
+  it("above sounding top returns OUT_OF_VALID_RANGE", () => {
     const r = interpolateAtHeight(sounding, m(9000));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("OUT_OF_VALID_RANGE");
   });
 
-  it("el viento se interpola por componentes, no por dirección", () => {
-    // Entre 800 hPa (256°) y 700 hPa (240°) la dirección gira; el resultado
-    // intermedio debe quedar entre ambas y con módulo entre los dos.
+  it("interpolates wind by vector components rather than scalar angle", () => {
+    // Between 800 hPa (256°) and 700 hPa (240°) wind direction turns;
+    // interpolated result must lie between both with consistent vector speed.
     const r = interpolateAtPressure(sounding, hPaToPa(750));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -101,7 +101,7 @@ describe("interpolación por altura", () => {
     expect(r.value.windSpeedMs).toBeLessThan(4.2);
   });
 
-  it("el sondeo llega hasta 500 hPa", () => {
+  it("sounding top reaches 500 hPa", () => {
     expect(paToHPa(sounding.levels[sounding.levels.length - 1]!.pressurePa)).toBeCloseTo(
       500,
       6,

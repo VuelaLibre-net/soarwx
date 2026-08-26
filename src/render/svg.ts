@@ -1,15 +1,12 @@
 /**
- * Primitivas mínimas de SVG.
+ * SVG rendering primitives.
  *
- * Cadenas, sin framework y sin dependencias: el consumidor decide si las
- * inserta en Astro, en React o en un fichero. `vuelalibre.net` no usa ninguna
- * librería de gráficos —su mapa de España son 414 líneas de SVG inline con cero
- * JavaScript— y esto encaja con eso.
+ * Lightweight, zero-dependency string builders generating responsive, accessible SVG elements.
  */
 
 export type Attrs = Readonly<Record<string, string | number | undefined>>;
 
-/** Escapa texto para que no pueda romper el documento. */
+/** Escapes XML special characters in string values. */
 export function escapeText(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -19,7 +16,7 @@ export function escapeText(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Redondea para no arrastrar ruido de coma flotante en el documento. */
+/** Rounds numerical values to minimize floating point noise in SVG output. */
 export function round(value: number, decimals = 2): string {
   if (!Number.isFinite(value)) return "0";
   const factor = Math.pow(10, decimals);
@@ -33,19 +30,19 @@ function attrsToString(attrs: Attrs): string {
     .join("");
 }
 
-/** Elemento SVG con sus atributos escapados. Devuelve cadena, no nodo. */
+/** Constructs an XML element string with escaped attributes. */
 export function element(tag: string, attrs: Attrs, children = ""): string {
   return children === ""
     ? `<${tag}${attrsToString(attrs)}/>`
     : `<${tag}${attrsToString(attrs)}>${children}</${tag}>`;
 }
 
-/** Elemento `<text>` con el contenido escapado. */
+/** Constructs an SVG `<text>` element with escaped text content. */
 export function text(content: string, attrs: Attrs): string {
   return element("text", attrs, escapeText(content));
 }
 
-/** Polilínea a partir de puntos ya proyectados a coordenadas del lienzo. */
+/** Constructs an SVG `<polyline>` element from projected 2D coordinate pairs. */
 export function polyline(
   points: readonly (readonly [number, number])[],
   attrs: Attrs,
@@ -57,11 +54,7 @@ export function polyline(
   });
 }
 
-/**
- * Polígono cerrado a partir de puntos ya proyectados. Para las superficies
- * rellenas de un gráfico de áreas, donde una polilínea dejaría el contorno
- * abierto y el relleno se cerraría por donde le pareciera al motor de dibujo.
- */
+/** Constructs an SVG `<polygon>` element from projected 2D coordinate pairs. */
 export function polygon(
   points: readonly (readonly [number, number])[],
   attrs: Attrs,
@@ -79,10 +72,7 @@ export interface LegendEntry {
 }
 
 /**
- * Leyenda en una fila.
- *
- * Sin ella, tres curvas del mismo gráfico son tres curvas de colores: el pie de
- * figura puede describirlas, pero no dice cuál es cuál.
+ * Single-line chart legend.
  */
 export function legend(
   entries: readonly LegendEntry[],
@@ -117,7 +107,7 @@ export function legend(
 }
 
 export interface DocumentOptions {
-  /** Ancho del lienzo interno. El SVG es responsive: no lleva ancho en píxeles. */
+  /** Internal viewBox coordinate width in pixels. */
   readonly widthPx: number;
   readonly heightPx: number;
   readonly title: string;
@@ -126,13 +116,12 @@ export interface DocumentOptions {
 }
 
 /**
- * Documento SVG responsive y accesible.
+ * Wraps SVG markup in responsive and accessible root document container.
  *
- * Lleva `viewBox` y **no** lleva `width` ni `height` en píxeles, así que escala
- * con su contenedor. `<title>` y `<desc>` van siempre y se referencian desde
- * `aria-labelledby`.
+ * Utilizes `viewBox` without fixed pixel dimensions to enable fluid responsive scaling.
+ * Links `<title>` and `<desc>` metadata via `aria-labelledby`.
  *
- * @source R-14.4 y R-14.5 de docs/REQUIREMENTS.md.
+ * @source Requirements R-14.4 and R-14.5 from docs/REQUIREMENTS.md.
  */
 export function document(options: DocumentOptions, body: string): string {
   const titleId = "t";

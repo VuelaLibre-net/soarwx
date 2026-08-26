@@ -29,20 +29,20 @@ declare const ziAglM: Uni.Metres;
 declare const fixture: Om.OpenMeteoResponse;
 declare const container: { innerHTML: string };
 
-import { liftedIndex, liftedIndexBand, kIndex, totalTotals, capeRisk } from "../../../src/stability/index.js";
+import * as en from "../../../src/i18n/en.js";
 
-/** `soarwx/stability` */
+/** `soarwx/i18n/en` */
 export async function example(): Promise<unknown> {
-  const li = liftedIndex(sounding, maxSurfaceTempK);
-  if (li.ok) liftedIndexBand(li.value);      // "stable" | "marginally_unstable" | ...
-  // li.error.code === "MISSING_VARIABLE" when the 500 hPa level is missing.
-  // Never returns 0.0 for absent data: a real 0.0 and absent are distinguishable.
+  en.describeLevel(4);                       // "Good"
+  en.describeCeilingLimit("hcrit");          // "limited by thermal strength"
+  en.describeVeto("stable_atmosphere");      // "Stable atmosphere above a shallow convective layer"
+  en.describeThermalQuality("organised");    // "Well-organised thermals"
+  en.describeConfidence("medium");           // "Medium confidence"
   
-  const risk = capeRisk(2800, 15);   // (CAPE, CIN) — both can be null
-  risk.band;            // "moderate"
-  risk.stormPotential;  // feeds the vetoes, never the factors
-  risk.inhibited;       // enough CIN to cap deep convection
-  risk.capeJkg;         // null if the model didn't serve it
-  void [liftedIndex, liftedIndexBand, kIndex, totalTotals, capeRisk, li, risk];
+  en.formatHour("2026-08-19T14:00", site.timezone);      // "16:00"
+  en.formatInstant("2026-08-19T14:00", site.timezone);   // "19 August at 16:00"
+  
+  en.DISCLAIMER;   // "Advisory forecast only. This does not replace..."
+  void [en];
   return undefined;
 }

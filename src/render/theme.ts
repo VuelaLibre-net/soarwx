@@ -1,11 +1,8 @@
 /**
- * Paleta.
+ * Palette configuration.
  *
- * Los colores por defecto son **variables CSS del consumidor**, con un valor de
- * respaldo. Así el gráfico hereda el tema claro u oscuro de la página en la que
- * se inserte sin que la librería sepa nada de ella.
- *
- * `vuelalibre.net` ya define `--chart-1` a `--chart-5` para ambos temas.
+ * Default colors resolve to CSS custom properties with hex fallbacks,
+ * ensuring automatic light and dark theme adaptation.
  */
 
 export type PaletteKey =
@@ -26,8 +23,7 @@ export type PaletteKey =
 export type Palette = Readonly<Record<PaletteKey, string>>;
 
 /**
- * Paleta por defecto. Cada color es una variable CSS con respaldo literal, así
- * que el mismo SVG funciona en claro y en oscuro sin recalcular nada.
+ * Default color palette utilizing theme-aware CSS custom properties with fallbacks.
  */
 export const DEFAULT_PALETTE: Palette = {
   axis: "var(--border, #8a8a8a)",
@@ -45,7 +41,7 @@ export const DEFAULT_PALETTE: Palette = {
   accent: "var(--foreground, #1a1a1a)",
 };
 
-/** Tamaño de fuente mínimo. Por debajo, el gráfico deja de ser legible. */
+/** Minimum font size in pixels to ensure legibility across viewports. */
 export const MIN_FONT_SIZE_PX = 10;
 
 export interface RenderOptions {
@@ -57,7 +53,7 @@ export interface RenderOptions {
   readonly className?: string;
 }
 
-/** Mezcla los colores que sobrescriba el consumidor sobre la paleta por defecto. */
+/** Merges user-defined palette overrides onto the default color palette. */
 export function resolvePalette(overrides?: Partial<Palette>): Palette {
   return overrides === undefined ? DEFAULT_PALETTE : { ...DEFAULT_PALETTE, ...overrides };
 }

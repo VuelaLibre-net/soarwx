@@ -1,16 +1,17 @@
 /**
- * Normalización del signo del flujo de calor sensible.
+ * Sensible heat flux sign normalisation.
  *
- * **La convención depende del modelo.** Medido en Fuentemilanos el mismo día y
- * a la misma hora: ICON-EU da −243.1 W/m² al mediodía y GFS +416.7 W/m². ICON
- * usa flujo positivo hacia abajo (convención DWD), GFS positivo hacia arriba.
+ * **The sign convention depends on the forecast model.** Measured at
+ * Fuentemilanos on the same day and hour: ICON-EU produces −243.1 W/m² at midday
+ * while GFS produces +416.7 W/m². ICON uses positive downward (DWD convention),
+ * GFS uses positive upward.
  *
- * Tomar el valor tal cual y meterlo en `w*` da, con ICON, flujo negativo al
- * mediodía y cero convección todo el día. No lanza excepción, no rompe nada y
- * produce un informe plausible y equivocado.
+ * Taking the raw value directly into `w*` causes ICON to register negative flux
+ * at solar noon and zero convection all day long. It raises no exceptions and
+ * silently outputs a plausible yet incorrect soaring forecast.
  *
- * Por eso la convención **se detecta**, no se tabula: una tabla se queda
- * obsoleta en silencio si Open-Meteo cambia de criterio.
+ * Consequently, sign convention is **auto-detected** rather than hardcoded in
+ * a static table: tables silently become obsolete if Open-Meteo updates backend criteria.
  */
 
 export type FluxSignConvention = "up_positive" | "down_positive" | "unknown";
@@ -22,24 +23,23 @@ export interface FluxSample {
 
 export interface FluxSignDetection {
   readonly convention: FluxSignConvention;
-  /** Fracción de las muestras diurnas que apoyan la convención elegida. */
+  /** Fraction of daytime samples that agree with the selected convention. */
   readonly agreementFrac: number;
   readonly samplesUsed: number;
 }
 
-/** Radiación por encima de la cual se considera que la superficie se calienta. */
+/** Radiation threshold above which the surface is considered heating up. */
 export const DAYTIME_RADIATION_THRESHOLD_WM2 = 200;
 
-/** Muestras diurnas mínimas para decidir. Por debajo, la convención es desconocida. */
+/** Minimum daytime samples required for reliable detection. Below this, convention is unknown. */
 export const MIN_SAMPLES_FOR_DETECTION = 3;
 
 /**
- * Detecta la convención de signo correlacionando el flujo con la radiación de
- * onda corta: cuando la superficie recibe más de 200 W/m², el flujo de calor
- * sensible va **hacia arriba**, y el signo que tome en esas horas define la
- * convención del modelo.
+ * Detects sign convention by correlating heat flux with shortwave radiation:
+ * when the surface receives > 200 W/m², sensible heat flux is physically
+ * directed **upward**, and the sign during those daytime hours reveals the model convention.
  *
- * @source docs/OPEN_METEO_INTEGRATION.md §4.1 (convenciones medidas).
+ * @source docs/OPEN_METEO_INTEGRATION.md §4.1 (measured conventions).
  */
 export function detectFluxSign(
   samples: readonly FluxSample[],
@@ -72,7 +72,7 @@ export function detectFluxSign(
 }
 
 /**
- * Devuelve el flujo con el criterio interno: **positivo hacia arriba**.
+ * Normalises heat flux to internal convention: **positive upward**.
  *
  * @source docs/OPEN_METEO_INTEGRATION.md §4.1.
  */

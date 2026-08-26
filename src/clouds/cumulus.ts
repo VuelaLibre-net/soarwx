@@ -1,25 +1,24 @@
 /**
- * Cumulus: día azul y espesor.
+ * Cumulus cloud metrics: blue thermal day and cloud vertical depth.
  */
 
 import { m } from "../units/branded.js";
 import type { Metres } from "../units/branded.js";
 
 /**
- * Día azul: la condensación queda por encima del techo térmico, así que las
- * térmicas no llegan a marcarse con nubes.
+ * Blue thermal day: convective condensation level sits above thermal ceiling,
+ * so convective thermals do not trigger cloud formation.
  *
- * @source Definición operativa habitual en vuelo a vela; Glendening (DrJack),
- *         «Cu Cloudbase».
+ * @source Standard soaring operational definition; Glendening (DrJack), "Cu Cloudbase".
  */
 export function isBlueDay(cloudBaseAglM: Metres, thermalTopAglM: Metres): boolean {
   return cloudBaseAglM >= thermalTopAglM;
 }
 
 /**
- * Espesor del cumulus: cuánto se desarrolla la nube por encima de su base.
+ * Cumulus cloud vertical depth: extent of convective cloud development above cloudbase.
  *
- * @source Indicador clásico de desarrollo convectivo.
+ * @source Standard convective development indicator.
  */
 export function cumulusDepth(cloudBaseAglM: Metres, thermalTopAglM: Metres): Metres {
   return m(Math.max(0, thermalTopAglM - cloudBaseAglM));

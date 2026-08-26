@@ -8,27 +8,27 @@ import {
 import { m, mps } from "../../src/units/branded.js";
 import { fpmToMs } from "../../src/units/convert.js";
 
-/** Casos de la tabla 1 de Allen (2006), con el umbral de 225 fpm de DrJack. */
+/** Test cases from Allen (2006) Table 1, with DrJack's 225 fpm threshold. */
 const ALLEN_TABLE_1: [string, number, number, number | null][] = [
-  // [caso, w* (m/s), zi (m), hcrit esperado (m) o null si no hay solución]
+  // [case, w* (m/s), zi (m), expected hcrit (m) or null if no solution]
   ["−2σ", 0.46, 53.6, null],
   ["−1σ", 1.27, 210, 106],
-  ["media", 2.56, 1401, 993],
+  ["median", 2.56, 1401, 993],
   ["+1σ", 4.08, 2819, 2167],
   ["+2σ", 5.02, 3647, 2868],
 ];
 
-describe("altura crítica sobre los casos de Allen", () => {
+describe("critical height on Allen cases", () => {
   for (const [label, wStar, zi, expected] of ALLEN_TABLE_1) {
     if (expected === null) {
       // C-05
-      it(`${label}: la térmica nunca compensa la caída`, () => {
+      it(`${label}: thermal never overcomes aircraft sink rate`, () => {
         const r = criticalHeight(mps(wStar), m(zi), GLIDER_CLUB);
         expect(r.ok).toBe(false);
         if (!r.ok) expect(r.error.code).toBe("NO_CONVECTION");
       });
     } else {
-      // C-01 a C-04
+      // C-01 to C-04
       it(`${label}: hcrit = ${String(expected)} m`, () => {
         const r = criticalHeight(mps(wStar), m(zi), GLIDER_CLUB);
         expect(r.ok).toBe(true);
@@ -40,9 +40,9 @@ describe("altura crítica sobre los casos de Allen", () => {
   }
 });
 
-describe("propiedades de la altura crítica", () => {
+describe("properties of critical height", () => {
   // C-06, P-01
-  it("nunca supera zi", () => {
+  it("never exceeds zi", () => {
     for (let wStar = 0.5; wStar <= 6; wStar += 0.25) {
       for (let zi = 200; zi <= 4000; zi += 200) {
         const r = criticalHeight(mps(wStar), m(zi), GLIDER_CLUB);
@@ -52,7 +52,7 @@ describe("propiedades de la altura crítica", () => {
   });
 
   // C-07
-  it("un perfil que nunca supera la caída da NO_CONVECTION, no cero", () => {
+  it("a profile that never overcomes sink returns NO_CONVECTION, not zero", () => {
     const r = criticalHeight(mps(0.8), m(300), GLIDER_CLUB);
     expect(r.ok).toBe(false);
     if (!r.ok) {
@@ -61,10 +61,9 @@ describe("propiedades de la altura crítica", () => {
     }
   });
 
-  // C-08, P-12. La sensibilidad es al **umbral**, no al hundimiento del avión:
-  // desde que están separados, quien decide hasta dónde llega el techo es el
-  // criterio de RASP.
-  it("con un umbral menor, hcrit sube; con uno mayor, baja", () => {
+  // C-08, P-12. Sensitivity is to the **threshold**, not aircraft sink rate:
+  // since they are decoupled, RASP criterion defines the ceiling altitude.
+  it("increases with lower threshold; decreases with higher threshold", () => {
     const gentle = { ...GLIDER_CLUB, hcritThresholdMs: mps(0.8) };
     const heavy = { ...GLIDER_CLUB, hcritThresholdMs: mps(1.6) };
     for (const [wStar, zi] of [
@@ -83,7 +82,7 @@ describe("propiedades de la altura crítica", () => {
     }
   });
 
-  it("crece con w* a zi fijo", () => {
+  it("increases with w* at fixed zi", () => {
     let previous = 0;
     for (let wStar = 2; wStar <= 6; wStar += 0.5) {
       const r = criticalHeight(mps(wStar), m(2000), GLIDER_CLUB);
@@ -94,7 +93,7 @@ describe("propiedades de la altura crítica", () => {
     }
   });
 
-  it("el máximo del núcleo está en torno a un quinto de la capa", () => {
+  it("core peak sits around one fifth of the convective layer", () => {
     const r = criticalHeight(mps(3), m(2000), GLIDER_CLUB);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -102,14 +101,14 @@ describe("propiedades de la altura crítica", () => {
     expect(r.value.peakHeightAglM / 2000).toBeLessThan(0.25);
   });
 
-  it("rechaza entradas no convectivas", () => {
+  it("rejects non-convective inputs", () => {
     expect(criticalHeight(mps(0), m(2000), GLIDER_CLUB).ok).toBe(false);
     expect(criticalHeight(mps(3), m(0), GLIDER_CLUB).ok).toBe(false);
   });
 
-  // La razón de ser del split: elegir velero no puede mover el techo, porque
-  // el techo lo fija una convención de RASP y no la polar de nadie.
-  it("no depende del velero: es idéntico en todo el catálogo", () => {
+  // Decoupling rationale: choosing an aircraft cannot shift ceiling height
+  // because the ceiling is set by RASP convention, not polar curves.
+  it("does not depend on aircraft: identical across the catalogue", () => {
     for (const [wStar, zi] of [
       [1.27, 210],
       [2.56, 1401],
@@ -125,8 +124,8 @@ describe("propiedades de la altura crítica", () => {
   });
 });
 
-describe("lectura esperada de variómetro", () => {
-  it("es el núcleo menos la caída del planeador", () => {
+describe("expected variometer reading", () => {
+  it("equals core updraft minus glider sink rate", () => {
     expect(expectedVarioAt(mps(2.56), m(700), m(1401), RASP_REFERENCE)).toBeCloseTo(
       2.09 - fpmToMs(225),
       2,
@@ -137,7 +136,7 @@ describe("lectura esperada de variómetro", () => {
     );
   });
 
-  it("es negativa por encima de hcrit", () => {
+  it("is negative above hcrit", () => {
     const r = criticalHeight(mps(2.56), m(1401), GLIDER_CLUB);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -146,7 +145,7 @@ describe("lectura esperada de variómetro", () => {
     ).toBeLessThan(0);
   });
 
-  it("en hcrit vale exactamente cero con la referencia de RASP", () => {
+  it("equals exactly zero at hcrit with RASP reference profile", () => {
     const r = criticalHeight(mps(4.08), m(2819), RASP_REFERENCE);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -155,9 +154,9 @@ describe("lectura esperada de variómetro", () => {
     ).toBeCloseTo(0, 6);
   });
 
-  // Y con un velero real no: en hcrit todavía queda ascendencia de sobra, que
-  // es justo lo que el umbral de DrJack pretende exigir.
-  it("en hcrit todavía es positiva con un velero real", () => {
+  // With a real glider: at hcrit there is still net positive climb remaining,
+  // which is exactly what DrJack's conservative threshold intends.
+  it("remains positive at hcrit with a real glider", () => {
     for (const profile of AIRCRAFT_PROFILES) {
       if (profile.minSinkMs === null) continue;
       const r = criticalHeight(mps(4.08), m(2819), profile);

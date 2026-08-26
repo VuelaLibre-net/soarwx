@@ -15,7 +15,7 @@ const result = computeDay({
 });
 if (!result.ok) throw new Error(result.error.message);
 
-/** Recoge todas las cadenas del árbol, con la ruta en la que aparecen. */
+/** Recursively collects all strings from object tree with their property path. */
 function stringsIn(value: unknown, path = "", out: [string, string][] = []) {
   if (typeof value === "string") out.push([path, value]);
   else if (Array.isArray(value))
@@ -28,38 +28,34 @@ function stringsIn(value: unknown, path = "", out: [string, string][] = []) {
 }
 
 // I-01, I-02
-describe("el núcleo no devuelve texto", () => {
+describe("core physics modules return structured data without embedded prose", () => {
   const strings = stringsIn(result.value.hours);
 
-  it("todas las cadenas son enums o marcas de tiempo, nunca prosa", () => {
+  it("all strings are programmatic enums or timestamps rather than localized prose", () => {
     for (const [path, value] of strings) {
       if (path.endsWith(".timeUtc")) continue;
       if (path.includes(".unit")) continue;
-      // El emplazamiento lo aporta el consumidor y se devuelve tal cual: su
-      // nombre y su zona horaria son suyos, no prosa generada por la librería.
       if (path.includes(".site.")) continue;
-      // Un enum: minúsculas, dígitos y guiones bajos. Sin espacios ni acentos.
+      // Enums: lowercase, numbers, underscores without spaces or accents.
       expect(value, `${path} = ${value}`).toMatch(/^[a-z0-9_]+$/);
     }
   });
 
-  it("ninguna cadena lleva marcado de presentación", () => {
-    // El predecesor devolvía cosas como "[green]Bajo[/green]" dentro de los
-    // valores, y luego necesitaba una función para limpiarlas.
+  it("no strings contain embedded presentation markup", () => {
     for (const [path, value] of strings) {
       expect(value, path).not.toContain("[");
       expect(value, path).not.toContain("<");
     }
   });
 
-  it("la atribución es la única prosa del día, y va aparte", () => {
+  it("attribution is the only prose in daily result and is kept separate", () => {
     expect(result.value.attribution).toContain(" ");
     expect(stringsIn(result.value.hours).map(([, v]) => v)).not.toContain(
       result.value.attribution,
     );
   });
 
-  it("ningún módulo de física importa el de textos", () => {
+  it("no physics module imports i18n modules", () => {
     const offenders = execSync("find src -name '*.ts' -not -path 'src/i18n/*'", {
       encoding: "utf8",
     })

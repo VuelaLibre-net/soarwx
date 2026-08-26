@@ -1,11 +1,8 @@
 /**
- * Sustentación de ladera.
+ * Orographic ridge lift computation.
  *
- * **Sin sierras con nombre.** El relieve entra como `RidgeSpec`: orientación de
- * la cresta, pendiente de la cara y altitud. El predecesor tenía los 310° del
- * Guadarrama y un factor empírico de 0.08 incrustados en la física general, y
- * ese factor implicaba una pendiente efectiva de unos 4.6° que no corresponde a
- * ninguna ladera concreta.
+ * Topographic geometry is provided via `RidgeSpec`: ridge crest bearing, face slope,
+ * and crest elevation.
  */
 
 import { mps } from "../units/branded.js";
@@ -17,22 +14,19 @@ import type { RidgeSpec } from "../types/site.js";
 export type RidgeLiftBand = "insufficient" | "marginal" | "optimal" | "dangerous";
 
 export interface RidgeLiftResult {
-  /** Componente del viento perpendicular a la cresta, en valor absoluto. */
+  /** Wind component perpendicular to ridge line, absolute magnitude. */
   readonly perpendicularMs: MPerS;
-  /** Velocidad vertical del aire forzado a subir por la ladera. */
+  /** Vertical wind velocity forced upward by ridge slope. */
   readonly verticalMs: MPerS;
-  /** Ángulo entre el viento y la perpendicular a la cresta, 0 = de frente. */
+  /** Angle between wind vector and ridge normal, 0° = direct headwind. */
   readonly incidenceDeg: number;
   readonly band: RidgeLiftBand;
 }
 
 /**
- * Umbrales de la componente perpendicular, en m/s.
+ * Perpendicular wind speed thresholds in m/s (approx 8, 15, and 28 kt).
  *
- * Son **empíricos y orientativos**, equivalentes a 8, 15 y 28 nudos, que es el
- * escalón que manejan habitualmente los pilotos. No proceden de ninguna
- * publicación con derivación, así que se exponen como constantes para que el
- * consumidor pueda recalibrarlos.
+ * Empirical soaring thresholds exposed as constants for customization.
  */
 export const RIDGE_LIFT_THRESHOLDS_MS = {
   marginal: 4.1,
@@ -43,22 +37,19 @@ export const RIDGE_LIFT_THRESHOLDS_MS = {
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Sustentación de ladera a partir del viento a la altura de la cresta.
+ * Computes orographic ridge lift from wind at crest altitude.
  *
- *     U⊥ = |viento · n|,  n perpendicular a la cresta
- *     w  = U⊥ · sen(pendiente)
+ *     U⊥ = |wind · n|,  n normal to ridge crest
+ *     w  = U⊥ · sin(slope)
  *
- * La velocidad vertical sale de la geometría real de la ladera, no de un factor
- * ajustado. Una cara de 15° con 10 m/s perpendiculares da 2.6 m/s de ascendencia;
- * el factor 0.08 del predecesor daba 0.8 m/s, que corresponde a una pendiente de
- * 4.6°.
+ * Vertical velocity is derived from genuine ridge slope geometry.
  *
- * @source Flujo forzado sobre relieve; Stull, Practical Meteorology, cap. 17.
+ * @source Forced airflow over topography; Stull, Practical Meteorology, ch. 17.
  */
 export function ridgeLift(ridge: RidgeSpec, windAtCrest: WindVector): RidgeLiftResult {
   const wind = toComponents(windAtCrest.speedMs, windAtCrest.fromDeg);
 
-  // Vector normal a la cresta, en el plano horizontal.
+  // Normal vector to ridge in horizontal plane.
   const bearing = ridge.bearingDeg * DEG_TO_RAD;
   const normalX = Math.cos(bearing);
   const normalY = -Math.sin(bearing);

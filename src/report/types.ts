@@ -1,5 +1,5 @@
 /**
- * Estructuras del informe diario. Ver docs/SPEC.md §11.1.
+ * Daily soaring report data structures. See docs/SPEC.md §11.1.
  */
 
 import type { Degrees, Kelvin, MPerS, Metres } from "../units/branded.js";
@@ -15,16 +15,16 @@ import type { SoaringScore } from "../forecast/score.js";
 import type { Confidence } from "../forecast/confidence.js";
 import type { SoaringWindow } from "../forecast/windows.js";
 
-/** Una hora de entrada, ya normalizada a SI. El adaptador la construye. */
+/** An hourly input observation normalized to SI units. */
 export interface HourlyObservation {
   readonly timeUtc: string;
   readonly sounding: Sounding;
-  /** Valor crudo del modelo, con su signo sin normalizar. */
+  /** Raw model surface flux value before sign normalization. */
   readonly modelFluxWm2?: number | null;
   readonly fluxConvention?: FluxSignConvention;
   readonly capeJkg?: number | null;
   readonly convectiveInhibitionJkg?: number | null;
-  /** `lifted_index` del modelo. Se prefiere al calculado. */
+  /** Model-native `lifted_index`, preferred over computed fallback when present. */
   readonly modelLiftedIndex?: number | null;
   readonly boundaryLayerHeightAglM?: Metres | null;
   readonly soilMoistureFrac?: number;
@@ -36,23 +36,17 @@ export type LiftedIndexSource = "model" | "computed" | "unavailable";
 export interface HourThermal {
   readonly wStarMs: MPerS;
   /**
-   * Flujo de calor sensible en superficie, **positivo hacia arriba**. Es el
-   * motor de `w*`: sin él, las dos cifras de la térmica no se pueden auditar
-   * contra el forzamiento que las produce.
+   * Surface sensible heat flux, **positive upward** (W/m²).
    *
-   * El signo ya viene normalizado al criterio interno, que no es el del
-   * modelo: ICON lo sirve positivo hacia abajo y GFS positivo hacia arriba.
-   * De dónde sale el valor —del modelo o del balance energético— lo declara
-   * `HourQuality.heatFluxSource`.
+   * Normalized from model conventions (e.g. ICON down vs GFS up).
+   * Origin documented in `HourQuality.heatFluxSource`.
    */
   readonly surfaceHeatFluxWm2: number;
-  /** Radiación neta en superficie. Contexto para leer el flujo sensible. */
+  /** Surface net radiation (W/m²). */
   readonly netRadiationWm2: number;
   /**
-   * Ascendencia media que ve el variómetro en una subida completa, del 10 % de
-   * la capa hasta la altura crítica. No se evalúa a una altura arbitraria: el
-   * núcleo tiene su máximo cerca del 20 % de la capa, así que media capa
-   * infravalora y el máximo exagera.
+   * Expected mean variometer climb rate across the working band
+   * (from 10% depth up to critical height hcrit).
    */
   readonly meanClimbMs: MPerS;
   readonly hcritAglM: Metres | null;
@@ -77,7 +71,7 @@ export interface HourStability {
   readonly liftedIndex: number | null;
   readonly liftedIndexSource: LiftedIndexSource;
   readonly kIndex: number | null;
-  /** Total Totals. Es un índice: adimensional por convención, aunque se derive de temperaturas. */
+  /** Total Totals Index. Dimensionless index. */
   readonly totalTotalsIndex: number | null;
   readonly cape: CapeRisk;
 }
@@ -98,13 +92,7 @@ export interface HourQuality extends SoundingQuality {
 
 export interface SoaringHour {
   readonly timeUtc: string;
-  /**
-   * El sondeo del que sale todo lo demás.
-   *
-   * Va incluido porque sin él el consumidor no puede dibujar el diagrama
-   * oblicuo, que es el gráfico que más dice a un piloto. Quien no lo necesite
-   * puede descartarlo antes de serializar.
-   */
+  /** Complete atmospheric sounding profile for Skew-T rendering and verification. */
   readonly sounding: Sounding;
   readonly thermal: HourThermal;
   readonly cloud: HourCloud;
@@ -124,6 +112,6 @@ export interface SoaringDay {
   readonly sunriseUtc: string;
   readonly sunsetUtc: string;
   readonly confidence: Confidence | null;
-  /** Atribución CC BY 4.0. El consumidor está obligado a mostrarla. */
+  /** Open-Meteo CC BY 4.0 license attribution. */
   readonly attribution: string;
 }

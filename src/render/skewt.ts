@@ -1,10 +1,7 @@
 /**
- * Diagrama oblicuo (skew-T log-P).
+ * Skew-T log-P atmospheric sounding chart rendering.
  *
- * Ejes: presión en escala logarítmica hacia arriba, temperatura inclinada. Se
- * dibujan las isotermas oblicuas, la familia de adiabáticas secas —que es lo
- * que permite leer de un vistazo si la capa está mezclada—, el perfil del
- * entorno, el punto de rocío y la parcela.
+ * Visualizes temperature, dewpoint, dry adiabats, parcel trajectories, and wind profile panels.
  */
 
 import { Pa } from "../units/branded.js";
@@ -20,70 +17,48 @@ import { cumulusGlyph, windArrow } from "./glyphs.js";
 
 const MARGIN = { top: 30, right: 12, bottom: 40, left: 44 } as const;
 
-/** Anchura de la columna de viento, y su separación del diagrama. */
+/** Width of wind panel and its gap from main sounding chart. */
 const WIND_PANEL_WIDTH_PX = 76;
 const WIND_PANEL_GAP_PX = 10;
 
 /**
- * Umbrales de viento que se sombrean en la columna, en m/s.
+ * Wind speed shading thresholds in m/s.
  *
- * El primero son 30 km/h, a partir de los cuales la deriva empieza a molestar.
- * El segundo es el corte de Allen (2006), que la propia librería usa para
- * anular `w*`: por encima, las térmicas dejan de ser explotables.
+ * First threshold is 30 km/h (8.33 m/s) where thermal drift becomes significant.
+ * Second threshold is Allen (2006) convective cutoff (12.87 m/s) where thermals break down.
  */
 export const WIND_SHADE_THRESHOLDS_MS = { brisk: 8.33, cutoff: 12.87 } as const;
 
-/**
- * Separación vertical mínima entre flechas de rumbo, en píxeles.
- *
- * Repartirlas por índice de nivel las amontona: los niveles de altura sobre el
- * terreno están todos en los primeros 200 m, así que cinco de ellos caen en
- * unos pocos píxeles junto al suelo.
- */
+/** Minimum vertical spacing between wind arrows in pixels. */
 const WIND_ARROW_MIN_GAP_PX = 34;
 
-/** Longitud de la flecha de rumbo, en píxeles. */
+/** Wind arrow length in pixels. */
 const WIND_ARROW_LENGTH_PX = 22;
 
-/** Holgura a cada lado del rango de temperatura observado, en grados. */
+/** Temperature axis padding in degrees Celsius. */
 const TEMP_PADDING_C = 8;
 
-/** Referencia de las alturas rotuladas junto a la presión. */
+/** Altitude reference for isobaric pressure level labels. */
 export type HeightReference = "agl" | "msl";
 
 export interface SkewTOptions extends RenderOptions {
-  /**
-   * Rango de temperatura del eje. En kelvin, como todo lo demás: las etiquetas
-   * se rotulan en grados Celsius, pero el contrato no cambia de unidades por
-   * tratarse de presentación.
-   */
+  /** Temperature axis range bounds in Kelvin. */
   readonly minTempK?: Kelvin;
   readonly maxTempK?: Kelvin;
   readonly topHpa?: number;
-  /** Parcela a dibujar. Si falta, no se dibuja. */
+  /** Initial surface parcel temperature in Kelvin. */
   readonly parcelFromK?: Kelvin;
-  /** Base de nubes, en altura sobre el nivel del mar. */
+  /** Lifting condensation level (cloud base) in metres MSL. */
   readonly lclMslM?: Metres;
-  /**
-   * Techo **utilizable**, no el tope de la parcela. Es el número que el piloto
-   * lee en el resumen, y marcar otra cosa con la misma palabra confunde: la
-   * parcela puede seguir flotando mil metros por encima de donde la térmica
-   * ya no compensa la caída del planeador.
-   */
+  /** Usable thermal ceiling in metres MSL. */
   readonly ceilingMslM?: Metres;
-  /**
-   * Referencia de las alturas que acompañan a cada nivel de presión.
-   *
-   * Por defecto **sobre el terreno**, que es la referencia en la que se dan el
-   * techo utilizable y la base de nubes: mezclar referencias en la misma
-   * pantalla es cómo se acaba comparando dos números que no son comparables.
-   */
+  /** Altitude reference for isobaric pressure level labels. Defaults to "agl". */
   readonly heightReference?: HeightReference;
-  /** Columna de viento a la derecha, con velocidad y rumbos. Activada por defecto. */
+  /** Enable wind profile panel on the right. Defaults to true. */
   readonly wind?: boolean;
-  /** Unidad de los rótulos de viento. Interna sigue siendo m/s. */
+  /** Unit for wind panel labels. Defaults to "kmh". */
   readonly windUnit?: WindUnit;
-  /** Techo de la nube, para sombrear la capa desde la base. */
+  /** Cloud top altitude in metres MSL for cloud layer shading. */
   readonly cloudTopMslM?: Metres;
 }
 
@@ -98,9 +73,9 @@ const WIND_UNITS: Readonly<
 };
 
 /**
- * Skew-T log-P de un sondeo.
+ * Renders a Skew-T log-P thermodynamic diagram from an atmospheric sounding.
  *
- * @source Diagrama oblicuo estándar; Stull, Practical Meteorology, cap. 5.
+ * @source Standard oblique thermodynamic chart; Stull, Practical Meteorology, ch. 5.
  */
 export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): string {
   const palette = resolvePalette(options.palette);
@@ -116,13 +91,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
   const topHpa =
     options.topHpa ??
     Math.max(300, paToHPa(levels[levels.length - 1]?.pressurePa ?? Pa(50000)));
-  // Rango ajustado a lo que hay en el sondeo, en vez de fijo.
-  //
-  // No recupera tanto espacio como parece: el hueco del cuadrante inferior
-  // izquierdo es **inherente al diagrama oblicuo**, porque las isotermas se
-  // inclinan a la derecha con la altura y el punto de rocío en niveles altos
-  // tira del extremo frío. Medido en Fuentemilanos, el sondeo abarca de −27 a
-  // +38 °C: el rango ya estaba casi ajustado.
+
   const observed = levels.flatMap((level) => [
     kToCelsius(level.tempK),
     kToCelsius(level.dewpointK),
@@ -136,7 +105,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
       ? Math.ceil((Math.max(...observed) + TEMP_PADDING_C) / 5) * 5
       : kToCelsius(options.maxTempK);
 
-  /** Inclinación: cuánto se desplaza una isoterma de abajo arriba del gráfico. */
+  /** Skew shift: horizontal displacement of an isotherm from bottom to top. */
   const skewPx = plotWidth * 0.45;
 
   const yOf = (hpa: number): number => {
@@ -158,7 +127,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
 
   const parts: string[] = [];
 
-  // Isotermas oblicuas.
+  // Oblique isotherms.
   for (let tempC = minTempC; tempC <= maxTempC; tempC += 10) {
     parts.push(
       polyline(
@@ -171,7 +140,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     );
   }
 
-  // Adiabáticas secas: leerlas es lo que dice si la capa está mezclada.
+  // Dry adiabats.
   for (let thetaC = -20; thetaC <= 80; thetaC += 10) {
     const points: [number, number][] = [];
     for (let hpa = bottomHpa; hpa >= topHpa; hpa -= 25) {
@@ -198,7 +167,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     }
   }
 
-  // Ejes.
+  // Axes.
   const heightReference = options.heightReference ?? "agl";
   const elevationMslM = sounding.site.elevationMslM;
 
@@ -222,10 +191,6 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
       }),
     );
 
-    // Altura equivalente, tomada de la columna geopotencial **del propio
-    // sondeo**, no de la atmósfera estándar: en un día caliente la diferencia
-    // entre ambas llega a los cientos de metros, y la que le sirve al piloto
-    // es la de ese día.
     const heightMslM = heightAtPressure(sounding, hpa);
     if (heightMslM === null) continue;
     const value = heightReference === "agl" ? heightMslM - elevationMslM : heightMslM;
@@ -242,8 +207,6 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     );
   }
 
-  // Bajo la columna, en dos líneas: arriba chocaba con la etiqueta del nivel
-  // más alto, que cae justo en el borde del gráfico.
   parts.push(
     text("hPa", {
       x: MARGIN.left - 6,
@@ -317,7 +280,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     );
   }
 
-  // Capa de nube: banda sombreada de la base al techo, y el glifo en la base.
+  // Cloud layer shading and base glyph.
   const cloudBaseHpa =
     options.lclMslM === undefined ? null : pressureAtHeight(sounding, options.lclMslM);
   if (cloudBaseHpa !== null && options.lclMslM !== undefined) {
@@ -380,7 +343,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
           { stroke: palette.ceiling, "stroke-width": 1, "stroke-dasharray": "4 4" },
         ),
         text(
-          `techo utilizable ${String(Math.round(options.ceilingMslM - elevationMslM))} m AGL`,
+          `usable ceiling ${String(Math.round(options.ceilingMslM - elevationMslM))} m AGL`,
           {
             x: MARGIN.left + 4,
             y: y - 3,
@@ -419,11 +382,11 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     }),
     legend(
       [
-        { label: "temperatura", colour: palette.temperature },
-        { label: "rocío", colour: palette.dewpoint },
+        { label: "temperature", colour: palette.temperature },
+        { label: "dewpoint", colour: palette.dewpoint },
         ...(options.parcelFromK === undefined
           ? []
-          : [{ label: "parcela", colour: palette.parcel, dashed: true }]),
+          : [{ label: "parcel", colour: palette.parcel, dashed: true }]),
       ],
       MARGIN.left,
       14,
@@ -436,10 +399,10 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
     {
       widthPx,
       heightPx,
-      title: options.title ?? "Sondeo oblicuo",
+      title: options.title ?? "Skew-T Sounding",
       desc:
         options.desc ??
-        `Temperatura y punto de rocío frente a presión en ${sounding.site.name ?? "el emplazamiento"}.`,
+        `Temperature and dewpoint vs pressure at ${sounding.site.name ?? "the site"}.`,
       ...(options.className === undefined ? {} : { className: options.className }),
     },
     parts.join(""),
@@ -447,10 +410,7 @@ export function renderSkewT(sounding: Sounding, options: SkewTOptions = {}): str
 }
 
 /**
- * Altura geopotencial a una presión dada, interpolando la columna del sondeo.
- *
- * Devuelve `null` fuera del rango del sondeo: es preferible no rotular una
- * altura a rotular una extrapolada.
+ * Computes geopotential height at specified pressure level by log-linear interpolation.
  */
 function heightAtPressure(sounding: Sounding, hpa: number): number | null {
   const target = hpa * 100;
@@ -470,7 +430,7 @@ function heightAtPressure(sounding: Sounding, hpa: number): number | null {
   return null;
 }
 
-/** Presión aproximada a una altura, interpolando la columna del sondeo. */
+/** Computes approximate atmospheric pressure at altitude by log-linear interpolation. */
 function pressureAtHeight(sounding: Sounding, mslM: Metres): number | null {
   const levels = sounding.levels;
   for (let i = 1; i < levels.length; i++) {
@@ -501,22 +461,17 @@ interface WindPanelInput {
 }
 
 /**
- * Columna de viento: velocidad frente a la altura y rumbos por flechas.
+ * Wind speed profile and direction arrow panel.
  *
- * Comparte el eje vertical con el diagrama, que es lo que la hace útil: el
- * viento se lee a la misma altura que la temperatura y la base de nubes, sin
- * cambiar de gráfico ni de escala.
+ * Aligns vertically with sounding isobaric pressure levels.
  *
- * @source Formato de flyXC Soundings; umbrales de sombreado en
- *         WIND_SHADE_THRESHOLDS_MS.
+ * @source flyXC sounding format; shading thresholds defined in WIND_SHADE_THRESHOLDS_MS.
  */
 function renderWindPanel(input: WindPanelInput): string {
   const { sounding, left, top, width, height, yOf, palette, unit } = input;
   const levels = sounding.levels;
   const maxObserved = Math.max(...levels.map((level) => level.windSpeedMs), 5);
 
-  // La escala se elige **en la unidad que se rotula**, no en m/s: pasos de
-  // 2.5 m/s convertidos a km/h dan 9, 18, 27… que no son cifras que nadie lea.
   const stepDisplay = niceStep(unit.from(Math.max(maxObserved * 1.15, 15.5)));
   const stepMs = stepDisplay / (unit.from(1) || 1);
   const maxMs = Math.ceil(Math.max(maxObserved * 1.15, 15.5) / stepMs) * stepMs;
@@ -566,8 +521,6 @@ function renderWindPanel(input: WindPanelInput): string {
     );
   }
 
-  // La unidad va **fuera** del cuadro, horizontal: dentro y rotada competía
-  // con la rejilla y con la curva.
   parts.push(
     text(unit.label, {
       x: round(left + width),
@@ -583,9 +536,6 @@ function renderWindPanel(input: WindPanelInput): string {
   );
   parts.push(polyline(profile, { stroke: palette.wind, "stroke-width": 2 }));
 
-  // Flechas repartidas por distancia vertical, no por índice de nivel, y
-  // contenidas dentro del cuadro: media flecha asomando por el borde superior
-  // se lee como un error de dibujo.
   const half = WIND_ARROW_LENGTH_PX / 2;
   let lastY = Number.NEGATIVE_INFINITY;
   for (const level of levels) {
@@ -620,13 +570,7 @@ function renderWindPanel(input: WindPanelInput): string {
   return parts.join("");
 }
 
-/**
- * Paso de rejilla legible: 1, 2, 5, 10, 20, 50… según el rango.
- *
- * Se apunta a unas seis divisiones. Con cuatro, un rango de 60 km/h sale con
- * pasos de 20 y solo dos líneas interiores, que es demasiado poco para leer
- * una velocidad de un vistazo.
- */
+/** Computes readable grid step increment (1, 2, 5, 10, 20, 50...). */
 function niceStep(range: number): number {
   const rough = range / 6;
   const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));

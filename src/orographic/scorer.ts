@@ -1,16 +1,10 @@
 /**
- * Parámetro de Scorer.
+ * Scorer parameter profile computation.
  *
  *     l² = N²/U² − (1/U)·d²U/dz²
  *
- * Es el criterio físico de la onda de montaña: la onda queda atrapada cuando l²
- * decrece con fuerza suficiente con la altura. El predecesor usaba en su lugar
- * un heurístico de sector angular y umbral de viento, con el comentario y el
- * código discrepando en el sector (290-340° escrito, 280-350° programado).
- *
- * Con seis a nueve niveles y huecos de cientos de metros, la segunda derivada
- * del viento es ruidosa. Se calcula igualmente, se declara el término de
- * curvatura por separado y se marca la calidad del cálculo.
+ * Trapped lee waves occur when l² decreases sufficiently with altitude.
+ * Both stability (buoyancy) and wind curvature terms are computed and exposed.
  */
 
 import { m } from "../units/branded.js";
@@ -25,23 +19,23 @@ import type { Level, Sounding } from "../sounding/types.js";
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/** Viento mínimo a lo largo del flujo por debajo del cual el parámetro no significa nada. */
+/** Minimum along-flow wind speed threshold required for meaningful Scorer calculation. */
 export const MIN_ALONG_FLOW_MS = 2;
 
 export interface ScorerPoint {
   readonly mslM: Metres;
-  /** Componente del viento a lo largo de la dirección de flujo. */
+  /** Wind component along the flow direction. */
   readonly alongFlowMs: MPerS;
-  /** Frecuencia de Brunt-Väisälä al cuadrado. */
+  /** Squared Brunt-Väisälä buoyancy frequency. */
   readonly bruntVaisalaPerS2: number;
-  /** Término de estabilidad, N²/U². */
+  /** Stability buoyancy term, N²/U². */
   readonly buoyancyTermPerM2: number;
-  /** Término de curvatura, −U″/U. Ruidoso con pocos niveles. */
+  /** Curvature term, −U″/U. */
   readonly curvatureTermPerM2: number;
   readonly scorerSquaredPerM2: number;
 }
 
-/** Proyección del viento de un nivel sobre la dirección de flujo. */
+/** Projects sounding level wind onto flow direction. */
 function alongFlow(level: Level, flowTowardDeg: number): number {
   const wind = toComponents(level.windSpeedMs, level.windFromDeg);
   const rad = flowTowardDeg * DEG_TO_RAD;
@@ -49,10 +43,9 @@ function alongFlow(level: Level, flowTowardDeg: number): number {
 }
 
 /**
- * Perfil del parámetro de Scorer a lo largo de una dirección de flujo.
+ * Computes Scorer parameter profile along the direction of airflow.
  *
- * `flowTowardDeg` es la dirección **hacia la que** sopla el flujo que cruza la
- * cresta, es decir, perpendicular a ella.
+ * `flowTowardDeg` is the compass heading toward which the airflow crosses the ridge.
  *
  * @source Scorer, R. S. (1949), Quarterly Journal of the RMS 75, 41-56.
  */
@@ -87,7 +80,7 @@ export function scorerParameter(
     const thetaHere = potentialTemperature(here.tempK, here.pressurePa);
     const nSquared = ((G / thetaHere) * (thetaAbove - thetaBelow)) / (zAbove - zBelow);
 
-    // Segunda derivada por diferencias finitas sobre malla no uniforme.
+    // Second derivative via finite differences on non-uniform vertical grid.
     const uBelow = alongFlow(below, flowTowardDeg);
     const uAbove = alongFlow(above, flowTowardDeg);
     const hLower = zHere - zBelow;

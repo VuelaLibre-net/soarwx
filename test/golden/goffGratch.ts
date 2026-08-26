@@ -1,13 +1,13 @@
 /**
- * Presión de vapor de saturación sobre agua líquida, Goff-Gratch (1946).
+ * Saturation vapor pressure over liquid water, Goff-Gratch (1946).
  *
- * Referencia independiente para validar la ec. 10 de Bolton (prueba T-02).
- * Solo para pruebas.
+ * Independent reference to validate Bolton equation 10 (test T-02).
+ * Test helper only.
  */
 
 const TS = 373.16;
 
-/** Devuelve la presión de saturación en pascales. */
+/** Returns saturation vapor pressure in Pascals. */
 export function goffGratchPa(tempK: number): number {
   const r = TS / tempK;
   const log10es =

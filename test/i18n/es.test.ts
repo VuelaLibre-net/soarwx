@@ -6,15 +6,14 @@ import { capeRisk } from "../../src/stability/capeRisk.js";
 import { m } from "../../src/units/branded.js";
 
 // I-03
-describe("cobertura de traducción", () => {
-  it("todos los factores tienen texto", () => {
+describe("translation coverage (es)", () => {
+  it("all factors have descriptive text", () => {
     for (const id of Object.keys(DEFAULT_FACTORS) as (keyof typeof DEFAULT_FACTORS)[]) {
       expect(es.describeFactor(id).length).toBeGreaterThan(3);
     }
   });
 
-  it("todos los vetos posibles tienen texto", () => {
-    // Se disparan todos a la vez y se comprueba que ninguno queda sin traducir.
+  it("all possible vetoes have descriptive text", () => {
     const vetoes = evaluateVetoes({
       hasConvection: false,
       overcast: true,
@@ -30,7 +29,7 @@ describe("cobertura de traducción", () => {
     }
   });
 
-  it("todos los niveles, límites de techo y bandas tienen texto", () => {
+  it("all levels, ceiling limits and bands have descriptive text", () => {
     for (const level of [1, 2, 3, 4, 5] as const) {
       expect(es.describeLevel(level).length).toBeGreaterThan(3);
     }
@@ -85,27 +84,27 @@ describe("cobertura de traducción", () => {
   });
 });
 
-describe("formato de fechas", () => {
-  it("usa la zona del emplazamiento", () => {
+describe("date formatting (es)", () => {
+  it("uses site timezone", () => {
     const madrid = es.formatHour("2026-08-18T12:00", "Europe/Madrid");
     const canarias = es.formatHour("2026-08-18T12:00", "Atlantic/Canary");
     expect(madrid).not.toBe(canarias);
     expect(madrid).toMatch(/\d{2}:\d{2}/);
   });
 
-  it("el instante completo lleva día y mes en español", () => {
+  it("full instant includes day and month in Spanish", () => {
     const label = es.formatInstant("2026-08-18T12:00", "Europe/Madrid");
     expect(label).toContain("agosto");
     expect(label).toContain("18");
   });
 
-  it("acepta marcas con segundos y zona", () => {
+  it("accepts timestamps with seconds and UTC zone", () => {
     expect(es.formatHour("2026-08-18T12:00:00Z", "Europe/Madrid")).toMatch(/\d{2}:\d{2}/);
   });
 });
 
-describe("aviso obligatorio", () => {
-  it("dice que no sustituye al briefing ni a la decisión del piloto", () => {
+describe("mandatory disclaimer (es)", () => {
+  it("mentions briefing and pilot in command", () => {
     expect(es.DISCLAIMER).toContain("briefing");
     expect(es.DISCLAIMER).toContain("piloto");
   });

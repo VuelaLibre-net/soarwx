@@ -1,13 +1,12 @@
 /**
- * Índice térmico y techo térmico por el método de la parcela.
+ * Thermal index and thermal ceiling via parcel method.
  *
- * El vocabulario clásico de la previsión térmica, que el predecesor no tenía:
- * se limitaba a leer `boundary_layer_height` del modelo.
+ * Classical thermal soaring terminology:
  *
- *     TI(z) = T_entorno(z) − T_parcela(z)
+ *     TI(z) = T_env(z) − T_parcel(z)
  *
- * Negativo significa que la parcela está más caliente que el aire que la rodea:
- * sube. El techo está donde cambia de signo.
+ * Negative indicates the parcel is warmer than ambient air: it accelerates upward.
+ * The thermal top is where TI crosses zero.
  */
 
 import { K, m } from "../units/branded.js";
@@ -23,27 +22,27 @@ import type { StableLayer } from "../sounding/inversion.js";
 import { findInversions } from "../sounding/inversion.js";
 
 /**
- * Índice térmico de trabajo. El techo absoluto está en TI = 0, pero por encima
- * de TI = −2 K las térmicas suelen ser ya demasiado débiles para el planeador.
+ * Working thermal index. The absolute ceiling sits at TI = 0, but above
+ * TI = −2 K thermals are generally too weak for gliders.
  */
 export const WORKING_THERMAL_INDEX_K = -2;
 
 /**
- * Altura de referencia para medir el exceso superadiabático de la capa
- * superficial. Por encima de ella el perfil ya está mezclado.
+ * Reference height for measuring superadiabatic surface layer excess.
+ * Above this layer, the convective profile is well mixed.
  */
 export const SURFACE_LAYER_TOP_AGL_M = 200;
 
 const BISECTION_STEPS = 60;
 
 /**
- * Índice térmico a una altura sobre el nivel del mar.
+ * Thermal index at a specified altitude above mean sea level.
  *
- * La parcela parte de la superficie con la temperatura máxima prevista del día
- * y asciende por la adiabática seca.
+ * The parcel ascends dry adiabatically from the surface at the predicted
+ * daily maximum temperature.
  *
- * @source Método clásico del índice térmico; ver Glendening (DrJack),
- *         «Thermal Index», y Stull, Practical Meteorology, cap. 5.
+ * @source Classical thermal index method; see Glendening (DrJack),
+ *         "Thermal Index", and Stull, Practical Meteorology, ch. 5.
  */
 export function thermalIndexAt(
   sounding: Sounding,
@@ -67,40 +66,37 @@ function parcelTempAt(
 }
 
 export interface ThermalTopResult {
-  /** Altura donde TI = 0: techo absoluto de la parcela de superficie. */
+  /** Altitude where TI = 0: absolute surface parcel ceiling. */
   readonly topAglM: Metres;
   readonly topMslM: Metres;
-  /** Altura donde TI = −2 K: techo de trabajo. */
+  /** Altitude where TI = −2 K: working ceiling. */
   readonly workingTopAglM: Metres;
   /**
-   * Techo de una parcela a la que se le ha quitado el exceso superadiabático de
-   * la capa superficial. Más conservador y físicamente más defendible: una
-   * térmica que sale del suelo no conserva hasta arriba los grados de más que
-   * marca el termómetro a dos metros.
+   * Mixed-layer parcel ceiling after subtracting superadiabatic surface excess.
+   * More conservative and physically realistic: thermals ascending from the
+   * ground do not maintain the 2m temperature excess throughout their depth.
    */
   readonly mixedLayerTopAglM: Metres;
   /**
-   * Exceso de temperatura potencial de la superficie sobre la capa mezclada.
-   * Cuanto mayor, más sobreestima el método clásico.
+   * Surface potential temperature excess over mixed layer.
+   * Larger excess indicates greater overestimation by the classical parcel method.
    */
   readonly surfaceExcessK: number;
-  /** Capa estable que corta el ascenso, si el techo cae dentro de una. */
+  /** Inversion capping convective ascent, if ceiling falls inside one. */
   readonly cappedByInversion: StableLayer | null;
   readonly method: "parcel";
 }
 
 /**
- * Exceso de temperatura potencial de la superficie sobre la capa mezclada.
+ * Surface layer superadiabatic potential temperature excess.
  *
- * Al mediodía la capa superficial es superadiabática y el termómetro de dos
- * metros marca varios grados por encima de la temperatura potencial de la capa
- * mezclada: medido en Fuentemilanos a las 14:00, θ en superficie es 42.3 °C y
- * en la capa mezclada 40.2 °C. Lanzar la parcela desde el valor de superficie
- * sin descontar ese exceso la lleva cientos de metros más arriba de lo que
- * llega una térmica real.
+ * At solar noon the surface layer is superadiabatic and the 2m thermometer
+ * reads several degrees above the mixed-layer potential temperature: measured
+ * at Fuentemilanos at 14:00, surface θ is 42.3 °C while mixed-layer θ is 40.2 °C.
+ * Lifting the parcel directly from the surface value without discounting this
+ * excess places the ceiling hundreds of metres higher than actual thermals reach.
  *
- * @source Estructura de la capa superficial convectiva; Stull, Practical
- *         Meteorology, cap. 18.
+ * @source Convective surface layer structure; Stull, Practical Meteorology, ch. 18.
  */
 export function superadiabaticExcessK(
   sounding: Sounding,
@@ -121,18 +117,15 @@ export function superadiabaticExcessK(
 }
 
 /**
- * Techo térmico por el método de la parcela: altura a la que una parcela que
- * parte de la superficie con la temperatura máxima prevista deja de estar más
- * caliente que el entorno.
+ * Thermal ceiling via parcel method: altitude where a surface parcel lifted
+ * at maximum temperature ceases to be warmer than the environment.
  *
- * **No** se usa `boundary_layer_height` del modelo. Esa variable es una
- * profundidad diagnóstica por número de Richardson que incluye mezcla por
- * cizalladura y capas residuales: medida en Fuentemilanos con GFS, alcanza su
- * máximo a las 18:00 hora local, cuando la radiación ya ha caído un 30 % desde
- * el pico y las térmicas se están muriendo.
+ * Does **not** use model `boundary_layer_height`. That variable is a diagnostic
+ * Richardson-number depth including shear mixing and residual layers: measured
+ * at Fuentemilanos with GFS, it peaks at 18:00 local time when solar radiation
+ * has already fallen 30 % and thermals are decaying.
  *
- * @source Método de la parcela; Glendening (DrJack), advertencia sobre el
- *         techo de capa límite del modelo.
+ * @source Parcel method; Glendening (DrJack), note on model boundary layer height.
  */
 export function thermalTop(
   sounding: Sounding,
@@ -145,10 +138,9 @@ export function thermalTop(
   const ti = (level: { tempK: Kelvin; pressurePa: Pascal }): number =>
     level.tempK - parcelTempAt(maxSurfaceTempK, surfacePressurePa, level.pressurePa);
 
-  // La flotabilidad se juzga en el primer nivel **por encima** de la
-  // superficie: en el propio nivel de superficie la parcela y el entorno
-  // coinciden por construcción cuando la máxima prevista es la temperatura
-  // actual, y el criterio daría siempre negativo.
+  // Buoyancy is evaluated at the first level **above** the surface:
+  // at the surface itself parcel and environment match by construction
+  // when max temp equals current surface temp.
   const firstAloftTi = ti(at(levels, 1));
   if (firstAloftTi >= 0) {
     return err("NO_CONVECTION", "parcel is not buoyant above the surface", {
@@ -165,9 +157,9 @@ export function thermalTop(
   }
   const workingMslM = crossing(sounding, maxSurfaceTempK, WORKING_THERMAL_INDEX_K);
 
-  // Techo de la parcela sin el exceso superadiabático de la capa superficial.
-  // Si esa parcela ya no flota justo por encima del suelo, no hay térmica que
-  // valga: el techo de capa mezclada es el propio suelo.
+  // Mixed layer parcel ceiling without surface superadiabatic excess.
+  // If this parcel is not buoyant right above the ground, mixed-layer ceiling
+  // is at ground level.
   const surfaceExcessK = superadiabaticExcessK(sounding);
   const mixedLayerParcelK = K(maxSurfaceTempK - surfaceExcessK);
   const firstAloft = at(levels, 1);
@@ -175,9 +167,8 @@ export function thermalTop(
     firstAloft.tempK -
       dryAdiabaticLift(mixedLayerParcelK, surfacePressurePa, firstAloft.pressurePa) <
     0;
-  // Se busca el **último** cruce, no el primero: dentro de una capa bien
-  // mezclada TI ≈ 0 en todo su espesor, así que el primer cruce cae en la base
-  // y daría un techo de decenas de metros en pleno día térmico.
+  // Search for the **last** crossing, not the first: inside a well-mixed layer
+  // TI ≈ 0 throughout its depth, so first crossing would fall at the base.
   const mixedLayerMslM = mixedLayerBuoyant
     ? Math.min(lastCrossing(sounding, mixedLayerParcelK, 0) ?? topMslM, topMslM)
     : at(levels, 0).geopotentialMslM;
@@ -200,11 +191,9 @@ export function thermalTop(
 }
 
 /**
- * Altura MSL del **último** cruce del índice térmico con el valor objetivo.
+ * MSL altitude of the **last** thermal index crossing with the target value.
  *
- * Es lo que corresponde a una parcela de capa mezclada: dentro de la capa el
- * índice ronda cero en todo su espesor, y lo que interesa es dónde deja de
- * hacerlo, no dónde empieza.
+ * Used for mixed-layer parcels where TI remains near zero throughout the layer.
  */
 function lastCrossing(
   sounding: Sounding,
@@ -246,7 +235,7 @@ function bisect(
   return (low + high) / 2;
 }
 
-/** Altura MSL donde el índice térmico alcanza el valor objetivo por primera vez. */
+/** MSL altitude where the thermal index first reaches the target value. */
 function crossing(
   sounding: Sounding,
   maxSurfaceTempK: Kelvin,

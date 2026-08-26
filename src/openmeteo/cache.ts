@@ -1,9 +1,8 @@
 /**
- * Caché de respuestas.
+ * Response caching adapters.
  *
- * Los modelos se actualizan cada 1 a 6 horas: pedir más a menudo quema cuota
- * sin ganar información. Un fallo de caché **nunca** es un fallo de la
- * petición.
+ * Forecast models update every 1 to 6 hours; redundant calls consume quota without adding information.
+ * Cache misses or storage failures never abort request workflows.
  */
 
 import type { CacheAdapter } from "./types.js";
@@ -13,7 +12,7 @@ interface Entry {
   readonly expiresAtMs: number;
 }
 
-/** Caché en memoria, para Node y para pruebas. */
+/** In-memory cache adapter for Node.js environments and testing. */
 export function memoryCache(now: () => number = Date.now): CacheAdapter {
   const store = new Map<string, Entry>();
   return {
@@ -33,7 +32,7 @@ export function memoryCache(now: () => number = Date.now): CacheAdapter {
   };
 }
 
-/** Caché sobre `sessionStorage`, para navegador. Degrada a nada si no existe. */
+/** Browser `sessionStorage` cache adapter. Degrades gracefully if unavailable. */
 export function sessionCache(): CacheAdapter {
   const storage: Storage | null =
     typeof globalThis.sessionStorage === "undefined" ? null : globalThis.sessionStorage;
@@ -62,14 +61,14 @@ export function sessionCache(): CacheAdapter {
           JSON.stringify({ value, expiresAtMs: Date.now() + ttlSeconds * 1000 }),
         );
       } catch {
-        // Cuota llena o modo privado: seguir sin caché es correcto.
+        // Quota full or private browsing: continuing uncached is safe.
       }
       return Promise.resolve();
     },
   };
 }
 
-/** Caché que no guarda nada. */
+/** No-op cache adapter. */
 export function noopCache(): CacheAdapter {
   return {
     get: () => Promise.resolve(null),
@@ -77,7 +76,7 @@ export function noopCache(): CacheAdapter {
   };
 }
 
-/** Clave estable a partir del cuerpo de la petición. */
+/** Computes stable cache key from endpoint URL and query payload. */
 export function cacheKey(url: string, body: URLSearchParams): string {
   const sorted = [...body.entries()].sort(([a, b], [c, d]) =>
     a === c ? b.localeCompare(d) : a.localeCompare(c),

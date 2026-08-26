@@ -1,5 +1,5 @@
 /**
- * Presión de vapor de saturación y razones de mezcla.
+ * Saturation vapour pressure and mixing ratios.
  */
 
 import { CP, CPV, EPS, LV0, LV_SLOPE, T0_CELSIUS } from "../units/constants.js";
@@ -10,9 +10,9 @@ import { celsiusToK } from "../units/convert.js";
 import type { SoarwxError } from "../types/result.js";
 
 /**
- * Rango de validez declarado por Bolton para su ec. 10: error < 0.1 % entre
- * −35 y +35 °C. Fuera de él la función sigue devolviendo un valor, pero el
- * llamante debe anotarlo en `quality`.
+ * Validity range declared by Bolton for eq. 10: error < 0.1 % between
+ * −35 and +35 °C. Outside this range the function still returns a value,
+ * but the caller should record it in `quality`.
  */
 export const SATURATION_VALID_RANGE = {
   minK: celsiusToK(-35),
@@ -20,11 +20,11 @@ export const SATURATION_VALID_RANGE = {
 } as const;
 
 /**
- * Presión de vapor de saturación sobre agua líquida.
+ * Saturation vapour pressure over liquid water.
  *
- *     es = 6.112 · exp( 17.67·T / (T + 243.5) )   [hPa, T en °C]
+ *     es = 6.112 · exp( 17.67·T / (T + 243.5) )   [hPa, T in °C]
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 10.
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 10.
  */
 export function saturationVapourPressure(tempK: Kelvin): Pascal {
   const tc = kToCelsius(tempK);
@@ -32,10 +32,10 @@ export function saturationVapourPressure(tempK: Kelvin): Pascal {
 }
 
 /**
- * Comprueba si la temperatura cae dentro del rango de validez de la ec. 10 de
- * Bolton. Devuelve el error a anotar, o `null` si está dentro.
+ * Checks whether temperature falls within Bolton (1980) eq. 10 validity range.
+ * Returns the error to record, or `null` if within range.
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 10 (rango declarado).
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 10 (declared range).
  */
 export function checkSaturationRange(tempK: Kelvin): SoarwxError | null {
   const { minK, maxK } = SATURATION_VALID_RANGE;
@@ -48,11 +48,11 @@ export function checkSaturationRange(tempK: Kelvin): SoarwxError | null {
 }
 
 /**
- * Razón de mezcla de saturación.
+ * Saturation mixing ratio.
  *
  *     ws = ε · es / (p − es)
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.63.
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.63.
  */
 export function saturationMixingRatio(tempK: Kelvin, pressurePa: Pascal): KgPerKg {
   const es = saturationVapourPressure(tempK);
@@ -60,69 +60,68 @@ export function saturationMixingRatio(tempK: Kelvin, pressurePa: Pascal): KgPerK
 }
 
 /**
- * Razón de mezcla a partir del punto de rocío. Es la razón de mezcla de
- * saturación evaluada a la temperatura de rocío.
+ * Mixing ratio from dewpoint. Equivalent to the saturation mixing ratio
+ * evaluated at the dewpoint temperature.
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.63.
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.63.
  */
 export function mixingRatio(dewpointK: Kelvin, pressurePa: Pascal): KgPerKg {
   return saturationMixingRatio(dewpointK, pressurePa);
 }
 
 /**
- * Humedad relativa respecto al agua líquida, en fracción 0..1.
+ * Relative humidity with respect to liquid water, as fraction 0..1.
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 10 (vía es).
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 10 (via es).
  */
 export function relativeHumidity(tempK: Kelvin, dewpointK: Kelvin): number {
   return saturationVapourPressure(dewpointK) / saturationVapourPressure(tempK);
 }
 
 /**
- * Calor latente de vaporización dependiente de la temperatura.
+ * Temperature-dependent latent heat of vaporisation.
  *
  *     Lv(T) = Lv0 − 2370·(T − 273.15)      [J/kg]
  *
- * Tratarlo como constante introduce un sesgo creciente con la temperatura: en
- * un ascenso pseudoadiabático desde 30 °C y 900 hPa hasta 500 hPa, la θe de
- * Bolton deriva 2.4 K con Lv constante y 0.4 K con esta expresión.
+ * Treating Lv as constant introduces bias that grows with temperature: in a
+ * pseudoadiabatic ascent from 30 °C and 900 hPa to 500 hPa, Bolton's θe
+ * drifts 2.4 K with constant Lv and 0.4 K with this formula.
  *
- * @source Wallace & Hobbs, Atmospheric Science, tabla de Lv(T); Bolton (1980) §2.
+ * @source Wallace & Hobbs, Atmospheric Science, table of Lv(T); Bolton (1980) §2.
  */
 export function latentHeatOfVaporisation(tempK: Kelvin): number {
   return LV0 - LV_SLOPE * (tempK - T0_CELSIUS);
 }
 
 /**
- * Calor específico a presión constante del aire húmedo.
+ * Specific heat of moist air at constant pressure.
  *
  *     cpm = (1 − q)·cpa + q·cpv
  *
- * Usarlo en vez del valor seco importa: a 45 °C y 40 % de humedad relativa, la
- * diferencia en la altura del LCL es del 1.9 %.
+ * Using moist rather than dry air matters: at 45 °C and 40 % relative humidity,
+ * the difference in LCL height is 1.9 %.
  *
- * @source Romps, D. M. (2017), J. Atmos. Sci. 74, definición de cpm.
+ * @source Romps, D. M. (2017), J. Atmos. Sci. 74, definition of cpm.
  */
 export function moistHeatCapacity(specificHumidity: number): number {
   return (1 - specificHumidity) * CP + specificHumidity * CPV;
 }
 
 /**
- * Humedad específica a partir de la razón de mezcla.
+ * Specific humidity from mixing ratio.
  *
  *     q = w / (1 + w)
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.57.
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.57.
  */
 export function specificHumidity(mixingRatioKgKg: KgPerKg): number {
   return mixingRatioKgKg / (1 + mixingRatioKgKg);
 }
 
 /**
- * Punto de rocío a partir de la presión de vapor, invirtiendo la ec. 10 de
- * Bolton analíticamente.
+ * Dewpoint from vapour pressure by analytical inversion of Bolton eq. 10.
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 10 (invertida).
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 10 (inverted).
  */
 export function dewpointFromVapourPressure(vapourPressurePa: Pascal): Kelvin {
   const ratio = Math.log(Math.max(vapourPressurePa, 1e-9) / 611.2);
@@ -130,16 +129,16 @@ export function dewpointFromVapourPressure(vapourPressurePa: Pascal): Kelvin {
 }
 
 /**
- * Punto de rocío a partir de la razón de mezcla y la presión.
+ * Dewpoint from mixing ratio and pressure.
  *
  *     e = w·p / (ε + w)
  *
- * Se usa para dar punto de rocío a los niveles de altura sobre el terreno, que
- * Open-Meteo sirve sin humedad: en la capa mezclada la razón de mezcla se
- * conserva, así que se propaga la de superficie. Es una **suposición**, y el
- * sondeo la declara en `quality.estimated`.
+ * Used to supply dewpoint for above-ground height levels, which Open-Meteo
+ * serves without moisture: in the mixed layer, mixing ratio is conserved,
+ * so the surface value is propagated upward. This is an **estimate**, and the
+ * sounding declares it in `quality.estimated`.
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.59; Bolton (1980) ec. 10.
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.59; Bolton (1980) eq. 10.
  */
 export function dewpointFromMixingRatio(
   mixingRatioKgKg: KgPerKg,
@@ -150,9 +149,9 @@ export function dewpointFromMixingRatio(
 }
 
 /**
- * Punto de rocío a partir de la humedad relativa.
+ * Dewpoint from relative humidity.
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 10 (invertida).
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 10 (inverted).
  */
 export function dewpointFromRelativeHumidity(tempK: Kelvin, rhFrac: number): Kelvin {
   const e = rhFrac * saturationVapourPressure(tempK);

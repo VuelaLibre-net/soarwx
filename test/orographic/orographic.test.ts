@@ -24,9 +24,9 @@ import {
   SIERRA_DE_AYLLON,
 } from "../helpers/sites.js";
 
-/** Cresta orientada norte-sur: la cruza el viento de componente este u oeste. */
+/** North-south oriented ridge: crossed by easterly or westerly winds. */
 const NORTH_SOUTH: RidgeSpec = {
-  name: "sintética",
+  name: "synthetic",
   bearingDeg: deg(0),
   slopeDeg: deg(15),
   crestMslM: m(2000),
@@ -35,13 +35,13 @@ const NORTH_SOUTH: RidgeSpec = {
 const W = (speed: number, from: number) => ({ speedMs: mps(speed), fromDeg: deg(from) });
 
 // O-01
-describe("ningún emplazamiento incrustado", () => {
-  /** Quita comentarios de bloque y de línea, para mirar solo el código. */
+describe("no hardcoded mountain sites in library code", () => {
+  /** Strips block and line comments to inspect executable code only. */
   function stripComments(source: string): string {
     return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   }
 
-  it("ninguna sierra ni aeródromo aparece en el código, solo en comentarios", () => {
+  it("no named mountain ranges or airfields appear in executable source code", () => {
     const files = execSync("find src -name '*.ts'", { encoding: "utf8" })
       .trim()
       .split("\n");
@@ -53,19 +53,17 @@ describe("ningún emplazamiento incrustado", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("los emplazamientos sí pueden citarse en comentarios: documentan la medida", () => {
+  it("site names may appear in comments documenting validation measurements", () => {
     const anywhere = execSync("grep -ril 'fuentemilanos' src/ || true", {
       encoding: "utf8",
     }).trim();
-    // No es un requisito, es constancia de que la distinción es real: hay
-    // comentarios que citan dónde se midió, y ninguno es lógica de sitio.
     expect(anywhere.length).toBeGreaterThan(0);
   });
 });
 
-describe("sustentación de ladera", () => {
+describe("orographic ridge lift", () => {
   // O-02
-  it("un viento paralelo a la cresta no genera ascendencia", () => {
+  it("wind parallel to ridge crest generates zero vertical climb", () => {
     const r = ridgeLift(NORTH_SOUTH, W(12, 180));
     expect(r.perpendicularMs).toBeCloseTo(0, 9);
     expect(r.verticalMs).toBeCloseTo(0, 9);
@@ -73,36 +71,36 @@ describe("sustentación de ladera", () => {
   });
 
   // O-03
-  it("con viento perpendicular la vertical es U·sen(pendiente)", () => {
+  it("with perpendicular wind vertical velocity is U·sin(slope)", () => {
     const r = ridgeLift(NORTH_SOUTH, W(10, 270));
     expect(r.perpendicularMs).toBeCloseTo(10, 9);
     expect(r.verticalMs).toBeCloseTo(10 * Math.sin((15 * Math.PI) / 180), 9);
     expect(r.verticalMs).toBeCloseTo(2.588, 3);
   });
 
-  it("el factor empírico 0.08 del predecesor equivalía a una ladera de 4.6°", () => {
+  it("0.08 empirical factor was equivalent to 4.6° slope", () => {
     const gentle: RidgeSpec = { ...NORTH_SOUTH, slopeDeg: deg(4.6) };
     const r = ridgeLift(gentle, W(10, 270));
     expect(r.verticalMs).toBeCloseTo(10 * 0.08, 2);
-    // Con la pendiente real de una sierra, la ascendencia triplica esa cifra.
+    // With realistic mountain slopes, lift is ~3x stronger than 4.6° slope.
     expect(ridgeLift(NORTH_SOUTH, W(10, 270)).verticalMs).toBeGreaterThan(
       3 * r.verticalMs,
     );
   });
 
-  it("las dos caras funcionan: el signo del viento no cambia la magnitud", () => {
+  it("both ridge aspects function symmetrically: wind sign preserves magnitude", () => {
     const west = ridgeLift(NORTH_SOUTH, W(10, 270));
     const east = ridgeLift(NORTH_SOUTH, W(10, 90));
     expect(east.perpendicularMs).toBeCloseTo(west.perpendicularMs, 9);
   });
 
-  it("un viento oblicuo da solo su componente perpendicular", () => {
+  it("oblique wind yields its trigonometric normal component", () => {
     const r = ridgeLift(NORTH_SOUTH, W(10, 315));
     expect(r.perpendicularMs).toBeCloseTo(10 * Math.SQRT1_2, 6);
     expect(r.incidenceDeg).toBeCloseTo(45, 4);
   });
 
-  it("clasifica por bandas y las bandas son constantes exportadas", () => {
+  it("classifies by exported constant thresholds", () => {
     expect(ridgeLift(NORTH_SOUTH, W(2, 270)).band).toBe("insufficient");
     expect(ridgeLift(NORTH_SOUTH, W(5, 270)).band).toBe("marginal");
     expect(ridgeLift(NORTH_SOUTH, W(10, 270)).band).toBe("optimal");
@@ -110,21 +108,21 @@ describe("sustentación de ladera", () => {
     expect(RIDGE_LIFT_THRESHOLDS_MS.optimal).toBeCloseTo(7.7, 6);
   });
 
-  it("la calma no inventa incidencia", () => {
+  it("calm winds yield 90° incidence without inventing headings", () => {
     expect(ridgeLift(NORTH_SOUTH, W(0, 0)).incidenceDeg).toBe(90);
   });
 
-  it("la orientación de la cresta manda: la misma cresta girada cambia el resultado", () => {
+  it("ridge bearing determines result: rotated ridge modifies outcome", () => {
     const eastWest: RidgeSpec = { ...NORTH_SOUTH, bearingDeg: deg(90) };
     expect(ridgeLift(eastWest, W(10, 270)).perpendicularMs).toBeCloseTo(0, 6);
     expect(ridgeLift(eastWest, W(10, 180)).perpendicularMs).toBeCloseTo(10, 6);
   });
 });
 
-describe("parámetro de Scorer", () => {
+describe("Scorer parameter", () => {
   const sounding = syntheticSounding(25, 1500, 4);
 
-  it("se calcula y descompone en estabilidad y curvatura", () => {
+  it("computes and decomposes into buoyancy and curvature terms", () => {
     const r = scorerParameter(sounding, 90);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -138,7 +136,7 @@ describe("parámetro de Scorer", () => {
     }
   });
 
-  it("es mayor en la capa estable que en la mezclada", () => {
+  it("is larger in stable layer than in mixed layer", () => {
     const r = scorerParameter(sounding, 90);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -151,7 +149,7 @@ describe("parámetro de Scorer", () => {
     expect(mean(stable)).toBeGreaterThan(mean(mixed));
   });
 
-  it("sin viento a lo largo del flujo no hay nada que calcular", () => {
+  it("returns error without sufficient along-flow wind", () => {
     const calm = syntheticSounding(25, 1500, 4);
     const r = scorerParameter(
       { ...calm, levels: calm.levels.map((l) => ({ ...l, windSpeedMs: mps(0.5) })) },
@@ -162,16 +160,16 @@ describe("parámetro de Scorer", () => {
     expect(MIN_ALONG_FLOW_MS).toBe(2);
   });
 
-  it("con menos de tres niveles no se puede derivar dos veces", () => {
+  it("returns INSUFFICIENT_LEVELS with fewer than 3 levels", () => {
     const r = scorerParameter({ ...sounding, levels: sounding.levels.slice(0, 2) }, 90);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("INSUFFICIENT_LEVELS");
   });
 });
 
-describe("potencial de onda", () => {
+describe("mountain wave potential", () => {
   // O-05
-  it("siempre declara el método que ha usado", () => {
+  it("always declares the method used", () => {
     const sounding = syntheticSounding(25, 1500, 4);
     for (const speed of [2, 8, 20]) {
       const windy = {
@@ -188,7 +186,7 @@ describe("potencial de onda", () => {
     }
   });
 
-  it("con viento débil perpendicular no hay onda", () => {
+  it("weak perpendicular wind yields no wave potential", () => {
     const sounding = syntheticSounding(25, 1500, 4);
     const calm = {
       ...sounding,
@@ -202,7 +200,7 @@ describe("potencial de onda", () => {
     expect(MIN_CROSS_RIDGE_MS).toBeCloseTo(7.5, 6);
   });
 
-  it("con viento paralelo a la cresta tampoco, aunque sople fuerte", () => {
+  it("wind parallel to ridge generates no wave, even when strong", () => {
     const sounding = syntheticSounding(25, 1500, 4);
     const along = {
       ...sounding,
@@ -217,7 +215,7 @@ describe("potencial de onda", () => {
     if (r.ok) expect(r.value.potential).toBe("none");
   });
 
-  it("informa de la componente perpendicular y de la longitud de onda", () => {
+  it("reports perpendicular wind component and estimated wavelength", () => {
     const sounding = syntheticSounding(25, 1500, 4);
     const strong = {
       ...sounding,
@@ -237,7 +235,7 @@ describe("potencial de onda", () => {
     }
   });
 
-  it("si el sondeo no cubre las dos capas, lo dice y no inventa", () => {
+  it("falls back to heuristic with clear reason when sounding lacks vertical span", () => {
     const shallow = syntheticSounding(25, 1500, 4);
     const highRidge: RidgeSpec = { ...NORTH_SOUTH, crestMslM: m(4500) };
     const windy = {
@@ -257,7 +255,7 @@ describe("potencial de onda", () => {
     );
   });
 
-  it("funciona sobre un sondeo real con la cresta real", () => {
+  it("evaluates real sounding against real ridge specification", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 14)));
     expect(built.ok).toBe(true);
@@ -265,37 +263,36 @@ describe("potencial de onda", () => {
     const r = wavePotential(built.value, LA_MUJER_MUERTA);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // Ese día el viento es flojo: sin onda, y dicho con su motivo.
+    // On this day wind is weak: no wave, reported with specific reason.
     expect(r.value.potential).toBe("none");
     expect(r.value.reason).toBe("cross_ridge_wind_too_weak");
   });
 });
 
 // O-04
-describe("sectores y umbrales", () => {
-  it("no hay sectores angulares codificados: la orientación es un dato", () => {
+describe("angular sectors and thresholds", () => {
+  it("no hardcoded angular sectors exist in code: ridge orientation is dynamic input", () => {
     const source = execSync("cat src/orographic/*.ts", { encoding: "utf8" });
-    // Ningún rango del tipo `280 <= dir <= 350` que discrepe de su comentario.
     expect(source).not.toMatch(/\d{3}\s*<=\s*\w*[Dd]eg/);
     expect(source).not.toMatch(/wind\w*Deg\s*<=\s*\d{3}/);
   });
 
-  it("todos los umbrales viven en constantes exportadas", () => {
+  it("all operational thresholds are exported as constants", () => {
     expect(RIDGE_LIFT_THRESHOLDS_MS).toBeDefined();
     expect(MIN_CROSS_RIDGE_MS).toBeDefined();
     expect(MIN_ALONG_FLOW_MS).toBeDefined();
   });
 });
 
-describe("onda atrapada con perfil favorable", () => {
+describe("trapped lee wave under favorable profile", () => {
   const ridge: RidgeSpec = {
-    name: "sintética",
+    name: "synthetic",
     bearingDeg: deg(0),
     slopeDeg: deg(20),
     crestMslM: m(1500),
   };
 
-  it("una capa estable sobre la cresta con atmósfera neutra encima atrapa la onda", () => {
+  it("stable layer over crest with neutral air above traps lee waves", () => {
     const r = wavePotential(waveSounding(2, 9, 10), ridge);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -305,7 +302,7 @@ describe("onda atrapada con perfil favorable", () => {
     expect(r.value.reason).toBe("scorer_drop_exceeds_trapping_threshold");
   });
 
-  it("la longitud de onda estimada cae en el rango observado de ondas de sotavento", () => {
+  it("estimated wavelength falls within observed lee wave spectrum", () => {
     const r = wavePotential(waveSounding(2, 9, 10), ridge);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -314,7 +311,7 @@ describe("onda atrapada con perfil favorable", () => {
     expect(r.value.estimatedWavelengthM!).toBeLessThan(12000);
   });
 
-  it("una inversión marcada con viento holgado da potencial fuerte", () => {
+  it("marked inversion with strong wind yields strong wave potential", () => {
     const r = wavePotential(waveSounding(-8, 9, 14), ridge);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -322,7 +319,7 @@ describe("onda atrapada con perfil favorable", () => {
     expect(STRONG_WAVE_DROP_FACTOR).toBe(2);
   });
 
-  it("sin contraste de estabilidad entre capas no hay atrapamiento", () => {
+  it("without stability contrast across layers, waves are not trapped", () => {
     const r = wavePotential(waveSounding(6, 6.5, 12), ridge);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -331,7 +328,7 @@ describe("onda atrapada con perfil favorable", () => {
     expect(r.value.reason).toBe("scorer_drop_insufficient");
   });
 
-  it("una onda más marcada da longitud de onda más corta", () => {
+  it("stronger trapping yields shorter resonant wavelength", () => {
     const sharp = wavePotential(waveSounding(0, 9, 10), ridge);
     const soft = wavePotential(waveSounding(9.5, 9.6, 12), ridge);
     expect(sharp.ok && soft.ok).toBe(true);
@@ -341,7 +338,7 @@ describe("onda atrapada con perfil favorable", () => {
     );
   });
 
-  it("con la cresta por debajo del sondeo se usa el viento de superficie", () => {
+  it("when ridge crest is below lowest sounding level, surface wind is used", () => {
     const belowGround: RidgeSpec = { ...ridge, crestMslM: m(-100) };
     const r = wavePotential(waveSounding(2, 9, 10), belowGround);
     expect(r.ok).toBe(true);
@@ -349,12 +346,12 @@ describe("onda atrapada con perfil favorable", () => {
   });
 });
 
-describe("respaldo declarado cuando falla el perfil", () => {
-  it("con viento fuerte pero sin perfil utilizable, el método es heurístico", () => {
+describe("declared fallback when profile calculation fails", () => {
+  it("strong wind without usable profile yields heuristic evaluation", () => {
     const sounding = waveSounding(2, 9, 14);
     const truncated = { ...sounding, levels: sounding.levels.slice(0, 2) };
     const ridge: RidgeSpec = {
-      name: "sintética",
+      name: "synthetic",
       bearingDeg: deg(0),
       slopeDeg: deg(20),
       crestMslM: m(1500),
@@ -364,16 +361,16 @@ describe("respaldo declarado cuando falla el perfil", () => {
     if (!r.ok) return;
     expect(r.value.method).toBe("heuristic");
     expect(r.value.reason).toBe("no_usable_scorer_profile");
-    // 14 m/s supera 1.5 veces el mínimo: el heurístico admite «marginal».
+    // 14 m/s exceeds 1.5x minimum: heuristic permits "marginal".
     expect(r.value.potential).toBe("marginal");
     expect(r.value.trappedLeeWave).toBe(false);
   });
 
-  it("el heurístico no promete más que «marginal»", () => {
+  it("heuristic caps rating at marginal", () => {
     const sounding = waveSounding(2, 9, 9);
     const truncated = { ...sounding, levels: sounding.levels.slice(0, 2) };
     const ridge: RidgeSpec = {
-      name: "sintética",
+      name: "synthetic",
       bearingDeg: deg(0),
       slopeDeg: deg(20),
       crestMslM: m(1500),
@@ -384,17 +381,16 @@ describe("respaldo declarado cuando falla el perfil", () => {
   });
 });
 
-describe("La Mujer Muerta, la ladera que se vuela desde Fuentemilanos", () => {
-  it("el viento que la ataca de frente viene del 338°, no del 310°", () => {
-    // El cordal va de oeste-suroeste a este-noreste: eje 68°, normal 338°.
+describe("La Mujer Muerta ridge validation", () => {
+  it("direct headwind attack angle corresponds to 338° heading", () => {
+    // Ridge axis runs WSW to ENE: 68° axis, 338° normal.
     const head = ridgeLift(LA_MUJER_MUERTA, W(12, 338));
     expect(head.perpendicularMs).toBeCloseTo(12, 2);
     expect(head.incidenceDeg).toBeCloseTo(0, 1);
   });
 
-  it("los 310° que el predecesor tenía fijos pierden un 11 % de la componente", () => {
-    // 28° de error entre 338° y 310°. Un viento real del 338° evaluado como si
-    // la normal fuese 310° se queda en cos(28°) = 0.887 de su valor.
+  it("legacy hardcoded 310° heading lost 11% perpendicular component", () => {
+    // 28° difference between 338° and 310° yields cos(28°) = 0.887.
     const wind = W(12, 338);
     const actual = ridgeLift(LA_MUJER_MUERTA, wind);
     const asPredecessor = ridgeLift(
@@ -407,13 +403,13 @@ describe("La Mujer Muerta, la ladera que se vuela desde Fuentemilanos", () => {
     );
   });
 
-  it("un viento del suroeste corre paralelo al cordal y no da ladera", () => {
+  it("southwesterly wind runs parallel to ridge crest and produces no lift", () => {
     const alongRidge = ridgeLift(LA_MUJER_MUERTA, W(15, 248));
     expect(alongRidge.perpendicularMs).toBeLessThan(1);
     expect(alongRidge.band).toBe("insufficient");
   });
 
-  it("la pendiente elegida cambia la ascendencia en un factor 1.4", () => {
+  it("selected slope geometry modifies vertical climb by 1.4x factor", () => {
     const wind = W(10, 338);
     const upperFace = ridgeLift(LA_MUJER_MUERTA, wind);
     const wholeFace = ridgeLift({ ...LA_MUJER_MUERTA, slopeDeg: deg(11.4) }, wind);
@@ -422,24 +418,22 @@ describe("La Mujer Muerta, la ladera que se vuela desde Fuentemilanos", () => {
     expect(upperFace.verticalMs / wholeFace.verticalMs).toBeCloseTo(1.39, 2);
   });
 
-  it("el emplazamiento lleva su cresta como dato, no la librería", () => {
+  it("site provides its own ridge specifications as data", () => {
     expect(FUENTEMILANOS_SITE.ridges).toHaveLength(1);
     expect(FUENTEMILANOS_SITE.ridges?.[0]?.name).toBe("La Mujer Muerta");
     expect(FUENTEMILANOS_SITE.elevationMslM).toBe(1001);
   });
 });
 
-describe("Sierra de Ayllón", () => {
-  it("su eje sale del terreno, no de la descripción publicada", () => {
-    // La fuente publicada dice «oeste-este» (eje 90°); el ajuste de la caída de
-    // elevación en 24 rumbos da 65°, coherente con el resto del Sistema Central.
+describe("Sierra de Ayllón ridge validation", () => {
+  it("ridge axis is derived from terrain geometry", () => {
     expect(SIERRA_DE_AYLLON.bearingDeg).toBe(65);
     const head = ridgeLift(SIERRA_DE_AYLLON, W(14, 335));
     expect(head.perpendicularMs).toBeCloseTo(14, 1);
     expect(head.incidenceDeg).toBeCloseTo(0, 0);
   });
 
-  it("evaluada como «oeste-este» perdería un 40 % de la componente", () => {
+  it("evaluating as west-east would lose 40% perpendicular component", () => {
     const wind = W(14, 335);
     const fromTerrain = ridgeLift(SIERRA_DE_AYLLON, wind);
     const asPublished = ridgeLift({ ...SIERRA_DE_AYLLON, bearingDeg: deg(90) }, wind);
@@ -449,14 +443,14 @@ describe("Sierra de Ayllón", () => {
     );
   });
 
-  it("comparte tendencia con La Mujer Muerta: ambas son Sistema Central", () => {
-    // 68° y 65°, derivados por separado de dos transectos independientes.
+  it("shares regional geological alignment with La Mujer Muerta", () => {
+    // 68° vs 65°, derived independently from distinct terrain transects.
     expect(
       Math.abs(SIERRA_DE_AYLLON.bearingDeg - LA_MUJER_MUERTA.bearingDeg),
     ).toBeLessThan(5);
   });
 
-  it("no cuelga de Fuentemilanos: está a 71 km y necesita su propio sondeo", () => {
+  it("maintains its own site query coordinates distinct from Fuentemilanos", () => {
     expect(FUENTEMILANOS_SITE.ridges).toHaveLength(1);
     expect(FUENTEMILANOS_SITE.ridges?.[0]?.name).toBe("La Mujer Muerta");
     expect(PICO_DEL_LOBO_SITE.ridges?.[0]?.name).toBe("Sierra de Ayllón");
@@ -466,17 +460,15 @@ describe("Sierra de Ayllón", () => {
   });
 });
 
-describe("límites del método de derivación del eje", () => {
-  it("un macizo da anisotropía modesta y una cima no da ninguna", () => {
+describe("ridge axis derivation limits", () => {
+  it("elongated massif exhibits modest anisotropy while isolated peak shows none", () => {
     expect(RIDGE_ANISOTROPY["Sierra de Ayllón"]!).toBeGreaterThan(
       MIN_MEANINGFUL_ANISOTROPY,
     );
     expect(RIDGE_ANISOTROPY["Peñalara"]!).toBeLessThan(MIN_MEANINGFUL_ANISOTROPY);
   });
 
-  it("con eje poco fiable, la ladera depende mucho del rumbo supuesto", () => {
-    // Peñalara cae parecido en todas direcciones: elegir un eje u otro cambia
-    // la componente perpendicular sin que el terreno lo justifique.
+  it("with low anisotropy, ridge lift depends heavily on assumed axis", () => {
     const wind = W(12, 270);
     const asFitted = ridgeLift(PENALARA, wind);
     const asGuadarramaTrend = ridgeLift({ ...PENALARA, bearingDeg: deg(68) }, wind);
@@ -485,12 +477,12 @@ describe("límites del método de derivación del eje", () => {
     ).toBeGreaterThan(3);
   });
 
-  it("Peñalara es más alta que La Mujer Muerta: por eso hay que ganar altura antes", () => {
+  it("Peñalara crest is higher than La Mujer Muerta", () => {
     expect(PENALARA.crestMslM).toBeGreaterThan(LA_MUJER_MUERTA.crestMslM);
     expect(PENALARA.crestMslM - LA_MUJER_MUERTA.crestMslM).toBe(231);
   });
 
-  it("cada cresta cuelga de su propio punto de consulta", () => {
+  it("each ridge belongs to its respective forecast site", () => {
     for (const site of [FUENTEMILANOS_SITE, PICO_DEL_LOBO_SITE, PENALARA_SITE]) {
       expect(site.ridges).toHaveLength(1);
       expect(site.ridges?.[0]?.crestMslM).toBeGreaterThan(0);

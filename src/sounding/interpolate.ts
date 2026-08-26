@@ -1,9 +1,9 @@
 /**
- * Interpolación dentro del sondeo.
+ * Atmospheric sounding interpolation.
  *
- * Lineal en `ln(p)`, que es la variable natural: la altura geopotencial es
- * lineal en `ln(p)` bajo hidrostática con temperatura constante a trozos.
- * El viento se interpola por componentes, nunca por módulo y dirección.
+ * Linear in `ln(p)`, which is the natural coordinate: geopotential height
+ * is linear in `ln(p)` under hydrostatic balance with piecewise-constant temperature.
+ * Wind is always interpolated by Cartesian vector components, never by scalar speed and direction.
  */
 
 import { K, Pa, m } from "../units/branded.js";
@@ -14,7 +14,7 @@ import type { Level, Sounding } from "./types.js";
 import { fromComponents, toComponents } from "./wind.js";
 import { at, consecutivePairs } from "../types/array.js";
 
-/** Interpola linealmente entre dos niveles con un peso ya calculado. */
+/** Linearly blends two sounding levels with a precomputed interpolation weight. */
 function blend(lower: Level, upper: Level, f: number): Level {
   const a = toComponents(lower.windSpeedMs, lower.windFromDeg);
   const b = toComponents(upper.windSpeedMs, upper.windFromDeg);
@@ -37,9 +37,9 @@ function blend(lower: Level, upper: Level, f: number): Level {
 }
 
 /**
- * Nivel interpolado a una presión dada. Lineal en `ln(p)`.
+ * Interpolates sounding level at specified pressure. Linear in `ln(p)`.
  *
- * @source Interpolación logarítmica en presión; práctica estándar en sondeos.
+ * @source Log-pressure interpolation; standard sounding practice.
  */
 export function interpolateAtPressure(
   sounding: Sounding,
@@ -69,15 +69,14 @@ export function interpolateAtPressure(
       return ok(blend(lower, upper, f));
     }
   }
-  /* v8 ignore next 2 -- inalcanzable: los rangos ya se comprobaron arriba y los
-     niveles están ordenados; queda como red de seguridad, no como camino. */
+  /* v8 ignore next 2 -- unreachable safety check */
   return err("OUT_OF_VALID_RANGE", "pressure not bracketed by any level", { pressurePa });
 }
 
 /**
- * Nivel interpolado a una altura sobre el nivel del mar.
+ * Interpolates sounding level at specified geopotential altitude above MSL.
  *
- * @source Interpolación logarítmica en presión; práctica estándar en sondeos.
+ * @source Standard atmospheric sounding interpolation.
  */
 export function interpolateAtHeight(sounding: Sounding, mslM: Metres): Result<Level> {
   const levels = sounding.levels;
@@ -104,11 +103,11 @@ export function interpolateAtHeight(sounding: Sounding, mslM: Metres): Result<Le
       return ok(blend(lower, upper, f));
     }
   }
-  /* v8 ignore next 2 -- inalcanzable, igual que en interpolateAtPressure. */
+  /* v8 ignore next 2 -- unreachable safety check */
   return err("OUT_OF_VALID_RANGE", "height not bracketed by any level", { mslM });
 }
 
-/** Nivel interpolado a una altura sobre el terreno. */
+/** Interpolates sounding level at specified height above ground level (AGL). */
 export function interpolateAtAgl(sounding: Sounding, aglM: Metres): Result<Level> {
   return interpolateAtHeight(sounding, m(sounding.site.elevationMslM + aglM));
 }

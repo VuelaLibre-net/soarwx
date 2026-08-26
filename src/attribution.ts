@@ -1,3 +1,3 @@
-/** Atribución exigida por la licencia CC BY 4.0 de los datos de Open-Meteo. */
+/** Attribution required by the CC BY 4.0 licence for Open-Meteo data. */
 export const OPEN_METEO_ATTRIBUTION =
-  "Datos meteorológicos de Open-Meteo.com (https://open-meteo.com), licencia CC BY 4.0.";
+  "Weather data from Open-Meteo.com (https://open-meteo.com), CC BY 4.0 licence.";

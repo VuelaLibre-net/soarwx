@@ -1,9 +1,7 @@
 /**
- * Normalización: de la respuesta cruda a estructuras internas en SI.
+ * Forecast response normalization to internal SI structures.
  *
- * Aquí se aplican dos correcciones que el resto de la librería da por hechas:
- * el **signo del flujo de calor**, que depende del modelo, y el **desfase de la
- * radiación**, que es media de la hora precedente y no valor instantáneo.
+ * Handles model-specific sensible heat flux sign conventions and hourly centering of shortwave radiation.
  */
 
 import { deg, m, mps, wm2 } from "../units/branded.js";
@@ -40,14 +38,12 @@ function times(response: OpenMeteoResponse): readonly string[] {
 }
 
 /**
- * Radiación centrada en la hora.
+ * Returns centered shortwave radiation value (W/m²).
  *
- * `shortwave_radiation` es la **media de la hora precedente**, así que su
- * centro cae media hora antes de su marca de tiempo. Emparejarla con la
- * temperatura de la misma marca desplaza el ciclo diurno media hora. Se
- * promedia con la hora siguiente para centrarla.
+ * Open-Meteo `shortwave_radiation` represents preceding hour average.
+ * It is averaged with the subsequent timestamp to align with instantaneous temperature readings.
  *
- * @source §4.7 de docs/OPEN_METEO_INTEGRATION.md.
+ * @source §4.7 of docs/OPEN_METEO_INTEGRATION.md.
  */
 export function centredRadiationWm2(response: OpenMeteoResponse, index: number): number {
   const here = value(response, "shortwave_radiation", index) ?? 0;
@@ -65,9 +61,9 @@ export interface NormalisedForecast {
 }
 
 /**
- * Convierte la respuesta en observaciones horarias listas para `computeDay`.
+ * Normalizes Open-Meteo response into hourly observations for `computeDay`.
  *
- * @source docs/OPEN_METEO_INTEGRATION.md §6.1, pasos 9 a 12.
+ * @source docs/OPEN_METEO_INTEGRATION.md §6.1, steps 9 to 12.
  */
 export function normaliseForecast(
   response: OpenMeteoResponse,

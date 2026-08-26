@@ -1,45 +1,43 @@
 /**
- * Exige que toda propiedad numérica de un tipo exportado lleve sufijo de unidad.
+ * Requires every numeric property in an exported type to carry a unit suffix.
  *
- * Regla de `docs/SPEC.md` §2 y `docs/REQUIREMENTS.md` NF-5. El histórico del
- * predecesor está lleno de errores de unidad (km/h tratado como nudos, IAS
- * tratada como velocidad respecto al suelo). El sufijo hace que el error salte
- * en revisión y en el compilador.
+ * Rule from `docs/SPEC.md` §2 and `docs/REQUIREMENTS.md` NF-5. The predecessor's
+ * history is full of unit errors (km/h treated as knots, IAS treated as ground
+ * speed). The suffix ensures unit mismatches fail during review and compilation.
  *
- * Los tipos marcados (`Kelvin`, `Metres`, ...) no disparan la regla: solo se
- * inspecciona `number` desnudo.
+ * Branded types (`Kelvin`, `Metres`, ...) do not trigger the rule: only bare
+ * `number` is checked.
  */
 
 const DEFAULT_SUFFIXES = [
   "K", // kelvin
   "Pa", // pascal
-  "M", // metro
-  "Ms", // metro/segundo
-  "Deg", // grado
-  "Wm2", // vatio/metro²
-  "Jkg", // julio/kilogramo
+  "M", // metre
+  "Ms", // metre/second
+  "Deg", // degree
+  "Wm2", // watt/metre²
+  "Jkg", // joule/kilogram
   "KgKg", // kg/kg
-  "KMs", // kelvin·metro/segundo (flujo cinemático)
-  "Frac", // fracción 0..1
-  "Hpa", // hectopascal (solo en adaptadores de entrada)
-  "MsPerKm", // cizalladura
-  "KPerM", // gradiente térmico
-  "Utc", // marca de tiempo ISO
+  "KMs", // kelvin·metre/second (kinematic flux)
+  "Frac", // fraction 0..1
+  "Hpa", // hectopascal (only in input adapters)
+  "MsPerKm", // shear
+  "KPerM", // lapse rate
+  "Utc", // ISO timestamp
   "Seconds",
-  "Ms2", // metro/segundo²
-  "KgM3", // kilogramo/metro³
-  "PerM2", // metro⁻² (parámetro de Scorer)
-  "PerS2", // segundo⁻² (frecuencia de Brunt-Väisälä al cuadrado)
-  "Hours", // horas
-  "Km", // kilómetro
-  "Days", // días
-  "Px", // píxel (solo en el lienzo del render)
+  "Ms2", // metre/second²
+  "KgM3", // kilogram/metre³
+  "PerM2", // metre⁻² (Scorer parameter)
+  "PerS2", // second⁻² (Brunt-Väisälä frequency squared)
+  "Hours", // hours
+  "Km", // kilometre
+  "Days", // days
+  "Px", // pixel (only in render canvas)
 ];
 
 /**
- * Sufijos que denotan una magnitud adimensional por su propia naturaleza:
- * cuentas, índices y cocientes. Evita que la lista de nombres exactos crezca
- * sin fin.
+ * Suffixes that denote dimensionless quantities by their nature:
+ * counts, indices and ratios. Prevents unbounded list growth.
  */
 const DEFAULT_DIMENSIONLESS_SUFFIXES = [
   "Used",
@@ -51,7 +49,7 @@ const DEFAULT_DIMENSIONLESS_SUFFIXES = [
   "Points",
 ];
 
-/** Nombres explícitamente adimensionales. Ampliable por configuración. */
+/** Explicitly dimensionless names. Configurable. */
 const DEFAULT_DIMENSIONLESS = [
   "score",
   "weight",
@@ -84,8 +82,7 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Las propiedades `number` de los tipos exportados deben llevar sufijo de unidad.",
+      description: "Numeric properties of exported types must carry a unit suffix.",
     },
     schema: [
       {
@@ -100,7 +97,7 @@ export default {
     ],
     messages: {
       missing:
-        "`{{name}}` es `number` sin sufijo de unidad. Usa uno de: {{suffixes}} — o un tipo marcado (SPEC §2).",
+        "`{{name}}` is a `number` without a unit suffix. Use one of: {{suffixes}} — or a branded type (SPEC §2).",
     },
   },
 
@@ -111,7 +108,7 @@ export default {
     const dimensionlessSuffixes =
       opts.dimensionlessSuffixes ?? DEFAULT_DIMENSIONLESS_SUFFIXES;
 
-    /** ¿La anotación es `number`, o una unión que lo contenga? */
+    /** Is the annotation `number` or a union containing it? */
     function isBareNumber(annotation) {
       if (!annotation) return false;
       if (annotation.type === "TSNumberKeyword") return true;
@@ -121,7 +118,7 @@ export default {
       return false;
     }
 
-    /** ¿El nodo está dentro de una declaración de tipo exportada? */
+    /** Is the node inside an exported type declaration? */
     function insideExportedType(node) {
       for (let n = node.parent; n; n = n.parent) {
         if (n.type === "TSInterfaceDeclaration" || n.type === "TSTypeAliasDeclaration") {

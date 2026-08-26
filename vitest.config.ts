@@ -6,12 +6,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**"],
-      // Ficheros de solo tipos y barriles de reexportación: no tienen lógica
-      // que cubrir, y contarlos falsea la media de los módulos que sí la tienen.
+      // Type-only files and re-export barrels: they contain no logic to cover,
+      // and including them skews the average of modules that do.
       exclude: ["src/**/types.ts", "src/types/site.ts", "src/**/index.ts"],
       reporter: ["text", "lcov"],
-      // Umbrales de docs/ACCEPTANCE.md §2. Se suben por directorio conforme
-      // cada módulo gana implementación; los que siguen a 0 son barriles vacíos.
+      // Thresholds from docs/ACCEPTANCE.md §2. Raised per directory as each
+      // module gains implementation; those remaining at 0 are empty barrels.
       thresholds: {
         "src/units/**": { lines: 90, branches: 90, functions: 90, statements: 90 },
         "src/thermo/**": { lines: 90, branches: 90, functions: 90, statements: 90 },

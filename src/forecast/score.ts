@@ -1,5 +1,5 @@
 /**
- * Agregación del índice de vuelo.
+ * Soaring index aggregation and rating.
  */
 
 import { at } from "../types/array.js";
@@ -11,32 +11,30 @@ import { vetoCap } from "./vetoes.js";
 export type SoaringLevel = 1 | 2 | 3 | 4 | 5;
 
 export interface SoaringScore {
-  /** Media ponderada de los factores, en [0, 1]. */
+  /** Weighted average score across all factors, normalized to [0, 1]. */
   readonly value: number;
   readonly level: SoaringLevel;
-  /** Nivel antes de aplicar los vetos, para poder ver cuánto han topado. */
+  /** Rating level prior to veto application, revealing veto capping impact. */
   readonly levelBeforeVetoes: SoaringLevel;
   readonly factors: readonly Factor[];
   readonly vetoes: readonly Veto[];
-  /** Factores por debajo del umbral, de peor a mejor. */
+  /** Factors falling below the OK threshold, sorted from lowest score to highest. */
   readonly limitingFactors: readonly FactorId[];
 }
 
 /**
- * Umbrales de nivel sobre la puntuación agregada.
- * Cuatro cortes que separan los cinco niveles.
+ * Default aggregated score thresholds separating the 5 soaring rating levels.
  */
 export const DEFAULT_LEVEL_THRESHOLDS: readonly [number, number, number, number] = [
   0.3, 0.58, 0.78, 0.9,
 ];
 
 /**
- * Índice de vuelo a partir de los factores y los vetos.
+ * Computes soaring index from individual factor scores and veto conditions.
  *
- * El nivel 5 exige **todos** los factores cumplidos: una puntuación alta con un
- * factor flojo es un día muy bueno, no uno perfecto.
+ * Level 5 requires **all** individual factors to meet OK threshold (score >= 0.6).
  *
- * @source R-10.1 a R-10.5 de docs/REQUIREMENTS.md.
+ * @source Requirements R-10.1 through R-10.5 from docs/REQUIREMENTS.md.
  */
 export function aggregate(
   factors: readonly Factor[],

@@ -1,27 +1,26 @@
 /**
- * Perfil vertical de la térmica: velocidad media, radio y velocidad de núcleo.
+ * Vertical thermal updraft profile: mean velocity, radius, and core peak velocity.
  *
- * **Lo que ve el piloto es el núcleo, no la media sobre la sección.** Con
- * `w* = 2.56 m/s` y `zi = 1401 m` —el caso medio de la tabla 1 de Allen— a
- * media capa la media es 0.91 m/s y el núcleo 2.09 m/s. Medir la altura crítica
- * contra la media declararía involable un día perfectamente normal.
+ * **Pilots experience the core updraft, not the cross-sectional average.** With
+ * `w* = 2.56 m/s` and `zi = 1401 m` — the median case in Allen's Table 1 — at
+ * mid-boundary layer the mean velocity is 0.91 m/s while the core is 2.09 m/s.
+ * Evaluating critical height against the mean would declare perfectly soarable days
+ * unsoarable.
  *
- * El máximo del núcleo sale **entre 0.92 y 1.12 · w\*** para `zi` de 800 a
- * 3500 m, decreciendo al crecer `zi` porque las capas profundas dan térmicas
- * más anchas y con el núcleo relativamente menos marcado. Es decir,
- * `max(w_peak) ≈ w*`, lo que reconcilia a Allen con DrJack: este último trata
- * `W*` directamente como la ascendencia de la que hay que restar el régimen de
- * caída del planeador. Las dos referencias, que parecían usar convenciones
- * distintas, describen lo mismo.
+ * Peak core strength ranges **between 0.92 and 1.12 · w\*** for `zi` from 800
+ * to 3500 m, decreasing with deeper layers as wider thermals develop less
+ * pronounced velocity peaks. That is, `max(w_peak) ≈ w*`, which reconciles
+ * Allen with DrJack (who treats `W*` directly as the lift from which glider sink
+ * is subtracted). The two sources describe the identical physical phenomenon.
  */
 
 import { m, mps } from "../units/branded.js";
 import type { MPerS, Metres } from "../units/branded.js";
 
-/** Altura relativa a la que la velocidad media se anula: 1/1.1. */
+/** Relative altitude where mean velocity drops to zero: 1/1.1. */
 export const ZERO_CROSSING_RATIO = 1 / 1.1;
 
-/** Radio exterior mínimo, en metros (Allen ec. 12). */
+/** Minimum outer radius in metres (Allen eq. 12). */
 export const MIN_OUTER_RADIUS_M = 10;
 
 export interface ProfilePoint {
@@ -32,13 +31,13 @@ export interface ProfilePoint {
 }
 
 /**
- * Velocidad media de ascenso dentro de la térmica.
+ * Mean updraft velocity across the thermal cross-section.
  *
  *     w̄(z) = w* · (z/zi)^(1/3) · (1 − 1.1·z/zi)
  *
- * Máximo 0.4577·w* en z/zi = 0.2273; negativa por encima de z/zi = 0.9091.
+ * Maximum 0.4577·w* at z/zi = 0.2273; negative above z/zi = 0.9091.
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 11, tomada de
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 11, adapted from
  *         Lenschow & Stephens (1980).
  */
 export function updraftMeanAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS {
@@ -48,11 +47,11 @@ export function updraftMeanAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MP
 }
 
 /**
- * Radio exterior de la térmica.
+ * Thermal outer radius.
  *
  *     r2 = max( 10, 0.102·(z/zi)^(1/3)·(1 − 0.25·z/zi)·zi )
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 12, de Lenschow (1980).
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 12, from Lenschow (1980).
  */
 export function updraftOuterRadius(zAglM: Metres, ziAglM: Metres): Metres {
   if (ziAglM <= 0 || zAglM < 0) return m(MIN_OUTER_RADIUS_M);
@@ -61,23 +60,23 @@ export function updraftOuterRadius(zAglM: Metres, ziAglM: Metres): Metres {
 }
 
 /**
- * Cociente entre radio interior y exterior del trapecio revuelto.
+ * Ratio between inner and outer radius of the inverted trapezoid thermal model.
  *
- *     r1/r2 = 0.0011·r2 + 0.14   si r2 < 600 m;  0.8 en otro caso
+ *     r1/r2 = 0.0011·r2 + 0.14   if r2 < 600 m;  0.8 otherwise
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 13 (ajuste a Konovalov).
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 13 (fit to Konovalov).
  */
 export function innerRadiusRatio(outerRadiusM: Metres): number {
   return outerRadiusM < 600 ? 0.0011 * outerRadiusM + 0.14 : 0.8;
 }
 
 /**
- * Velocidad en el núcleo de la térmica, a partir de la media y de la geometría
- * del trapecio revuelto.
+ * Peak core updraft velocity derived from cross-sectional mean and inverted
+ * trapezoid geometry.
  *
  *     w_peak = 3·w̄·(r2³ − r2²·r1) / (r2³ − r1³) = 3·w̄·(1 − ρ)/(1 − ρ³)
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 14-15.
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 14-15.
  */
 export function updraftPeakAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS {
   const mean = updraftMeanAt(wStarMs, zAglM, ziAglM);
@@ -87,14 +86,14 @@ export function updraftPeakAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MP
 
 export interface ProfileOptions {
   readonly stepM?: Metres;
-  /** Fracción de `zi` hasta la que se muestrea. Por defecto 1.0. */
+  /** Fraction of `zi` sampled. Defaults to 1.0. */
   readonly topFrac?: number;
 }
 
 /**
- * Perfil muestreado, para gráfica y para búsquedas numéricas.
+ * Sampled vertical thermal profile for plotting and numerical searches.
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 11-15.
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 11-15.
  */
 export function updraftProfile(
   wStarMs: MPerS,

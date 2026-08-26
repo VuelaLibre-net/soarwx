@@ -1,8 +1,7 @@
 /**
- * Cliente HTTP. **El único punto de la librería que toca la red.**
+ * HTTP client. **The single module in the library performing network access.**
  *
- * `fetch` se inyecta: así las pruebas no tocan la red y el mismo código sirve
- * en navegador y en Node.
+ * Supports dependency injection for `fetch` to enable mock testing and cross-platform compatibility.
  */
 
 import { err, ok } from "../types/result.js";
@@ -22,7 +21,7 @@ export type FetchLike = (
 ) => Promise<{ ok: boolean; status: number; text: () => Promise<string> }>;
 
 export interface OpenMeteoOptions {
-  /** Inyectable: pruebas sin red, y el mismo código en navegador y en Node. */
+  /** Injected fetch function for offline testing and cross-environment support. */
   readonly fetch?: FetchLike;
   readonly models?: readonly OpenMeteoModel[];
   readonly baseUrl?: string;
@@ -35,26 +34,21 @@ export interface OpenMeteoOptions {
 
 export const DEFAULT_TIMEOUT_MS = 10_000;
 export const DEFAULT_RETRIES = 2;
-/** Reintentos solo para estos códigos. Un 400 es error de programación. */
+/** Retryable HTTP status codes. 400 Bad Request indicates programming error and is not retried. */
 export const RETRYABLE_STATUS = [429, 500, 502, 503, 504] as const;
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Lanza una petición con reintentos y caché.
+ * Dispatches an HTTP request with caching, exponential backoff, and jitter.
  *
- * **Un HTTP 400 no se reintenta.** Significa que se pidió una variable con un
- * nombre que no existe, y eso no mejora insistiendo: es un error del código.
- *
- * @source §6.4 de docs/OPEN_METEO_INTEGRATION.md.
+ * @source §6.4 of docs/OPEN_METEO_INTEGRATION.md.
  */
 export async function sendRequest(
   request: HttpRequest,
   options: OpenMeteoOptions = {},
 ): Promise<Result<OpenMeteoResponse>> {
-  // `fetch` es global en Node 22 y en todo navegador vigente. Se inyecta para
-  // poder probar sin red, no porque pueda faltar.
   const doFetch: FetchLike = options.fetch ?? globalThis.fetch;
 
   const cache = options.cache ?? noopCache();
@@ -122,7 +116,7 @@ function isRetryable(status: number): boolean {
   return (RETRYABLE_STATUS as readonly number[]).includes(status);
 }
 
-/** Espera exponencial con jitter. */
+/** Exponential backoff delay with random jitter. */
 function backoffMs(attempt: number): number {
   return 250 * Math.pow(2, attempt) * (0.75 + Math.random() * 0.5);
 }
@@ -133,7 +127,7 @@ function httpError(status: number, text: string): Result<OpenMeteoResponse> {
     const parsed = JSON.parse(text) as Partial<OpenMeteoError>;
     if (typeof parsed.reason === "string") reason = parsed.reason;
   } catch {
-    // El cuerpo no era JSON; se conserva el texto recortado.
+    // Response body was not JSON; truncated string retained.
   }
   return err("FETCH_FAILED", `HTTP ${String(status)}`, { status, reason });
 }
@@ -157,7 +151,7 @@ function parseBody(text: string): Result<OpenMeteoResponse> {
   return ok(parsed as OpenMeteoResponse);
 }
 
-/** La caché no sobrevive al ciclo del modelo, y como mucho dura una hora. */
+/** Cache TTL matched to model update cycle, capped at 1 hour. */
 function ttlSecondsFor(request: HttpRequest): number {
   const model = request.body.get("models");
   const capabilities =
@@ -166,7 +160,7 @@ function ttlSecondsFor(request: HttpRequest): number {
   return hours * 3600;
 }
 
-/** Pide la previsión de un modelo y valida el eco y las unidades. */
+/** Fetches model forecast and validates request echo and returned units. */
 export async function fetchForecast(
   site: Site,
   options: ForecastRequestOptions,

@@ -12,7 +12,7 @@ const ruleTester = new RuleTester();
 ruleTester.run("unit-suffix", rule, {
   valid: [
     {
-      name: "sufijos de unidad reconocidos",
+      name: "recognised unit suffixes",
       code: `
         export interface Level {
           tempK: number;
@@ -25,61 +25,61 @@ ruleTester.run("unit-suffix", rule, {
       `,
     },
     {
-      name: "tipo marcado, no number desnudo",
+      name: "branded type, not bare number",
       code: `
         type Kelvin = number & { __brand: "K" };
         export interface S { temperature: Kelvin; }
       `,
     },
     {
-      name: "nombres adimensionales de la lista",
+      name: "allowlisted dimensionless names",
       code: `export interface Factor { score: number; weight: number; }`,
     },
     {
-      name: "contadores adimensionales",
+      name: "dimensionless counters",
       code: `export interface Opts { maxIterations: number; iterations: number; }`,
     },
     {
-      name: "sufijos adimensionales genéricos",
+      name: "generic dimensionless suffixes",
       code: `export interface Q { pressureLevelsUsed: number; bowenRatio: number; kIndex: number; }`,
     },
     {
-      name: "interfaz no exportada",
+      name: "non-exported interface",
       code: `interface Internal { temp: number; }`,
     },
     {
-      name: "propiedad no numérica",
+      name: "non-numeric property",
       code: `export interface S { name: string; blue: boolean; }`,
     },
     {
-      name: "AGL y MSL distinguidos",
+      name: "AGL and MSL distinguished",
       code: `export interface C { ceilingAglM: number; ceilingMslM: number; }`,
     },
   ],
   invalid: [
     {
-      name: "altura sin sufijo",
+      name: "height without suffix",
       code: `export interface C { altitude: number; }`,
-      // `data` no se afirma: el mensaje interpola la lista completa de sufijos.
+      // `data` is not asserted: message interpolates full suffix list.
       errors: [{ messageId: "missing", column: 22 }],
     },
     {
-      name: "temperatura sin sufijo",
+      name: "temperature without suffix",
       code: `export interface S { temp: number; }`,
       errors: [{ messageId: "missing" }],
     },
     {
-      name: "unión con number tampoco escapa",
+      name: "union with number does not escape",
       code: `export interface S { ceiling: number | null; }`,
       errors: [{ messageId: "missing" }],
     },
     {
-      name: "type alias exportado también se inspecciona",
+      name: "exported type alias is also checked",
       code: `export type S = { windSpeed: number };`,
       errors: [{ messageId: "missing" }],
     },
     {
-      name: "varias propiedades, varios errores",
+      name: "multiple properties, multiple errors",
       code: `export interface S { depth: number; width: number; heightM: number; }`,
       errors: [{ messageId: "missing" }, { messageId: "missing" }],
     },

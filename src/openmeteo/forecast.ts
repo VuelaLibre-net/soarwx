@@ -1,9 +1,7 @@
 /**
- * Punto de entrada de alto nivel: de emplazamiento a día calculado.
+ * High-level forecast entry point: site coordinates to computed soaring day.
  *
- * Los pasos 1 a 12 de `docs/OPEN_METEO_INTEGRATION.md` §6.1 viven aquí; el 13
- * es núcleo puro (`computeDay`) y el 14 vuelve aquí porque solo este módulo
- * sabe cuántos modelos hubo.
+ * Implements forecast integration pipeline steps from `docs/OPEN_METEO_INTEGRATION.md` §6.1.
  */
 
 import { ok, err } from "../types/result.js";
@@ -32,22 +30,20 @@ export interface ModelDay {
 }
 
 export interface MultiModelResult {
-  /** Día del modelo mejor clasificado que respondió. */
+  /** Day forecast from highest-ranked responding model. */
   readonly day: SoaringDay;
   readonly perModel: readonly ModelDay[];
-  /** Modelos que fallaron, con su motivo. */
+  /** Models that failed, with failure error codes. */
   readonly failed: readonly { model: OpenMeteoModel; reason: string }[];
 }
 
 /**
- * Día de vuelo para un emplazamiento y una fecha local.
+ * Fetches and computes soaring day forecast for site and date across ensemble models.
  *
- * Con varios modelos se consultan en paralelo y se calcula la confianza por
- * dispersión. Si cae uno, el día sale con los demás y el caído se anota; si
- * caen todos, es `FETCH_FAILED`. **Nunca se devuelve un día parcial haciéndolo
- * pasar por completo.**
+ * Parallel queries are executed across models to derive consensus confidence.
+ * If all queried models fail, returns `FETCH_FAILED`.
  *
- * @source docs/OPEN_METEO_INTEGRATION.md §6.1 y §6.4.
+ * @source docs/OPEN_METEO_INTEGRATION.md §6.1 and §6.4.
  */
 export async function fetchSoaringDay(
   site: Site,

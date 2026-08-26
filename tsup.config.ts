@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-/** Un punto de entrada por subruta del mapa `exports` de package.json. */
+/** One entry point per subpath in the package.json `exports` map. */
 export default defineConfig({
   entry: [
     "src/index.ts",

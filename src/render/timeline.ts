@@ -1,24 +1,7 @@
 /**
- * Timeline diaria: la capa convectiva a lo largo del día.
+ * Daily soaring timeline rendering: convective layer evolution across hours.
  *
- * Es un gráfico de áreas, no de barras. Una barra por hora dice a qué altura
- * llega cada hora por separado; lo que un piloto necesita ver es la **forma**
- * del día —cuándo arranca, dónde está la meseta, con qué pendiente muere—, y
- * eso lo dibuja una envolvente continua. Es también como lo publican RASP y
- * Skysight, que es con lo que se va a contrastar.
- *
- * Tres superficies apiladas, de abajo arriba:
- *
- * 1. El techo utilizable, relleno sólido: la banda en la que el planeador
- *    sube de verdad.
- * 2. De ahí al tope de térmica, relleno tenue: ahí todavía sube aire, pero ya
- *    no compensa la caída en espiral. Verlas separadas es lo que evita leer un
- *    número como si fuera el otro.
- * 3. La base de los cumulus, con su línea, cuando el día no es azul.
- *
- * Encima, una tira de flechas con el viento en el tope de la térmica, que es
- * el que decide la deriva mientras se sube. Debajo, el índice hora a hora, que
- * es la información que llevaban las barras y que si no se perdería.
+ * Implements continuous area chart visualization for thermal ceiling, thermal top, and cloud base.
  */
 
 import type { SoaringDay, SoaringHour } from "../report/types.js";
@@ -29,16 +12,16 @@ import { document, element, legend, polyline, round, text } from "./svg.js";
 
 const MARGIN = { top: 46, right: 12, bottom: 42, left: 46 } as const;
 
-/** Alto de la tira de flechas, sobre el área de dibujo. */
+/** Height of upper wind strip in pixels. */
 const WIND_STRIP_PX = 18;
 
-/** Alto de la tira del índice, bajo el área de dibujo. */
+/** Height of bottom score index strip in pixels. */
 const LEVEL_STRIP_PX = 8;
 
-/** Opacidad del fondo de una ventana volable. Por debajo de esto no se ve. */
+/** Soaring window background fill opacity. */
 export const WINDOW_FILL_OPACITY = 0.22;
 
-/** Opacidad de la banda del índice: a más nivel, más sólida. */
+/** Score level bar opacity mapping. */
 export const LEVEL_OPACITY: Readonly<Record<1 | 2 | 3 | 4 | 5, number>> = {
   1: 0.15,
   2: 0.3,
@@ -47,56 +30,80 @@ export const LEVEL_OPACITY: Readonly<Record<1 | 2 | 3 | 4 | 5, number>> = {
   5: 1,
 };
 
-/** Relleno de la banda utilizable. Sólido, es la que se lee primero. */
+/** Usable thermal layer fill opacity. */
 const USABLE_FILL_OPACITY = 0.45;
 
-/** Relleno de la banda que sube pero no compensa. Tenue a propósito. */
+/** Residual convective layer fill opacity. */
 const RESIDUAL_FILL_OPACITY = 0.16;
 
 type Point = readonly [number, number];
 
 /**
- * Curva cúbica monotónica que pasa por todos los puntos sin rebasar máximos ni
- * mínimos locales. Así una hora con poco techo no inventa altura al suavizar.
+ * Monotone cubic interpolation commands preserving local extrema.
  */
 function smoothCurveCommands(points: readonly Point[]): string {
   if (points.length < 2) return "";
 
-  const slopes = points.slice(0, -1).map(([x, y], index) => {
-    const [nextX, nextY] = points[index + 1]!;
-    return (nextY - y) / (nextX - x);
-  });
-  const tangents = slopes.map((slope, index) => {
-    if (index === 0 || index === slopes.length - 1) return slope;
+  const slopes: number[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    if (current && next) {
+      slopes.push((next[1] - current[1]) / (next[0] - current[0]));
+    }
+  }
 
-    const previous = slopes[index - 1]!;
-    if (previous * slope <= 0) return 0;
+  const tangents: number[] = [];
+  for (let i = 0; i < slopes.length; i++) {
+    const slope = slopes[i] ?? 0;
+    if (i === 0 || i === slopes.length - 1) {
+      tangents.push(slope);
+      continue;
+    }
 
-    const previousWidth = points[index]![0] - points[index - 1]![0];
-    const nextWidth = points[index + 1]![0] - points[index]![0];
+    const previous = slopes[i - 1] ?? 0;
+    if (previous * slope <= 0) {
+      tangents.push(0);
+      continue;
+    }
+
+    const prevPt = points[i - 1];
+    const currPt = points[i];
+    const nextPt = points[i + 1];
+    const previousWidth = currPt && prevPt ? currPt[0] - prevPt[0] : 0;
+    const nextWidth = nextPt && currPt ? nextPt[0] - currPt[0] : 0;
     const previousWeight = 2 * nextWidth + previousWidth;
     const nextWeight = nextWidth + 2 * previousWidth;
-    return (
-      (previousWeight + nextWeight) / (previousWeight / previous + nextWeight / slope)
+    tangents.push(
+      (previousWeight + nextWeight) / (previousWeight / previous + nextWeight / slope),
     );
-  });
+  }
 
-  return points
-    .slice(0, -1)
-    .map(([x, y], index) => {
-      const [nextX, nextY] = points[index + 1]!;
-      const width = nextX - x;
-      return `C ${round(x + width / 3)} ${round(y + ((tangents[index] ?? 0) * width) / 3)} ${round(nextX - width / 3)} ${round(nextY - ((tangents[index + 1] ?? 0) * width) / 3)} ${round(nextX)} ${round(nextY)}`;
-    })
-    .join(" ");
+  const commands: string[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    if (!current || !next) continue;
+    const [x, y] = current;
+    const [nextX, nextY] = next;
+    const width = nextX - x;
+    const tCurrent = tangents[i] ?? 0;
+    const tNext = tangents[i + 1] ?? 0;
+    commands.push(
+      `C ${round(x + width / 3)} ${round(y + (tCurrent * width) / 3)} ${round(nextX - width / 3)} ${round(nextY - (tNext * width) / 3)} ${round(nextX)} ${round(nextY)}`,
+    );
+  }
+
+  return commands.join(" ");
 }
 
 function smoothLine(
   points: readonly Point[],
   attrs: Readonly<Record<string, string | number>>,
 ): string {
-  if (points.length === 0) return "";
-  const [x, y] = points[0]!;
+  const first = points[0];
+  if (!first) return "";
+  const [x, y] = first;
   return element("path", {
     ...attrs,
     fill: "none",
@@ -109,10 +116,12 @@ function smoothArea(
   lower: readonly Point[],
   attrs: Readonly<Record<string, string | number>>,
 ): string {
-  if (upper.length === 0 || lower.length === 0) return "";
-  const [startX, startY] = upper[0]!;
+  const start = upper[0];
   const reversedLower = [...lower].reverse();
-  const [endX, endY] = reversedLower[0]!;
+  const end = reversedLower[0];
+  if (!start || !end) return "";
+  const [startX, startY] = start;
+  const [endX, endY] = end;
   return element("path", {
     ...attrs,
     d: `M ${round(startX)} ${round(startY)} ${smoothCurveCommands(upper)} L ${round(endX)} ${round(endY)} ${smoothCurveCommands(reversedLower)} Z`,
@@ -125,8 +134,11 @@ function smoothAreaToBaseline(
   attrs: Readonly<Record<string, string | number>>,
 ): string {
   if (points.length < 2) return "";
-  const [startX, startY] = points[0]!;
-  const [endX] = points[points.length - 1]!;
+  const start = points[0];
+  const end = points[points.length - 1];
+  if (!start || !end) return "";
+  const [startX, startY] = start;
+  const [endX] = end;
   return element("path", {
     ...attrs,
     d: `M ${round(startX)} ${round(startY)} ${smoothCurveCommands(points)} L ${round(endX)} ${round(baseline)} L ${round(startX)} ${round(baseline)} Z`,
@@ -134,26 +146,22 @@ function smoothAreaToBaseline(
 }
 
 export interface TimelineOptions extends RenderOptions {
-  /** Solo se dibujan las horas dentro de esta franja local. */
+  /** Local hour range filter bounds. */
   readonly fromLocalHours?: number;
   readonly toLocalHours?: number;
-  /**
-   * Tira de flechas con el viento en el tope de la térmica. Activada por
-   * defecto: sin ella el gráfico dice a qué altura se sube y calla hacia dónde
-   * lleva la subida.
-   */
+  /** Enable wind direction strip above chart. Defaults to true. */
   readonly wind?: boolean;
 }
 
-/** Base de cumulus solo cuando la hay: en día azul no se dibuja nada. */
+/** Returns cumulus base altitude if present (null on blue thermal days). */
 function cumulusBaseOf(hour: SoaringHour): number | null {
   return hour.cloud.blue ? null : hour.cloud.baseAglM;
 }
 
 /**
- * Evolución de la capa convectiva a lo largo del día.
+ * Renders daily soaring timeline visualization.
  *
- * @source R-14.2 de docs/REQUIREMENTS.md.
+ * @source Requirement R-14.2 from docs/REQUIREMENTS.md.
  */
 export function renderDayTimeline(
   day: SoaringDay,
@@ -176,8 +184,6 @@ export function renderDayTimeline(
     return local >= fromLocalHours && local <= toLocalHours;
   });
 
-  // La escala la manda el tope de térmica y no el techo: si la mandara el
-  // techo, la banda residual saldría siempre recortada por arriba.
   const maxHeight = Math.max(
     3000,
     ...hours.map((hour) => hour.thermal.thermalTopAglM),
@@ -185,13 +191,12 @@ export function renderDayTimeline(
   );
 
   const slot = hours.length > 0 ? plotWidth / hours.length : plotWidth;
-  /** Centro de la hora: la medida es del instante, no del intervalo. */
   const xOf = (index: number): number => MARGIN.left + (index + 0.5) * slot;
   const yOf = (aglM: number): number => plotBottom - (aglM / maxHeight) * plotHeight;
 
   const parts: string[] = [];
 
-  // Rejilla de alturas.
+  // Altitude grid lines.
   const step = maxHeight > 2500 ? 1000 : 500;
   for (let z = 0; z <= maxHeight; z += step) {
     const y = yOf(z);
@@ -213,7 +218,7 @@ export function renderDayTimeline(
     );
   }
 
-  // Ventanas volables, de fondo.
+  // Soaring windows background.
   for (const window of day.windows) {
     const start = hours.findIndex((hour) => hour.timeUtc === window.startUtc);
     const end = hours.findIndex((hour) => hour.timeUtc === window.endUtc);
@@ -229,7 +234,6 @@ export function renderDayTimeline(
         fill: palette.window,
         opacity: WINDOW_FILL_OPACITY,
       }),
-      // Un borde superior: el relleno solo, sobre fondo oscuro, no se ve.
       polyline(
         [
           [left, marginTop],
@@ -248,13 +252,11 @@ export function renderDayTimeline(
       (hour, index) => [xOf(index), yOf(hour.thermal.thermalTopAglM)] as const,
     );
 
-    // Un cero no es un techo al nivel del suelo: significa que no existe una
-    // capa utilizable. Se parte en tramos para que línea y relleno no caigan al
-    // eje entre horas sin vuelo.
     const ceilingRuns: Point[][] = [];
     let ceilingRun: Point[] = [];
     hours.forEach((hour, index) => {
-      if (hour.ceiling.aglM > 0) ceilingRun.push(ceilingPoints[index]!);
+      const pt = ceilingPoints[index];
+      if (pt && hour.ceiling.aglM > 0) ceilingRun.push(pt);
       else if (ceilingRun.length > 0) {
         ceilingRuns.push(ceilingRun);
         ceilingRun = [];
@@ -262,9 +264,6 @@ export function renderDayTimeline(
     });
     if (ceilingRun.length > 0) ceilingRuns.push(ceilingRun);
 
-    // Banda residual primero, para que la utilizable se dibuje encima y su
-    // borde común quede nítido. Si el techo es cero, esta franja conserva el
-    // tope térmico hasta el eje: aún puede haber ascendencia, pero no vuelo.
     parts.push(
       smoothArea(topPoints, ceilingPoints, {
         fill: palette.ceiling,
@@ -287,8 +286,9 @@ export function renderDayTimeline(
         }),
       );
 
-      if (run.length === 1) {
-        const [x, y] = run[0]!;
+      const first = run[0];
+      if (run.length === 1 && first) {
+        const [x, y] = first;
         parts.push(
           element("circle", { cx: round(x), cy: round(y), r: 2, fill: palette.ceiling }),
         );
@@ -303,7 +303,7 @@ export function renderDayTimeline(
       }
     }
 
-    // Base de cumulus: solo el tramo con nube, y partido si el día alterna.
+    // Cloud base line.
     let run: (readonly [number, number])[] = [];
     const flushRun = (): void => {
       if (run.length > 1) {
@@ -326,14 +326,11 @@ export function renderDayTimeline(
     flushRun();
   }
 
-  // Tira de viento en el tope de la térmica.
+  // Upper wind direction strip.
   if (showWind && hours.length > 0) {
     const y = MARGIN.top + WIND_STRIP_PX / 2;
     parts.push(
-      // Solo «viento»: el margen izquierdo son 46 px y «viento en tope» se
-      // salía del lienzo por la izquierda. De qué viento se trata lo dice el
-      // pie de figura, que es donde hay sitio para decirlo entero.
-      text("viento", {
+      text("wind", {
         x: MARGIN.left - 6,
         y: y + 3,
         fill: palette.label,
@@ -342,8 +339,6 @@ export function renderDayTimeline(
       }),
     );
     hours.forEach((hour, index) => {
-      // Sin térmica no hay tope, y una flecha ahí apuntaría a un viento que no
-      // sopla en ninguna altura que se vaya a volar.
       if (hour.thermal.thermalTopAglM <= 0) return;
       parts.push(
         windArrow(
@@ -357,7 +352,7 @@ export function renderDayTimeline(
     });
   }
 
-  // Índice hora a hora, bajo el eje: es lo que decían las barras.
+  // Hourly score strip.
   hours.forEach((hour, index) => {
     parts.push(
       element("rect", {
@@ -384,7 +379,7 @@ export function renderDayTimeline(
     }
   });
 
-  // Mejor momento.
+  // Best soaring hour vertical line.
   const bestIndex = hours.findIndex((hour) => hour.timeUtc === day.best?.timeUtc);
   if (bestIndex >= 0) {
     parts.push(
@@ -410,14 +405,12 @@ export function renderDayTimeline(
       stroke: palette.axis,
       "stroke-width": 1,
     }),
-    // En dos filas: las cinco entradas en una sola se salen por la derecha del
-    // lienzo de 640, y una leyenda cortada es peor que no tenerla.
     legend(
       [
-        { label: "techo utilizable (m AGL)", colour: palette.ceiling },
-        { label: "tope de térmica", colour: palette.core },
+        { label: "usable ceiling (m AGL)", colour: palette.ceiling },
+        { label: "thermal top", colour: palette.core },
         ...(hasCumulus
-          ? [{ label: "base de cumulus", colour: palette.cloud, dashed: true }]
+          ? [{ label: "cumulus base", colour: palette.cloud, dashed: true }]
           : []),
       ],
       MARGIN.left,
@@ -427,9 +420,9 @@ export function renderDayTimeline(
     ),
     legend(
       [
-        { label: "ventana volable", colour: palette.window },
-        { label: "mejor momento", colour: palette.accent, dashed: true },
-        { label: "índice de la hora", colour: palette.accent },
+        { label: "soaring window", colour: palette.window },
+        { label: "best hour", colour: palette.accent, dashed: true },
+        { label: "hourly score", colour: palette.accent },
       ],
       MARGIN.left,
       28,
@@ -444,10 +437,10 @@ export function renderDayTimeline(
     {
       widthPx,
       heightPx,
-      title: options.title ?? "Evolución del día",
+      title: options.title ?? "Day timeline",
       desc:
         options.desc ??
-        `Capa convectiva por horas en ${day.site.name ?? "el emplazamiento"} el ${day.dateLocal}. Techo utilizable máximo ${round(maxCeiling, 0)} m sobre el terreno, tope de térmica máximo ${round(maxHeight, 0)} m.`,
+        `Hourly convective layer at ${day.site.name ?? "the site"} on ${day.dateLocal}. Peak usable ceiling ${round(maxCeiling, 0)} m AGL, peak thermal top ${round(maxHeight, 0)} m.`,
       ...(options.className === undefined ? {} : { className: options.className }),
     },
     parts.join(""),

@@ -1,8 +1,7 @@
 /**
- * Ensamblado del día: de datos horarios a informe.
+ * Daily soaring report assembly: transforms hourly meteorological observations into report structures.
  *
- * **Puro y sin red.** Es la costura donde se prueban días reales desde
- * ficheros: todo lo que hay por encima se ejercita sin tocar la red.
+ * Fully pure and offline; accepts normalized domain soundings without network access.
  */
 
 import { m, mps } from "../units/branded.js";
@@ -50,11 +49,11 @@ import type {
   SoaringHour,
 } from "./types.js";
 
-/** Cobertura a partir de la cual se considera cielo roto (BKN). */
+/** Cloud cover fraction threshold for broken (BKN) sky conditions. */
 export const BROKEN_COVER_FRAC = 0.625;
-/** Cobertura total a partir de la cual se considera cubierto (OVC). */
+/** Total cloud cover fraction threshold for overcast (OVC) sky conditions. */
 export const OVERCAST_COVER_FRAC = 0.875;
-/** Altura sobre el nivel del mar que separa nubosidad baja de media. */
+/** Altitude threshold (m MSL) separating low cloud cover from mid-level cloud cover. */
 export const LOW_MID_CUTOFF_MSL_M = 3000;
 
 export interface ComputeDayInput {
@@ -69,7 +68,7 @@ export interface ComputeDayInput {
 }
 
 /**
- * Calcula el día completo. No accede a la red.
+ * Computes daily soaring report across all daylight hours without network access.
  *
  * @source docs/SPEC.md §12.
  */
@@ -286,7 +285,7 @@ function computeHour(
   };
 }
 
-/** El modelo manda; el cálculo propio es respaldo y se declara. */
+/** Model lifted index takes precedence; computed sounding index acts as documented fallback. */
 function resolveLiftedIndex(
   sounding: Sounding,
   observation: HourlyObservation,
@@ -303,15 +302,10 @@ function resolveLiftedIndex(
 }
 
 /**
- * Cielo cerrado.
+ * Evaluates whether sky conditions are overcast.
  *
- * **La nubosidad baja cuenta siempre.** Por definición está por debajo de 3 km,
- * es decir entre el sol y el suelo, y corta la convección venga de donde venga
- * la base que calculemos nosotros. El predecesor elegía entre capa baja y media
- * según dónde cayera la base calculada, de modo que un 90 % de nubosidad baja
- * declarado por el modelo no vetaba nada si nuestra base salía alta.
- *
- * La capa media solo se mira cuando la base calculada cae en su banda.
+ * Low cloud cover is unconditionally evaluated since it lies beneath 3 km MSL.
+ * Mid-level cloud cover is evaluated when convective cloud base reaches the mid-level layer.
  */
 function isOvercast(sounding: Sounding, cloudBaseAglM: Metres | null): boolean {
   const surface = sounding.surface;

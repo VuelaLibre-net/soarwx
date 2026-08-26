@@ -1,5 +1,5 @@
 /**
- * Temperatura potencial y correcciones por humedad.
+ * Potential temperature and moisture corrections.
  */
 
 import { K } from "../units/branded.js";
@@ -7,45 +7,45 @@ import type { Kelvin, KgPerKg, Pascal } from "../units/branded.js";
 import { KAPPA, P0 } from "../units/constants.js";
 
 /**
- * Temperatura potencial.
+ * Potential temperature.
  *
  *     θ = T · (p0/p)^(Rd/cp)
  *
- * Se conserva en un ascenso adiabático seco. `w*` debe usar θ, no T: a 900 hPa
- * la diferencia es de ~9 K (Allen ec. 10).
+ * Conserved in dry adiabatic ascent. `w*` must use θ rather than T: at 900 hPa
+ * the difference is ~9 K (Allen eq. 10).
  *
- * @source Poisson; Wallace & Hobbs, Atmospheric Science, ec. 3.54.
+ * @source Poisson; Wallace & Hobbs, Atmospheric Science, eq. 3.54.
  */
 export function potentialTemperature(tempK: Kelvin, pressurePa: Pascal): Kelvin {
   return K(tempK * Math.pow(P0 / pressurePa, KAPPA));
 }
 
 /**
- * Inversa de {@link potentialTemperature}: temperatura a una presión dada.
+ * Inverse of {@link potentialTemperature}: temperature at a given pressure.
  *
- * @source Poisson; Wallace & Hobbs, Atmospheric Science, ec. 3.54.
+ * @source Poisson; Wallace & Hobbs, Atmospheric Science, eq. 3.54.
  */
 export function temperatureFromPotential(thetaK: Kelvin, pressurePa: Pascal): Kelvin {
   return K(thetaK * Math.pow(pressurePa / P0, KAPPA));
 }
 
 /**
- * Temperatura virtual.
+ * Virtual temperature.
  *
  *     Tv = T · (1 + 0.61·w)
  *
- * La flotabilidad depende de Tv, no de T: el aire húmedo es menos denso.
+ * Buoyancy depends on Tv, not T: moist air is less dense.
  *
- * @source Allen (2006), AIAA 2006-1510, ec. 5 (misma corrección 0.61).
+ * @source Allen (2006), AIAA 2006-1510, eq. 5 (same 0.61 moisture correction).
  */
 export function virtualTemperature(tempK: Kelvin, mixingRatioKgKg: KgPerKg): Kelvin {
   return K(tempK * (1 + 0.61 * mixingRatioKgKg));
 }
 
 /**
- * Temperatura potencial virtual.
+ * Virtual potential temperature.
  *
- * @source Stull, Practical Meteorology, cap. 3.
+ * @source Stull, Practical Meteorology, ch. 3.
  */
 export function virtualPotentialTemperature(
   tempK: Kelvin,

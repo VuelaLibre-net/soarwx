@@ -28,9 +28,9 @@ import {
   toSoundingInput,
 } from "../helpers/fixture.js";
 
-describe("temperatura de disparo", () => {
+describe("trigger temperature", () => {
   // B-06
-  it("por debajo de ella no hay condensación; por encima sí", () => {
+  it("no condensation occurs below trigger temperature; occurs above", () => {
     const sounding = syntheticSounding(28, 2500, 3, 8);
     const r = triggerTemperature(sounding);
     expect(r.ok).toBe(true);
@@ -40,7 +40,7 @@ describe("temperatura de disparo", () => {
     expect(r.value.cclMslM).toBeGreaterThan(r.value.cclAglM - 1);
   });
 
-  it("con aire más húmedo, el disparo baja y el CCL también", () => {
+  it("with more humid air trigger temperature and CCL both decrease", () => {
     const dry = triggerTemperature(syntheticSounding(28, 2500, 3, 8));
     const humid = triggerTemperature(syntheticSounding(28, 2500, 3, 14));
     expect(dry.ok && humid.ok).toBe(true);
@@ -49,7 +49,7 @@ describe("temperatura de disparo", () => {
     expect(humid.value.cclAglM).toBeLessThan(dry.value.cclAglM);
   });
 
-  it("en Fuentemilanos a mediodía el disparo supera la máxima: día azul", () => {
+  it("at Fuentemilanos midday trigger exceeds daily max: blue thermal day", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 14)));
     expect(built.ok).toBe(true);
@@ -58,20 +58,20 @@ describe("temperatura de disparo", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const tmax = seriesMax(fixture, "temperature_2m");
-    // Con 29 K de separación entre temperatura y rocío no se forma un cumulus.
+    // With 29 K spread between temperature and dewpoint, no cumulus can form.
     expect(kToCelsius(r.value.triggerTempK)).toBeGreaterThan(tmax);
   });
 
-  it("un aire tan seco que nunca condensa se declara, no se inventa", () => {
+  it("air so dry it never condenses returns error rather than fake value", () => {
     const r = triggerTemperature(syntheticSounding(28, 2500, 3, -40));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("OUT_OF_VALID_RANGE");
   });
 });
 
-describe("reconciliación de la altura de mezcla", () => {
+describe("mixing height reconciliation", () => {
   // B-05
-  it("sin diagnóstico del modelo el día se calcula igual", () => {
+  it("computes forecast cleanly without model BL diagnosis", () => {
     const r = reconcileMixingHeight(m(2000), null);
     expect(r.chosenAglM).toBe(2000);
     expect(r.modelAglM).toBeNull();
@@ -79,36 +79,36 @@ describe("reconciliación de la altura de mezcla", () => {
     expect(r.likelyShearDriven).toBe(false);
   });
 
-  it("el elegido es siempre el de la parcela", () => {
+  it("always chooses parcel-derived mixing height", () => {
     expect(reconcileMixingHeight(m(1500), m(4000)).chosenAglM).toBe(1500);
     expect(reconcileMixingHeight(m(2500), m(900)).chosenAglM).toBe(2500);
   });
 
-  it("marca mezcla por cizalladura cuando el modelo se dispara", () => {
+  it("flags shear-driven mixing when model height diverges strongly", () => {
     const r = reconcileMixingHeight(m(1500), m(4000));
     expect(r.divergenceFrac).toBeCloseTo(1.667, 3);
     expect(r.likelyShearDriven).toBe(true);
   });
 
-  it("no la marca con divergencias pequeñas", () => {
+  it("does not flag shear on small divergences", () => {
     const r = reconcileMixingHeight(m(3000), m(3400));
     expect(r.likelyShearDriven).toBe(false);
     expect(SHEAR_DRIVEN_DIVERGENCE_FRAC).toBe(0.5);
   });
 
-  it("acepta una tolerancia propia", () => {
+  it("accepts custom tolerance fraction", () => {
     expect(reconcileMixingHeight(m(3000), m(3400), 0.1).likelyShearDriven).toBe(true);
   });
 
-  it("una parcela nula no divide por cero", () => {
+  it("zero parcel height does not divide by zero", () => {
     const r = reconcileMixingHeight(m(0), m(3000));
     expect(r.divergenceFrac).toBeNull();
     expect(Number.isFinite(r.chosenAglM)).toBe(true);
   });
 });
 
-describe("boyancia frente a cizalladura", () => {
-  it("u* crece con el viento y con la rugosidad", () => {
+describe("buoyancy versus shear", () => {
+  it("u* increases with wind speed and surface roughness", () => {
     expect(frictionVelocity(mps(10), m(0.1))).toBeGreaterThan(
       frictionVelocity(mps(5), m(0.1)),
     );
@@ -117,11 +117,11 @@ describe("boyancia frente a cizalladura", () => {
     );
   });
 
-  it("con 5 m/s sobre cultivo, u* ronda 0.43 m/s", () => {
+  it("with 5 m/s wind over cropland u* is around 0.43 m/s", () => {
     expect(frictionVelocity(mps(5), m(0.1))).toBeCloseTo(0.434, 2);
   });
 
-  it("clasifica según los umbrales de DrJack", () => {
+  it("classifies thermal organisation by DrJack thresholds", () => {
     const weakWind = buoyancyShearRatio({
       wStarMs: mps(2.2),
       surfaceWindMs: mps(2),
@@ -139,12 +139,12 @@ describe("boyancia frente a cizalladura", () => {
     if (strongWind.ok) expect(strongWind.value.quality).toBe("broken");
   });
 
-  it("los umbrales son los publicados: 5 y 10", () => {
+  it("published thresholds are 5 and 10", () => {
     expect(BROKEN_THRESHOLD).toBe(5);
     expect(ORGANISED_THRESHOLD).toBe(10);
   });
 
-  it("expone el parámetro de Obukhov para no esconder la aproximación", () => {
+  it("exposes Obukhov parameter for transparency", () => {
     const r = buoyancyShearRatio({
       wStarMs: mps(2.4),
       surfaceWindMs: mps(4),
@@ -158,7 +158,7 @@ describe("boyancia frente a cizalladura", () => {
     );
   });
 
-  it("la relación empeora al aumentar el viento", () => {
+  it("ratio degrades with increasing surface wind", () => {
     let previous = Infinity;
     for (let wind = 1; wind <= 12; wind += 1) {
       const r = buoyancyShearRatio({
@@ -173,7 +173,7 @@ describe("boyancia frente a cizalladura", () => {
     }
   });
 
-  it("en calma la cizalladura no rompe nada", () => {
+  it("shear does not disrupt thermals under calm wind", () => {
     const r = buoyancyShearRatio({
       wStarMs: mps(2),
       surfaceWindMs: mps(0),
@@ -183,7 +183,7 @@ describe("boyancia frente a cizalladura", () => {
     if (r.ok) expect(r.value.quality).toBe("organised");
   });
 
-  it("sin convección no hay relación que calcular", () => {
+  it("returns error without convection", () => {
     const r = buoyancyShearRatio({
       wStarMs: mps(0),
       surfaceWindMs: mps(5),
@@ -194,8 +194,8 @@ describe("boyancia frente a cizalladura", () => {
   });
 });
 
-describe("perfil de aeronave", () => {
-  it("el umbral de hcrit son los 225 fpm de DrJack, iguales para todos", () => {
+describe("aircraft profile", () => {
+  it("hcrit threshold is DrJack's 225 fpm, identical across all profiles", () => {
     expect(RASP_HCRIT_THRESHOLD_MS).toBeCloseTo(fpmToMs(225), 12);
     expect(RASP_HCRIT_THRESHOLD_MS).toBeCloseTo(1.143, 3);
     for (const profile of AIRCRAFT_PROFILES) {
@@ -203,7 +203,7 @@ describe("perfil de aeronave", () => {
     }
   });
 
-  it("la caída virando sale del mínimo en recto por el factor de 40°", () => {
+  it("circling sink scales from straight-flight sink by 40° factor", () => {
     expect(BANK_40_SINK_FACTOR).toBeCloseTo(1.4915, 4);
     for (const profile of AIRCRAFT_PROFILES) {
       if (profile.minSinkMs === null) continue;
@@ -211,29 +211,28 @@ describe("perfil de aeronave", () => {
         profile.minSinkMs * BANK_40_SINK_FACTOR,
         12,
       );
-      // El aviso que motivó el cambio: ningún velero real cae tanto como el
-      // umbral de DrJack cuando se le aplica su propia polar.
+      // No real glider sinks as much as DrJack's threshold under its own polar.
       expect(profile.circlingSinkMs).toBeLessThan(RASP_HCRIT_THRESHOLD_MS);
     }
   });
 
-  it("el planeador de club por omisión es un ASK 21 a 40°", () => {
+  it("default club glider is an ASK 21 banked at 40°", () => {
     expect(GLIDER_CLUB.minSinkMs).toBe(0.65);
     expect(GLIDER_CLUB.circlingSinkMs).toBeCloseTo(0.9695, 4);
   });
 
-  it("la referencia de RASP iguala caída y umbral, y no declara polar", () => {
+  it("RASP reference equates sink with threshold and declares no polar", () => {
     expect(RASP_REFERENCE.minSinkMs).toBeNull();
     expect(RASP_REFERENCE.circlingSinkMs).toBe(RASP_HCRIT_THRESHOLD_MS);
   });
 
-  it("y el corte de viento que usa Allen en sus cálculos", () => {
+  it("applies Allen's wind cutoff across all profiles", () => {
     for (const profile of AIRCRAFT_PROFILES) {
       expect(profile.maxSurfaceWindMs).toBe(12.87);
     }
   });
 
-  it("no impone la temperatura: es solo geometría y prestaciones", () => {
+  it("does not impose temperature: pure geometry and performance", () => {
     expect(Object.keys(GLIDER_CLUB)).toEqual([
       "id",
       "minSinkMs",

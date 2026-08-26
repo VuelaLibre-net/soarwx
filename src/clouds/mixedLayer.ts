@@ -1,11 +1,8 @@
 /**
- * Promedios de la capa mezclada.
+ * Mixed layer mean properties.
  *
- * La base de los cumulus **no** sale de la parcela instantánea de dos metros,
- * sino de la razón de mezcla media de la capa mezclada. Al mediodía el aire
- * junto al suelo está más seco y más caliente que la capa que hay encima, y una
- * térmica que sale del suelo se lleva la mezcla de la capa, no el valor puntual
- * del termómetro y del higrómetro.
+ * Cumulus cloudbase is derived from the mass-weighted mean mixing ratio of the
+ * convective boundary layer rather than 2-meter surface moisture.
  */
 
 import { K, kgkg, m } from "../units/branded.js";
@@ -18,20 +15,19 @@ import { consecutivePairs } from "../types/array.js";
 import type { Sounding } from "../sounding/types.js";
 
 export interface MixedLayerResult {
-  /** Razón de mezcla media, ponderada por masa. */
+  /** Mass-weighted mean mixing ratio across mixed layer. */
   readonly meanMixingRatioKgKg: KgPerKg;
-  /** Temperatura potencial media, ponderada por masa. */
+  /** Mass-weighted mean potential temperature across mixed layer. */
   readonly meanPotentialTempK: Kelvin;
   readonly topAglM: Metres;
   readonly levelsUsed: number;
 }
 
 /**
- * Medias ponderadas por masa (por espesor en presión) desde la superficie hasta
- * el techo de la capa mezclada.
+ * Mass-weighted averages (weighted by layer pressure depth) from surface
+ * up to mixed layer top.
  *
- * @source Definición de parcela de capa mezclada; Stull, Practical Meteorology,
- *         cap. 5 y 18.
+ * @source Mixed-layer parcel definition; Stull, Practical Meteorology, ch. 5 & 18.
  */
 export function mixedLayerMean(
   sounding: Sounding,
@@ -47,7 +43,7 @@ export function mixedLayerMean(
   for (const [lower, upper] of consecutivePairs(sounding.levels)) {
     if (lower.geopotentialMslM >= topMslM) break;
 
-    // El tramo se recorta en el techo de la capa.
+    // Segment is clamped at mixed layer top.
     const fraction =
       upper.geopotentialMslM <= topMslM
         ? 1

@@ -1,4 +1,4 @@
-/** Sondeos sintéticos deterministas para probar la convección. */
+/** Deterministic synthetic atmospheric soundings for convection testing. */
 
 import { celsiusToK, hPaToPa } from "../../src/units/convert.js";
 import { deg, m, mps, wm2 } from "../../src/units/branded.js";
@@ -9,7 +9,7 @@ import type { Sounding, SurfaceState } from "../../src/sounding/types.js";
 import type { Site } from "../../src/types/site.js";
 
 export const FLAT_SITE: Site = {
-  name: "sintético",
+  name: "synthetic",
   latDeg: 40,
   lonDeg: -4,
   elevationMslM: m(0),
@@ -34,13 +34,9 @@ export function surfaceState(tempC: number, dewC: number, windMs = 3): SurfaceSt
 }
 
 /**
- * Perfil con capa mezclada hasta `capMslM` y una inversión de `capK` grados
- * por encima.
+ * Synthetic profile with mixed boundary layer up to `capMslM` and a capping inversion of `capK` degrees above.
  *
- * Las presiones se integran hidrostáticamente a partir del perfil de
- * temperatura, no se toman de una atmósfera estándar: un sondeo sintético con
- * alturas y presiones incoherentes entre sí no representa ninguna atmósfera y
- * hace que el método de la parcela dé resultados sin sentido.
+ * Pressures are hydrostatically integrated from the temperature profile.
  */
 export function cappedProfile(
   surfaceTempC: number,
@@ -51,7 +47,7 @@ export function cappedProfile(
   const heights = [
     110, 340, 560, 780, 1010, 1250, 1500, 1760, 2030, 2320, 3000, 4200, 5000, 5900,
   ];
-  // Ligeramente superadiabática, para que la parcela de superficie flote.
+  // Slightly superadiabatic so surface parcel is buoyant.
   const mixedLapse = 0.01;
   const aboveLapse = 0.006;
 
@@ -98,8 +94,7 @@ export function syntheticSounding(
 }
 
 /**
- * Sondeo pensado para onda de montaña: capa estable marcada sobre la cresta y
- * atmósfera casi neutra por encima, con viento uniforme cruzando la sierra.
+ * Mountain wave sounding: strong stable layer above ridge crest with near-neutral layer above.
  */
 export function waveSounding(
   lowerLapseKPerKm: number,

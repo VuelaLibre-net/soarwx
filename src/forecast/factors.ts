@@ -1,14 +1,9 @@
 /**
- * Factores del índice de vuelo.
+ * Soaring index factor breakdown.
  *
- * Cada factor expone su valor, su unidad, su puntuación, su peso y su banda.
- * **Un veredicto sin desglose es inaceptable** (R-10.2): el piloto tiene
- * derecho a saber por qué el día puntúa lo que puntúa.
+ * Each factor exposes its raw value, unit, score, weight, and scoring band (R-10.2).
  *
- * **La CAPE no está aquí y no puede estarlo.** Es exclusivamente un veto. El
- * predecesor la puntuaba con banda ideal 1000-2500 J/kg mientras la vetaba por
- * encima de 2500, de modo que 2400 J/kg sacaba nota máxima y estaba a 100 J/kg
- * de un veto.
+ * **CAPE is excluded from positive scoring factors** and operates strictly as a veto mechanism.
  */
 
 import type { Band } from "./bands.js";
@@ -25,14 +20,14 @@ export type FactorId =
 
 export interface Factor {
   readonly id: FactorId;
-  /** Valor crudo, en la unidad que declara `unit`. */
+  /** Raw parameter value in designated units. */
   readonly value: number;
   readonly unit: string;
-  /** Puntuación en [0, 1]. */
+  /** Normalized score in [0, 1]. */
   readonly score: number;
   readonly weight: number;
   readonly band: Band;
-  /** Un factor se considera cumplido a partir de 0.6. */
+  /** True when factor score meets or exceeds 0.6. */
   readonly ok: boolean;
 }
 
@@ -40,17 +35,17 @@ export interface FactorSpec {
   readonly unit: string;
   readonly weight: number;
   readonly band: Band;
-  /** Por qué esa banda y ese peso. */
+  /** Physical rationale for assigned band and weighting. */
   readonly rationale: string;
 }
 
 const INF = Number.POSITIVE_INFINITY;
 
 /**
- * Configuración por defecto, calibrada para planeador.
+ * Default soaring scoring factor configuration calibrated for gliders.
  *
- * @source Umbrales de Glendening (DrJack) donde existen (calidad de térmica,
- *         viento); el resto son convenciones de uso declaradas y recalibrables.
+ * @source Glendening (DrJack) thresholds where published (thermal quality, surface wind);
+ *         standard soaring conventions for remaining parameters.
  */
 export const DEFAULT_FACTORS: Readonly<Record<FactorId, FactorSpec>> = {
   climb_strength: {
@@ -58,59 +53,59 @@ export const DEFAULT_FACTORS: Readonly<Record<FactorId, FactorSpec>> = {
     weight: 2,
     band: { idealMin: 2, idealMax: INF, zeroMin: 0.4, zeroMax: INF },
     rationale:
-      "Lectura esperada de variómetro promediada sobre la banda de trabajo, con el hundimiento del velero elegido. Por debajo de 0.4 m/s no compensa virar; a partir de 2 m/s el día es de trabajo cómodo.",
+      "Expected variometer climb averaged across working band, accounting for circling sink of chosen aircraft polar. Below 0.4 m/s circling is unproductive; above 2 m/s soaring conditions are comfortable.",
   },
   usable_ceiling: {
     unit: "m AGL",
     weight: 2,
     band: { idealMin: 1800, idealMax: INF, zeroMin: 400, zeroMax: INF },
     rationale:
-      "Techo utilizable. Por debajo de 400 m no hay vuelo; 1800 m permite transiciones con margen.",
+      "Operational soaring ceiling. Below 400 m AGL cross-country flight is impractical; 1800 m AGL provides safe gliding transitions.",
   },
   lapse_rate: {
     unit: "K/km",
     weight: 1.5,
     band: { idealMin: 7, idealMax: INF, zeroMin: 2, zeroMax: INF },
     rationale:
-      "Gradiente térmico en la capa límite. Cerca del adiabático seco (9.8) la convección es libre; por debajo de 2 K/km la capa está estabilizada.",
+      "Thermal lapse rate in boundary layer. Approaching dry adiabatic (9.8 K/km) buoyancy is strong; below 2 K/km layer is stabilized.",
   },
   thermal_quality: {
     unit: "w*/u*",
     weight: 1.5,
     band: { idealMin: 10, idealMax: INF, zeroMin: 5, zeroMax: INF },
     rationale:
-      "Relación boyancia/cizalladura. Umbrales de DrJack: 5 o menos rompe las térmicas, 10 o más deja de importar.",
+      "Buoyancy-to-shear ratio. DrJack thresholds: <=5 disrupts and breaks thermals, >=10 maintains organised thermal columns.",
   },
   surface_wind: {
     unit: "m/s",
     weight: 1.5,
     band: { idealMin: 0, idealMax: 7.7, zeroMin: -INF, zeroMax: 15.4 },
     rationale:
-      "Viento en superficie. Hasta 15 nudos no estorba; a 30 nudos el vuelo deja de ser razonable.",
+      "Surface wind speed. Up to 15 kt wind has little negative impact; above 30 kt soaring becomes hazardous.",
   },
   moisture: {
     unit: "K",
     weight: 1,
     band: { idealMin: 8, idealMax: 20, zeroMin: 2, zeroMax: 35 },
     rationale:
-      "Déficit de punto de rocío en la capa mezclada. Muy bajo trae sobredesarrollo; muy alto deja el día azul y sin referencias. Sustituye al K-Index, que es un índice tormentoso y no una medida de sequedad.",
+      "Mixed-layer dewpoint depression. Very low spread risks overdevelopment; very high spread produces blue thermal days with no cloud cues.",
   },
   cloud_cover: {
-    unit: "fracción",
+    unit: "fraction",
     weight: 1,
     band: { idealMin: 0, idealMax: 0.3, zeroMin: -INF, zeroMax: 0.8 },
     rationale:
-      "Nubosidad total. Algo de cumulus marca las térmicas; a partir de 0.8 la radiación cae y con ella la convección.",
+      "Total cloud fraction. Scattered cumulus marks thermals; above 0.8 solar insolation drops sharply, shutting down convection.",
   },
 };
 
-/** Un factor se da por cumplido a partir de esta puntuación. */
+/** Minimum factor score threshold for `ok` status. */
 export const FACTOR_OK_THRESHOLD = 0.6;
 
 /**
- * Construye un factor a partir de su valor crudo y su especificación.
+ * Builds a scoring factor from its raw value and specification.
  *
- * @source R-10.2 de docs/REQUIREMENTS.md.
+ * @source Requirement R-10.2 from docs/REQUIREMENTS.md.
  */
 export function buildFactor(id: FactorId, value: number, spec: FactorSpec): Factor {
   const score = scoreBand(value, spec.band);

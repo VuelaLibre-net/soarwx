@@ -12,49 +12,49 @@ const ruleTester = new RuleTester();
 ruleTester.run("require-source-citation", rule, {
   valid: [
     {
-      name: "función exportada con cita",
+      name: "exported function with citation",
       code: `
         /**
-         * Presión de vapor de saturación.
-         * @source Bolton (1980), ec. 10
+         * Saturation vapour pressure.
+         * @source Bolton (1980), eq. 10
          */
         export function saturationVapourPressure(t: number): number { return t; }
       `,
     },
     {
-      name: "const arrow exportada con cita",
+      name: "exported arrow const with citation",
       code: `
-        /** @source Allen (2006), ec. 11 */
+        /** @source Allen (2006), eq. 11 */
         export const updraft = (z: number): number => z;
       `,
     },
     {
-      name: "función NO exportada, sin cita",
+      name: "non-exported function without citation",
       code: `function helper(t: number): number { return t; }`,
     },
     {
-      name: "constante exportada que no es función",
+      name: "exported constant that is not a function",
       code: `export const GAMMA_D = 0.009761;`,
     },
   ],
   invalid: [
     {
-      name: "función exportada sin docblock",
+      name: "exported function without docblock",
       code: `export function lclTemperature(t: number): number { return t; }`,
       errors: [
         { messageId: "missing", data: { name: "lclTemperature", tag: "@source" } },
       ],
     },
     {
-      name: "docblock sin @source",
+      name: "docblock without @source",
       code: `
-        /** Calcula algo importante. */
+        /** Calculates something important. */
         export function wStar(q: number): number { return q; }
       `,
       errors: [{ messageId: "missing" }],
     },
     {
-      name: "comentario de línea no cuenta como docblock",
+      name: "line comment does not count as docblock",
       code: `
         // @source Bolton (1980)
         export function esat(t: number): number { return t; }
@@ -62,7 +62,7 @@ ruleTester.run("require-source-citation", rule, {
       errors: [{ messageId: "missing" }],
     },
     {
-      name: "arrow exportada sin cita",
+      name: "exported arrow without citation",
       code: `export const hcrit = (w: number): number => w;`,
       errors: [{ messageId: "missing", data: { name: "hcrit", tag: "@source" } }],
     },

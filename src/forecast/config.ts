@@ -1,8 +1,7 @@
 /**
- * Configuración de puntuación.
+ * Soaring forecast scoring configuration.
  *
- * La configuración **recalibra de verdad**: cambiar un peso cambia el nivel.
- * No es decorativa (R-10.4).
+ * Provides real recalibration: changing factor weights or bands modifies overall ratings (R-10.4).
  */
 
 import type { AircraftProfile } from "../aircraft/profiles.js";
@@ -23,9 +22,9 @@ export interface ResolvedScoring {
 }
 
 /**
- * Mezcla la configuración del consumidor con los valores por defecto.
+ * Merges consumer overrides with default scoring configuration.
  *
- * @source R-10.4 de docs/REQUIREMENTS.md.
+ * @source Requirement R-10.4 from docs/REQUIREMENTS.md.
  */
 export function resolveScoring(config: ScoringConfig = {}): ResolvedScoring {
   const factors = {} as Record<FactorId, FactorSpec>;

@@ -1,17 +1,15 @@
 /**
- * Glifos del diagrama.
+ * Diagram glyph primitives.
  *
- * Formas simples en coordenadas locales, para que el consumidor no tenga que
- * traer una librería de iconos por dos dibujos.
+ * Lightweight vector shapes in local coordinate spaces.
  */
 
 import { element, round } from "./svg.js";
 
 /**
- * Nube de cumulus, dibujada alrededor de (x, y) con la anchura pedida.
+ * Cumulus cloud glyph drawn centered at (x, y) with specified width.
  *
- * Marca la base en el propio diagrama, que se lee mucho antes que una cifra en
- * una tabla aparte.
+ * Visual marker for cloud base directly on the sounding diagram.
  */
 export function cumulusGlyph(
   x: number,
@@ -41,10 +39,9 @@ export function cumulusGlyph(
 }
 
 /**
- * Flecha de viento: apunta **hacia donde sopla**, no de dónde viene.
+ * Wind arrow pointing in flow direction (downwind vector).
  *
- * Es la convención de las cartas de trayectoria y la que usa flyXC: el piloto
- * quiere ver hacia dónde le va a llevar la deriva.
+ * Follows aviation navigation chart conventions: arrow indicates direction of drift.
  */
 export function windArrow(
   x: number,
@@ -54,7 +51,7 @@ export function windArrow(
   colour: string,
 ): string {
   const rad = (towardDeg * Math.PI) / 180;
-  // Pantalla: x crece al este, y crece al sur.
+  // Screen coords: x grows eastward, y grows southward.
   const dx = Math.sin(rad);
   const dy = -Math.cos(rad);
   const tipX = x + (dx * lengthPx) / 2;

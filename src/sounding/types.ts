@@ -1,5 +1,5 @@
 /**
- * Estructuras del sondeo vertical. Ver docs/SPEC.md §4.2.
+ * Vertical atmospheric sounding data structures. See docs/SPEC.md §4.2.
  */
 
 import type { Degrees, Kelvin, MPerS, Metres, Pascal, WPerM2 } from "../units/branded.js";
@@ -13,7 +13,7 @@ export interface Level {
   readonly tempK: Kelvin;
   readonly dewpointK: Kelvin;
   readonly windSpeedMs: MPerS;
-  /** Dirección DE DONDE viene el viento. */
+  /** Wind direction FROM which the wind is blowing. */
   readonly windFromDeg: Degrees;
   readonly cloudCoverFrac?: number;
   readonly source: LevelSource;
@@ -22,9 +22,9 @@ export interface Level {
 export interface SurfaceState {
   readonly tempK: Kelvin;
   readonly dewpointK: Kelvin;
-  /** Presión de estación. **No** es el QNH. */
+  /** Station surface pressure. **Not** altimeter setting (QNH). */
   readonly pressurePa: Pascal;
-  /** Presión reducida al nivel del mar (QNH). Solo para altimetría. */
+  /** Sea-level reduced pressure (QNH). For altimetry reference only. */
   readonly mslPressurePa: Pascal;
   readonly windSpeedMs: MPerS;
   readonly windFromDeg: Degrees;
@@ -37,31 +37,28 @@ export interface SurfaceState {
 }
 
 export interface SoundingQuality {
-  /** Niveles de presión conservados por encima del terreno. */
+  /** Count of valid pressure levels retained above terrain. */
   readonly pressureLevelsUsed: number;
-  /** Niveles de presión descartados por caer bajo el terreno. */
+  /** Count of pressure levels discarded below ground level. */
   readonly levelsDiscardedBelowGround: number;
-  /** Niveles de altura sobre el terreno incorporados. */
+  /** Count of AGL height levels incorporated into sounding. */
   readonly heightLevelsUsed: number;
-  /** Total de niveles del sondeo, incluida la superficie. */
+  /** Total levels in sounding, including surface. */
   readonly levelsUsed: number;
   /**
-   * Mayor hueco vertical entre niveles consecutivos dentro de la ventana de
-   * análisis. Un techo interpolado a través de un hueco grande no merece la
-   * misma confianza que uno acotado de cerca (R-1.4b).
+   * Largest vertical gap between consecutive levels within analysis window.
+   * Interpolating across large gaps yields lower confidence (R-1.4b).
    */
   readonly maxVerticalGapM: Metres;
   readonly gapWindowTopAglM: Metres;
   /**
-   * Separación entre la elevación declarada y la altura a la que la columna
-   * geopotencial del modelo sitúa la presión de superficie. En Open-Meteo
-   * `surface_pressure` está reescalado a la elevación pedida y
-   * `geopotential_height_*hPa` no: son familias incoherentes entre sí. Se
-   * declara, no se corrige.
+   * Vertical difference between site elevation and where the model geopotential
+   * column places surface pressure. In Open-Meteo `surface_pressure` is downscaled
+   * to requested elevation while `geopotential_height_*hPa` is not. Declared explicitly.
    */
   readonly surfacePressureOffsetM: Metres;
   readonly missing: readonly string[];
-  /** Magnitudes derivadas por suposición, no medidas. Nunca se presentan como medidas. */
+  /** Variables derived through assumptions rather than direct measurements. */
   readonly estimated: readonly string[];
   readonly usable: boolean;
 }
@@ -70,7 +67,7 @@ export interface Sounding {
   readonly site: Site;
   readonly timeUtc: string;
   readonly surface: SurfaceState;
-  /** Ordenados por presión estrictamente descendente, todos sobre el terreno. */
+  /** Sorted by strictly descending pressure, all situated above ground level. */
   readonly levels: readonly Level[];
   readonly quality: SoundingQuality;
 }

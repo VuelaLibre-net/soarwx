@@ -43,7 +43,7 @@ function raw(name: string): string {
 }
 const parsed = (name: string) => JSON.parse(raw(name)) as OpenMeteoResponse;
 
-/** `fetch` de mentira: devuelve lo que se le diga y cuenta las llamadas. */
+/** Fake fetch implementation returning predefined responses and tracking calls. */
 function stubFetch(
   responses: readonly { status: number; body: string }[],
 ): FetchLike & { calls: { url: string; body: URLSearchParams }[] } {
@@ -62,9 +62,9 @@ function stubFetch(
   return Object.assign(fn, { calls });
 }
 
-describe("catálogo de modelos", () => {
+describe("model capabilities catalog", () => {
   // CT-7, CT-8
-  it("refleja lo medido: ICON sin capa límite, GFS con ella, ECMWF sin niveles", () => {
+  it("reflects API verification: ICON lacks boundary layer height, GFS includes it, ECMWF lacks pressure levels", () => {
     expect(MODEL_CAPABILITIES.icon_eu.hasBoundaryLayerHeight).toBe(false);
     expect(MODEL_CAPABILITIES.icon_eu.hasSensibleHeatFlux).toBe(true);
     expect(MODEL_CAPABILITIES.gfs_seamless.hasBoundaryLayerHeight).toBe(true);
@@ -72,51 +72,51 @@ describe("catálogo de modelos", () => {
     expect(MODEL_CAPABILITIES.ecmwf_ifs.pressureLevelsHpa).toEqual([]);
   });
 
-  it("ECMWF queda fuera de los modelos de sondeo", () => {
+  it("excludes ECMWF from sounding-capable models", () => {
     expect(soundingModels()).not.toContain("ecmwf_ifs");
     expect(soundingModels()).not.toContain("ecmwf_ifs025");
     expect(soundingModels()[0]).toBe("icon_eu");
   });
 
-  it("GFS solo sirve el nivel de altura de 80 m", () => {
+  it("GFS only serves 80 m height level", () => {
     expect(MODEL_CAPABILITIES.gfs_seamless.heightLevelsM).toEqual([80]);
     expect(MODEL_CAPABILITIES.icon_eu.heightLevelsM).toEqual([80, 120, 180]);
   });
 
-  it("best_match no existe como opción", () => {
+  it("best_match is excluded from supported models", () => {
     expect(Object.keys(MODEL_CAPABILITIES)).not.toContain("best_match");
     expect(RECOMMENDED_ENSEMBLE).toHaveLength(3);
   });
 });
 
 // G-13, G-14
-describe("construcción de la petición", () => {
+describe("request construction", () => {
   const request = buildForecastRequest(FUENTEMILANOS_SITE, {
     model: "icon_eu",
     startDate: "2026-08-18",
     endDate: "2026-08-18",
   });
 
-  it("envía elevación, zona horaria del emplazamiento y m/s", () => {
+  it("includes elevation, site timezone, and m/s units", () => {
     expect(request.body.get("elevation")).toBe("1001");
     expect(request.body.get("timezone")).toBe("Europe/Madrid");
     expect(request.body.get("wind_speed_unit")).toBe("ms");
   });
 
-  it("nunca envía UTC ni best_match", () => {
+  it("never sends UTC timezone or best_match model", () => {
     expect(request.body.get("timezone")).not.toBe("UTC");
     expect(request.body.get("models")).toBe("icon_eu");
     expect(request.body.get("models")).not.toBe("best_match");
   });
 
-  it("usa POST con campos repetidos, no cadenas separadas por comas", () => {
+  it("uses POST with repeated form fields rather than comma-separated strings", () => {
     expect(request.method).toBe("POST");
     const hourly = request.body.getAll("hourly");
     expect(hourly.length).toBeGreaterThan(50);
     for (const name of hourly) expect(name).not.toContain(",");
   });
 
-  it("poda los cuatro niveles que caen bajo tierra en Fuentemilanos", () => {
+  it("prunes four underground pressure levels at Fuentemilanos", () => {
     expect(request.levelsHpa).toEqual([900, 850, 800, 700, 600, 500]);
     const hourly = request.body.getAll("hourly");
     for (const hpa of [1000, 975, 950, 925]) {
@@ -125,21 +125,21 @@ describe("construcción de la petición", () => {
     expect(hourly).toContain("temperature_900hPa");
   });
 
-  it("a nivel del mar no poda nada", () => {
+  it("retains all pressure levels at sea level", () => {
     const seaLevel = { ...FUENTEMILANOS_SITE, elevationMslM: m(0) };
     expect(buildForecastRequest(seaLevel, { model: "icon_eu" }).levelsHpa).toHaveLength(
       10,
     );
   });
 
-  it("la atmósfera estándar sitúa 1000 hPa cerca de 111 m", () => {
+  it("standard atmosphere maps 1000 hPa to ~111 m MSL", () => {
     expect(standardAtmosphereHeightM(1013.25)).toBeCloseTo(0, 6);
     expect(standardAtmosphereHeightM(1000)).toBeCloseTo(111, 0);
     expect(standardAtmosphereHeightM(500)).toBeCloseTo(5574, -1);
     expect(BELOW_GROUND_MARGIN_M).toBe(150);
   });
 
-  it("sin fechas pide días de previsión", () => {
+  it("requests forecast_days when explicit dates are omitted", () => {
     const rolling = buildForecastRequest(FUENTEMILANOS_SITE, {
       model: "icon_eu",
       forecastDays: 5,
@@ -148,32 +148,32 @@ describe("construcción de la petición", () => {
     expect(rolling.body.get("start_date")).toBeNull();
   });
 
-  it("con clave usa el endpoint comercial", () => {
+  it("routes to commercial endpoint when API key is provided", () => {
     const commercial = buildForecastRequest(FUENTEMILANOS_SITE, {
       model: "icon_eu",
-      apiKey: "secreto",
+      apiKey: "secret",
     });
     expect(commercial.url).toContain("customer-api");
-    expect(commercial.body.get("apikey")).toBe("secreto");
+    expect(commercial.body.get("apikey")).toBe("secret");
   });
 
-  it("todas las variables de nivel llevan su sufijo", () => {
+  it("formats all level variable names with isobaric suffixes", () => {
     expect(levelVariableNames([850])).toContain("geopotential_height_850hPa");
     expect(SURFACE_VARIABLES).toContain("sensible_heat_flux");
     expect(SURFACE_VARIABLES).toContain("boundary_layer_height");
   });
 });
 
-describe("validación de la respuesta", () => {
+describe("response validation", () => {
   const icon = parsed("lefm-2026-08-18-icon_eu.json");
 
-  it("detecta por contenido, no por presencia de clave", () => {
+  it("validates variable presence by content rather than bare key existence", () => {
     expect(hasData(icon, "temperature_2m")).toBe(true);
-    expect(hasData(icon, "no_existe")).toBe(false);
+    expect(hasData(icon, "non_existent")).toBe(false);
   });
 
   // G-08
-  it("ECMWF acepta los niveles y los devuelve vacíos", () => {
+  it("detects empty pressure level arrays returned by ECMWF", () => {
     const ecmwf = parsed("ecmwf-no-levels.json");
     expect("temperature_850hPa" in ecmwf.hourly).toBe(true);
     expect(hasData(ecmwf, "temperature_850hPa")).toBe(false);
@@ -181,13 +181,13 @@ describe("validación de la respuesta", () => {
   });
 
   // G-09
-  it("AROME fuera de dominio devuelve casi todo vacío", () => {
+  it("detects mostly-null response from out-of-domain AROME queries", () => {
     const arome = parsed("arome-out-of-domain.json");
     expect(usableLevels(arome, [900, 850, 800, 700])).toEqual([]);
     expect(missingVariables(arome, ["surface_pressure"])).toContain("surface_pressure");
   });
 
-  it("valida el eco de elevación y zona horaria", () => {
+  it("validates elevation and timezone echoes", () => {
     expect(validateEcho(icon, FUENTEMILANOS_SITE).ok).toBe(true);
     const wrong = validateEcho(icon, {
       ...FUENTEMILANOS_SITE,
@@ -202,7 +202,7 @@ describe("validación de la respuesta", () => {
     expect(otherZone.ok).toBe(false);
   });
 
-  it("valida las unidades antes de convertir", () => {
+  it("validates declared units before conversion", () => {
     expect(validateUnits(icon).ok).toBe(true);
     const tampered = {
       ...icon,
@@ -217,18 +217,18 @@ describe("validación de la respuesta", () => {
   });
 });
 
-describe("normalización", () => {
+describe("normalization", () => {
   const icon = parsed("lefm-2026-08-18-icon_eu.json");
   const gfs = parsed("lefm-2026-08-18-gfs_seamless.json");
 
-  it("detecta la convención de signo de cada modelo", () => {
+  it("detects model-specific flux sign convention", () => {
     const a = normaliseForecast(icon, FUENTEMILANOS_SITE, [900, 850, 800, 700, 600, 500]);
     const b = normaliseForecast(gfs, FUENTEMILANOS_SITE, [900, 850, 800, 700, 600, 500]);
     expect(a.ok && a.value.fluxConvention).toBe("down_positive");
     expect(b.ok && b.value.fluxConvention).toBe("up_positive");
   });
 
-  it("produce observaciones utilizables y declara lo que falta", () => {
+  it("produces usable observations and declares missing variables", () => {
     const result = normaliseForecast(
       icon,
       FUENTEMILANOS_SITE,
@@ -237,7 +237,6 @@ describe("normalización", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.observations).toHaveLength(24);
-    // ICON no sirve ni lifted_index ni capa límite.
     expect(result.value.missing).toContain("lifted_index");
     expect(result.value.missing).toContain("boundary_layer_height");
     expect(result.value.missing).not.toContain("sensible_heat_flux");
@@ -245,7 +244,7 @@ describe("normalización", () => {
   });
 
   // G-17
-  it("centra la radiación: es media de la hora precedente", () => {
+  it("centers shortwave radiation to match instantaneous timestamps", () => {
     const at12 = centredRadiationWm2(icon, 12);
     const rawSeries = icon.hourly["shortwave_radiation"] as (number | null)[];
     const here = rawSeries[12]!;
@@ -254,13 +253,13 @@ describe("normalización", () => {
     expect(at12).not.toBe(here);
   });
 
-  it("la última hora no se sale del array", () => {
+  it("handles last hour without array index overflow", () => {
     const last = (icon.hourly["time"] as string[]).length - 1;
     expect(Number.isFinite(centredRadiationWm2(icon, last))).toBe(true);
   });
 
   // G-08
-  it("sin niveles utilizables no calcula un día basura", () => {
+  it("returns INSUFFICIENT_LEVELS when no usable pressure levels exist", () => {
     const ecmwf = parsed("ecmwf-no-levels.json");
     const result = normaliseForecast(ecmwf, FUENTEMILANOS_SITE, [900, 850, 800, 700]);
     expect(result.ok).toBe(false);
@@ -268,8 +267,8 @@ describe("normalización", () => {
   });
 });
 
-describe("caché", () => {
-  it("la clave no depende del orden de los campos", () => {
+describe("caching", () => {
+  it("cache key is invariant to parameter ordering", () => {
     const a = new URLSearchParams([
       ["b", "2"],
       ["a", "1"],
@@ -281,7 +280,7 @@ describe("caché", () => {
     expect(cacheKey("u", a)).toBe(cacheKey("u", b));
   });
 
-  it("la caché en memoria caduca", async () => {
+  it("in-memory cache expires entries after TTL", async () => {
     let now = 0;
     const cache = memoryCache(() => now);
     await cache.set("k", "v", 10);
@@ -290,18 +289,18 @@ describe("caché", () => {
     expect(await cache.get("k")).toBeNull();
   });
 
-  it("la caché vacía nunca devuelve nada", async () => {
+  it("no-op cache always returns null", async () => {
     const cache = noopCache();
     await cache.set("k", "v", 10);
     expect(await cache.get("k")).toBeNull();
   });
 });
 
-describe("cliente", () => {
+describe("HTTP client", () => {
   const request = buildForecastRequest(FUENTEMILANOS_SITE, { model: "icon_eu" });
 
   // G-10
-  it("un HTTP 400 no se reintenta y conserva el motivo de la API", async () => {
+  it("HTTP 400 is not retried and preserves API error reason", async () => {
     const fetchStub = stubFetch([
       { status: 400, body: raw("error-400-bad-variable.json") },
     ]);
@@ -314,7 +313,7 @@ describe("cliente", () => {
     }
   });
 
-  it("un 429 sí se reintenta", async () => {
+  it("retries on HTTP 429 status", async () => {
     const good = raw("lefm-2026-08-18-icon_eu.json");
     const fetchStub = stubFetch([
       { status: 429, body: "" },
@@ -329,7 +328,7 @@ describe("cliente", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("agotados los reintentos devuelve el fallo", async () => {
+  it("returns failure when retries are exhausted", async () => {
     const fetchStub = stubFetch([{ status: 503, body: "" }]);
     const result = await sendRequest(request, {
       fetch: fetchStub,
@@ -340,15 +339,15 @@ describe("cliente", () => {
     expect(fetchStub.calls).toHaveLength(2);
   });
 
-  it("un cuerpo que no es JSON se declara", async () => {
-    const fetchStub = stubFetch([{ status: 200, body: "<html>vaya</html>" }]);
+  it("handles non-JSON response body gracefully", async () => {
+    const fetchStub = stubFetch([{ status: 200, body: "<html>oops</html>" }]);
     const result = await sendRequest(request, { fetch: fetchStub });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain("JSON");
   });
 
-  it("un fallo de red se propaga como FETCH_FAILED", async () => {
-    const failing: FetchLike = () => Promise.reject(new Error("sin red"));
+  it("propagates network failures as FETCH_FAILED", async () => {
+    const failing: FetchLike = () => Promise.reject(new Error("offline"));
     const result = await sendRequest(request, {
       fetch: failing,
       retries: 0,
@@ -359,7 +358,7 @@ describe("cliente", () => {
   });
 
   // G-15
-  it("la segunda llamada idéntica no emite petición", async () => {
+  it("identical secondary call serves from cache without network request", async () => {
     const fetchStub = stubFetch([
       { status: 200, body: raw("lefm-2026-08-18-icon_eu.json") },
     ]);
@@ -369,7 +368,7 @@ describe("cliente", () => {
     expect(fetchStub.calls).toHaveLength(1);
   });
 
-  it("valida el eco al pedir la previsión", async () => {
+  it("validates echo during forecast fetch", async () => {
     const fetchStub = stubFetch([
       { status: 200, body: raw("lefm-2026-08-18-icon_eu.json") },
     ]);
@@ -390,12 +389,12 @@ describe("cliente", () => {
   });
 });
 
-describe("varios modelos", () => {
+describe("multi-model ensemble forecasting", () => {
   const iconBody = raw("lefm-2026-08-18-icon_eu.json");
   const gfsBody = raw("lefm-2026-08-18-gfs_seamless.json");
 
   // G-03
-  it("dos modelos dan día y confianza", async () => {
+  it("two models provide day report and confidence metric", async () => {
     let call = 0;
     const fetchStub: FetchLike = () => {
       const body = call++ === 0 ? iconBody : gfsBody;
@@ -417,7 +416,7 @@ describe("varios modelos", () => {
   });
 
   // G-11
-  it("si cae un modelo, el día sale con el resto y el caído se anota", async () => {
+  it("when one model fails, day proceeds with remaining models and notes failure", async () => {
     let call = 0;
     const fetchStub: FetchLike = () =>
       call++ === 0
@@ -440,7 +439,7 @@ describe("varios modelos", () => {
   });
 
   // G-12
-  it("si caen todos, no se devuelve un día parcial", async () => {
+  it("when all models fail, returns error rather than partial day", async () => {
     const fetchStub = stubFetch([{ status: 503, body: "" }]);
     const result = await fetchSoaringDay(FUENTEMILANOS_SITE, "2026-08-18", {
       fetch: fetchStub,
@@ -453,7 +452,7 @@ describe("varios modelos", () => {
   });
 
   // G-16
-  it("el día lleva la atribución", async () => {
+  it("includes attribution in day output", async () => {
     const fetchStub = stubFetch([{ status: 200, body: iconBody }]);
     const result = await fetchSoaringDay(FUENTEMILANOS_SITE, "2026-08-18", {
       fetch: fetchStub,
@@ -464,16 +463,15 @@ describe("varios modelos", () => {
   });
 });
 
-// La regla de oro de esta fase.
-describe("aislamiento de la red", () => {
-  it("ninguna prueba de esta suite ha tocado la red", () => {
+describe("network isolation verification", () => {
+  it("no unit test in this suite executed genuine network requests", () => {
     const spy = vi.spyOn(globalThis, "fetch");
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
   });
 });
 
-describe("caché de sesión", () => {
+describe("session cache", () => {
   function withSessionStorage<T>(run: () => T): T {
     const store = new Map<string, string>();
     const stub: Storage = {
@@ -501,24 +499,24 @@ describe("caché de sesión", () => {
     }
   }
 
-  it("sin sessionStorage degrada a no guardar nada", async () => {
+  it("degrades gracefully to noop without sessionStorage", async () => {
     const cache = sessionCache();
     await cache.set("k", "v", 10);
     expect(await cache.get("k")).toBeNull();
   });
 
-  it("con sessionStorage guarda y devuelve", async () => {
+  it("stores and retrieves entries with sessionStorage present", async () => {
     const cache = withSessionStorage(() => sessionCache());
     await withSessionStorage(async () => {
       const c = sessionCache();
       await c.set("k", "v", 10);
       expect(await c.get("k")).toBe("v");
-      expect(await c.get("otra")).toBeNull();
+      expect(await c.get("other")).toBeNull();
     });
     expect(cache).toBeDefined();
   });
 
-  it("una entrada caducada se descarta", async () => {
+  it("discards expired entry", async () => {
     await withSessionStorage(async () => {
       const c = sessionCache();
       await c.set("k", "v", -1);
@@ -526,19 +524,19 @@ describe("caché de sesión", () => {
     });
   });
 
-  it("un valor corrupto no rompe", async () => {
+  it("handles corrupt JSON payload gracefully", async () => {
     await withSessionStorage(async () => {
-      globalThis.sessionStorage.setItem("k", "esto no es json");
+      globalThis.sessionStorage.setItem("k", "not valid json");
       expect(await sessionCache().get("k")).toBeNull();
     });
   });
 });
 
-describe("normalización, casos degradados", () => {
+describe("normalization edge cases", () => {
   const icon = parsed("lefm-2026-08-18-icon_eu.json");
   const levels = [900, 850, 800, 700, 600, 500];
 
-  it("una hora sin temperatura se salta sin romper el día", () => {
+  it("hour without temperature is skipped cleanly", () => {
     const holed = {
       ...icon,
       hourly: {
@@ -553,7 +551,7 @@ describe("normalización, casos degradados", () => {
     if (result.ok) expect(result.value.observations).toHaveLength(23);
   });
 
-  it("sin flujo de calor la convención es desconocida", () => {
+  it("flux convention is unknown when heat flux is omitted", () => {
     const noFlux = { ...icon, hourly: { ...icon.hourly } };
     delete (noFlux.hourly as Record<string, unknown>)["sensible_heat_flux"];
     const result = normaliseForecast(noFlux, FUENTEMILANOS_SITE, levels);
@@ -563,20 +561,20 @@ describe("normalización, casos degradados", () => {
     expect(result.value.missing).toContain("sensible_heat_flux");
   });
 
-  it("sin eje de tiempo no hay nada que normalizar", () => {
+  it("returns error when time axis is missing", () => {
     const empty = { ...icon, hourly: { ...icon.hourly, time: [] } };
     const result = normaliseForecast(empty, FUENTEMILANOS_SITE, levels);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("MISSING_VARIABLE");
   });
 
-  it("sin niveles suficientes por hora, ninguna observación sobrevive", () => {
+  it("returns error when pressure levels are insufficient", () => {
     const result = normaliseForecast(icon, FUENTEMILANOS_SITE, [700]);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("INSUFFICIENT_LEVELS");
   });
 
-  it("sin datos diarios el amanecer queda a null", () => {
+  it("sunrise is null when daily section is omitted", () => {
     const noDaily = { ...icon };
     delete (noDaily as Record<string, unknown>)["daily"];
     const result = normaliseForecast(noDaily, FUENTEMILANOS_SITE, levels);
@@ -585,10 +583,10 @@ describe("normalización, casos degradados", () => {
   });
 });
 
-describe("opciones del día", () => {
+describe("forecast options", () => {
   const iconBody = raw("lefm-2026-08-18-icon_eu.json");
 
-  it("acepta perfil de aeronave y configuración propios", async () => {
+  it("accepts custom aircraft profile and scoring configuration", async () => {
     const fetchStub = stubFetch([{ status: 200, body: iconBody }]);
     const result = await fetchSoaringDay(FUENTEMILANOS_SITE, "2026-08-18", {
       fetch: fetchStub,
@@ -598,29 +596,25 @@ describe("opciones del día", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // Con un umbral más laxo, el techo sube.
     const noon = result.value.day.hours.find((h) => h.timeUtc.slice(11, 16) === "14:00");
     expect(noon?.ceiling.aglM).toBeGreaterThan(2000);
   });
 
-  it("un modelo sin niveles utilizables se anota como fallido", async () => {
+  it("records model without usable levels as failed", async () => {
     const fetchStub = stubFetch([{ status: 200, body: raw("ecmwf-no-levels.json") }]);
     const result = await fetchSoaringDay(FUENTEMILANOS_SITE, "2026-08-18", {
       fetch: fetchStub,
       models: ["ecmwf_ifs", "icon_eu"],
     });
-    // Ambos reciben la misma respuesta vacía: no hay día que dar.
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("FETCH_FAILED");
   });
 });
 
-describe("unidades ausentes", () => {
+describe("absent units", () => {
   const icon = parsed("lefm-2026-08-18-icon_eu.json");
 
-  it('la cadena "undefined" marca una variable que el modelo no sirve', () => {
-    // Medido en vivo: ICON-EU devuelve `hourly_units.boundary_layer_height`
-    // con el valor literal "undefined", no ausente ni null.
+  it('recognizes "undefined" string as absent model variable', () => {
     const withAbsent = {
       ...icon,
       hourly_units: { ...icon.hourly_units, boundary_layer_height: ABSENT_UNIT },
@@ -629,7 +623,7 @@ describe("unidades ausentes", () => {
     expect(ABSENT_UNIT).toBe("undefined");
   });
 
-  it("una unidad realmente distinta sí es un error", () => {
+  it("flags genuine unit mismatches as error", () => {
     const wrong = {
       ...icon,
       hourly_units: { ...icon.hourly_units, boundary_layer_height: "ft" },

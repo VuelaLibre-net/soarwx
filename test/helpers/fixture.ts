@@ -1,10 +1,7 @@
 /**
- * Carga un fixture de Open-Meteo y lo convierte en `SoundingInput`.
+ * Loads Open-Meteo test fixture data and maps it to `SoundingInput`.
  *
- * Es un **ayudante de pruebas**, no el adaptador. El adaptador real, con
- * validación de unidades, detección por contenido y normalización de signos,
- * llega en la fase 7 (`src/openmeteo/`). Aquí se hace lo mínimo para poder
- * probar la fase 2 contra datos reales.
+ * Test helper module for test suites.
  */
 
 import { readFileSync } from "node:fs";
@@ -44,19 +41,19 @@ export const PRESSURE_LEVELS_HPA = [
 
 export const HEIGHT_LEVELS_M = [80, 120, 180] as const;
 
-/** Serie numérica del fixture, con los huecos como `null`. */
+/** Numerical series from fixture with missing entries as null. */
 export function series(fixture: OpenMeteoFixture, key: string): (number | null)[] {
   const raw = fixture.hourly[key];
-  if (!raw) throw new Error(`variable ausente en el fixture: ${key}`);
+  if (!raw) throw new Error(`variable missing in fixture: ${key}`);
   return raw as (number | null)[];
 }
 
-/** Marcas de tiempo del fixture, en la zona horaria del emplazamiento. */
+/** Timestamps from fixture in site timezone. */
 export function times(fixture: OpenMeteoFixture): string[] {
   return fixture.hourly["time"] as string[];
 }
 
-/** Máximo de una serie, ignorando huecos. */
+/** Maximum value of a series, ignoring nulls. */
 export function seriesMax(fixture: OpenMeteoFixture, key: string): number {
   return Math.max(...series(fixture, key).map((v) => v ?? -Infinity));
 }
@@ -73,18 +70,18 @@ function has(hourly: Hourly, key: string, index: number): boolean {
 
 function num(hourly: Hourly, key: string, index: number): number {
   const series = hourly[key];
-  if (!series) throw new Error(`variable ausente en el fixture: ${key}`);
+  if (!series) throw new Error(`variable missing in fixture: ${key}`);
   const value = series[index];
   if (typeof value !== "number")
-    throw new Error(`valor nulo en ${key}[${String(index)}]`);
+    throw new Error(`null value in ${key}[${String(index)}]`);
   return value;
 }
 
-/** Índice horario a partir de la hora local (el fixture usa la zona del emplazamiento). */
+/** Hourly index matching specified local hour. */
 export function indexOfLocalHour(fixture: OpenMeteoFixture, hour: number): number {
   const times = fixture.hourly["time"] as string[];
   const found = times.findIndex((t) => Number(t.slice(11, 13)) === hour);
-  if (found < 0) throw new Error(`hora local no encontrada: ${String(hour)}`);
+  if (found < 0) throw new Error(`local hour not found: ${String(hour)}`);
   return found;
 }
 
@@ -120,8 +117,6 @@ export function toSoundingInput(
     cloudCoverFrac: num(h, `cloud_cover_${String(hpa)}hPa`, index) / 100,
   }));
 
-  // GFS solo sirve el nivel de 80 m; ICON sirve 80, 120 y 180. Se toman los
-  // que haya, no los que se esperaban.
   const heightLevels: RawHeightLevel[] = HEIGHT_LEVELS_M.filter((z) =>
     has(h, `temperature_${String(z)}m`, index),
   ).map((z) => ({
@@ -140,7 +135,7 @@ export function toSoundingInput(
   };
 }
 
-/** Construye las observaciones horarias de un fixture, para `computeDay`. */
+/** Constructs hourly observations from fixture for `computeDay`. */
 export function toHourlyObservations(
   fixture: OpenMeteoFixture,
   site: Site,

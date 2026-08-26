@@ -1,9 +1,8 @@
 /**
- * Techo utilizable y su factor limitante.
+ * Usable soaring ceiling and limiting factor diagnosis.
  *
- * El número que el piloto mira, y el motivo por el que es ese y no otro. Sin el
- * factor limitante, un techo bajo no dice si el problema es que la nube está
- * baja, que la térmica es débil o que el cielo está cerrado.
+ * Provides the operational ceiling altitude alongside the limiting physical factor
+ * (cloudbase, hcrit, boundary layer top, overcast, or absence of convection).
  */
 
 import { m } from "../units/branded.js";
@@ -14,12 +13,12 @@ export type CeilingLimit =
   "cloudbase" | "hcrit" | "boundary_layer" | "overcast" | "no_convection";
 
 export interface CeilingInput {
-  /** Altura crítica del perfil de ascendencia. `null` si no hay convección. */
+  /** Critical climb height from updraft profile. `null` if no convection exists. */
   readonly hcritAglM: Metres | null;
   readonly thermalTopAglM: Metres;
-  /** Base de cumulus. `null` en día azul o sin humedad suficiente. */
+  /** Cumulus cloudbase. `null` for blue thermals or insufficient moisture. */
   readonly cloudBaseAglM: Metres | null;
-  /** Cielo cerrado por debajo o dentro de la capa: corta la convección. */
+  /** Overcast cloud cover suppressing convective development. */
   readonly overcast: boolean;
   readonly elevationMslM: Metres;
 }
@@ -31,11 +30,10 @@ export interface CeilingResult {
 }
 
 /**
- * Techo utilizable: el menor de la altura crítica, el techo térmico y la base
- * de nubes, con el motivo declarado.
+ * Computes usable ceiling: minimum of critical climb height (hcrit), thermal ceiling,
+ * and cumulus cloudbase, declaring the active limiting factor.
  *
- * @source Composición de los criterios de Glendening (DrJack): `hcrit` como
- *         techo práctico y la base de nubes como tope superior.
+ * @source Glendening (DrJack) criteria: `hcrit` as operational ceiling and cloudbase as hard upper bound.
  */
 export function usableCeiling(input: CeilingInput): CeilingResult {
   const withElevation = (aglM: number, limitedBy: CeilingLimit): CeilingResult => ({

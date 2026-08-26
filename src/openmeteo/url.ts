@@ -1,13 +1,7 @@
 /**
- * Construcción de la petición.
+ * HTTP request construction for Open-Meteo API.
  *
- * Se usa **POST con campos repetidos**. Dos motivos medidos:
- *
- * - La petición de sondeo completo lleva unas 90 variables y la URL supera el
- *   kilobyte; un GET así falla en la capa de transporte.
- * - Open-Meteo acepta POST, pero los arrays van como **campos repetidos**:
- *   `hourly=a&hourly=b`. Unirlos por comas devuelve HTTP 400 con
- *   `Cannot initialize SurfacePressureAndHeightVariable… from invalid String value`.
+ * Employs HTTP POST with repeated form fields to avoid URL length constraints.
  */
 
 import type { Site } from "../types/site.js";
@@ -19,9 +13,7 @@ export const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 export const COMMERCIAL_FORECAST_URL = "https://customer-api.open-meteo.com/v1/forecast";
 
 /**
- * Margen bajo la elevación por debajo del cual un nivel se considera bajo
- * tierra. Deja pasar los que quedan justo en el límite, porque la atmósfera
- * estándar solo aproxima la relación entre presión y altura.
+ * Margin below site elevation (metres) below which pressure levels are pruned.
  */
 export const BELOW_GROUND_MARGIN_M = 150;
 
@@ -38,28 +30,27 @@ export interface HttpRequest {
   readonly url: string;
   readonly method: "POST";
   readonly body: URLSearchParams;
-  /** Niveles realmente pedidos, tras podar los que caen bajo tierra. */
+  /** Actual pressure levels requested after underground pruning. */
   readonly levelsHpa: readonly number[];
 }
 
 /**
- * Altura de un nivel de presión en la atmósfera estándar internacional.
+ * Computes geopotential altitude of a pressure level in the International Standard Atmosphere (ISA).
  *
  *     z = (1 − (p/p0)^(1/5.25588)) / 2.25577e-5
  *
- * @source Atmósfera estándar internacional (ISA), capa troposférica.
+ * @source International Standard Atmosphere (ISA) tropospheric formula.
  */
 export function standardAtmosphereHeightM(pressureHpa: number): number {
   return (1 - Math.pow(pressureHpa / 1013.25, 1 / 5.25588)) / 2.25577e-5;
 }
 
 /**
- * Niveles que merece la pena pedir para un emplazamiento.
+ * Identifies pressure levels above ground elevation for a site.
  *
- * En Fuentemilanos (1001 m) descarta 1000, 975, 950 y 925 hPa: cuatro niveles,
- * veinticuatro variables, más de dos llamadas de cuota por modelo y día.
+ * Pruning underground levels avoids redundant network bandwidth and API quota usage.
  *
- * @source R-1.2 y §5.2 de docs/OPEN_METEO_INTEGRATION.md.
+ * @source Requirement R-1.2 and §5.2 of docs/OPEN_METEO_INTEGRATION.md.
  */
 export function levelsForSite(
   site: Site,
@@ -72,14 +63,11 @@ export function levelsForSite(
 }
 
 /**
- * Petición de previsión para un modelo.
+ * Constructs an HTTP request for Open-Meteo forecast API.
  *
- * Envía **siempre** `elevation`, `timezone` del emplazamiento y
- * `wind_speed_unit=ms`. Nunca `timezone=UTC` con fechas locales: en España en
- * verano eso convierte el día en las 02:00 a 02:00 hora local y se pierden las
- * dos últimas horas de tarde térmica.
+ * Always includes site elevation, timezone, and SI wind speed units (`wind_speed_unit=ms`).
  *
- * @source R-13.3 a R-13.5 de docs/REQUIREMENTS.md.
+ * @source Requirements R-13.3 through R-13.5 from docs/REQUIREMENTS.md.
  */
 export function buildForecastRequest(
   site: Site,

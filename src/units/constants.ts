@@ -1,49 +1,49 @@
 /**
- * Constantes físicas. Todas en SI.
+ * Physical constants. All in SI units.
  *
- * Los valores están fijados para coincidir con las fuentes que se citan en los
- * módulos que los usan: cambiar uno cambia el número que ve el piloto, así que
- * es un cambio mayor de versión (ver CHANGELOG.md).
+ * Values are pinned to match cited sources in the modules that use them:
+ * changing a constant changes pilot-facing output, which constitutes a
+ * major version change (see CHANGELOG.md).
  */
 
 import { K, Pa } from "./branded.js";
 import type { Kelvin, Pascal } from "./branded.js";
 
-/** Aceleración de la gravedad estándar, m/s². ISO 80000-3. */
+/** Standard gravitational acceleration, m/s². ISO 80000-3. */
 export const G = 9.80665;
 
-/** Constante específica del aire seco, J/(kg·K). */
+/** Specific gas constant for dry air, J/(kg·K). */
 export const RD = 287.05;
 
-/** Constante específica del vapor de agua, J/(kg·K). */
+/** Specific gas constant for water vapour, J/(kg·K). */
 export const RV = 461.5;
 
 /**
- * Calor específico del aire seco a presión constante, J/(kg·K).
- * Valor de Allen (2006), para que `w*` sea reproducible contra su artículo.
+ * Specific heat of dry air at constant pressure, J/(kg·K).
+ * Value from Allen (2006), making `w*` reproducible against his paper.
  */
 export const CP = 1004.67;
 
-/** Calor latente de vaporización a 0 °C, J/kg. */
+/** Latent heat of vaporisation at 0 °C, J/kg. */
 export const LV0 = 2.501e6;
 
-/** Pendiente de la dependencia térmica del calor latente, J/(kg·K). */
+/** Temperature dependence slope of latent heat of vaporisation, J/(kg·K). */
 export const LV_SLOPE = 2370;
 
-/** Calor específico del vapor de agua a presión constante, J/(kg·K). */
+/** Specific heat of water vapour at constant pressure, J/(kg·K). */
 export const CPV = 1879;
 
-/** Cociente de constantes de gas, Rd/Rv. Adimensional. */
+/** Ratio of gas constants, Rd/Rv. Dimensionless. */
 export const EPS = RD / RV;
 
-/** Exponente de Poisson, Rd/cp. Adimensional. */
+/** Poisson constant, Rd/cp. Dimensionless. */
 export const KAPPA = RD / CP;
 
-/** Gradiente adiabático seco, K/m. Γd = g/cp ≈ 9.761 K/km. */
+/** Dry adiabatic lapse rate, K/m. Γd = g/cp ≈ 9.761 K/km. */
 export const GAMMA_D = G / CP;
 
-/** Presión de referencia para la temperatura potencial, Pa. */
+/** Reference pressure for potential temperature, Pa. */
 export const P0: Pascal = Pa(100000);
 
-/** Cero de la escala Celsius, en kelvin. */
+/** Zero Celsius in kelvin. */
 export const T0_CELSIUS: Kelvin = K(273.15);

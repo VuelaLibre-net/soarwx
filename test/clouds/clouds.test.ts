@@ -19,10 +19,10 @@ import {
   toSoundingInput,
 } from "../helpers/fixture.js";
 
-describe("promedios de la capa mezclada", () => {
+describe("mixed layer mean properties", () => {
   const sounding = syntheticSounding(30, 2000, 3, 8);
 
-  it("devuelve medias dentro del rango de los niveles que promedia", () => {
+  it("returns averages within the range of bracketed levels", () => {
     const r = mixedLayerMean(sounding, m(1500));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -31,7 +31,7 @@ describe("promedios de la capa mezclada", () => {
     expect(r.value.topAglM).toBe(1500);
   });
 
-  it("promediar más capa cambia el resultado", () => {
+  it("averaging deeper layer updates the result", () => {
     const shallow = mixedLayerMean(sounding, m(500));
     const deep = mixedLayerMean(sounding, m(2000));
     expect(shallow.ok && deep.ok).toBe(true);
@@ -39,16 +39,16 @@ describe("promedios de la capa mezclada", () => {
     expect(deep.value.levelsUsed).toBeGreaterThan(shallow.value.levelsUsed);
   });
 
-  it("sin capa que promediar es INSUFFICIENT_LEVELS", () => {
+  it("returns INSUFFICIENT_LEVELS with empty layer depth", () => {
     const r = mixedLayerMean(sounding, m(0));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("INSUFFICIENT_LEVELS");
   });
 });
 
-describe("base de cumulus", () => {
+describe("cumulus cloudbase", () => {
   // N-01
-  it("la parcela de capa mezclada difiere de la instantánea de dos metros", () => {
+  it("mixed layer parcel differs from instantaneous 2-metre surface value", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 14)));
     expect(built.ok).toBe(true);
@@ -67,7 +67,7 @@ describe("base de cumulus", () => {
     expect(mixed.value.method).toBe("mixed_layer_ccl");
   });
 
-  it("con más humedad la base baja", () => {
+  it("higher moisture lowers cloudbase altitude", () => {
     const dry = cumulusBase(syntheticSounding(30, 2000, 3, 0), m(1500), celsiusToK(30));
     const humid = cumulusBase(
       syntheticSounding(30, 2000, 3, 15),
@@ -79,13 +79,13 @@ describe("base de cumulus", () => {
     expect(humid.value.baseAglM).toBeLessThan(dry.value.baseAglM);
   });
 
-  it("la base en MSL es la AGL más la elevación", () => {
+  it("MSL cloudbase equals AGL base plus terrain elevation", () => {
     const r = cumulusBase(syntheticSounding(30, 2000, 3, 10), m(1500), celsiusToK(30));
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.baseMslM).toBeCloseTo(r.value.baseAglM, 6);
   });
 
-  it("declara si hay humedad suficiente para que se forme la nube", () => {
+  it("diagnoses whether sufficient moisture exists for cloud formation", () => {
     const humid = cumulusBase(
       syntheticSounding(30, 2000, 3, 15),
       m(1500),
@@ -104,7 +104,7 @@ describe("base de cumulus", () => {
     expect(dry.value.sufficientMoisture).toBe(false);
   });
 
-  it("en Fuentemilanos el 18 de agosto la base queda por encima del techo", () => {
+  it("at Fuentemilanos on August 18 cloudbase sits above thermal ceiling", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 14)));
     expect(built.ok).toBe(true);
@@ -117,28 +117,28 @@ describe("base de cumulus", () => {
     );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // 29 K de separación entre temperatura y rocío: día azul.
+    // 29 K spread between surface temperature and dewpoint: blue thermal day.
     expect(r.value.baseAglM).toBeGreaterThan(2600);
     expect(r.value.sufficientMoisture).toBe(false);
   });
 });
 
-describe("día azul y espesor", () => {
+describe("blue thermal day and vertical depth", () => {
   // N-02
-  it("hay día azul cuando la condensación queda por encima del techo", () => {
+  it("blue day occurs when condensation level exceeds thermal ceiling", () => {
     expect(isBlueDay(m(3000), m(2000))).toBe(true);
     expect(isBlueDay(m(1200), m(2000))).toBe(false);
   });
 
-  it("el espesor nunca es negativo", () => {
+  it("cloud depth is never negative", () => {
     expect(cumulusDepth(m(1200), m(2000))).toBe(800);
     expect(cumulusDepth(m(3000), m(2000))).toBe(0);
   });
 });
 
-describe("riesgo de sobredesarrollo", () => {
+describe("overdevelopment risk", () => {
   // N-06
-  it("crece con el espesor, todo lo demás igual", () => {
+  it("increases with cloud depth, ceteris paribus", () => {
     let previous = -1;
     for (const depth of [0, 1200, 2200, 3500]) {
       const r = overdevelopmentRisk({ cumulusDepthM: m(depth) });
@@ -148,13 +148,13 @@ describe("riesgo de sobredesarrollo", () => {
     expect(DEPTH_THRESHOLDS_M).toEqual([1000, 2000, 3000]);
   });
 
-  it("sin ningún indicador el riesgo es nulo", () => {
+  it("risk is none when no drivers are present", () => {
     const r = overdevelopmentRisk({ cumulusDepthM: m(500) });
     expect(r.level).toBe("none");
     expect(r.drivers).toEqual([]);
   });
 
-  it("declara qué indicadores lo empujan", () => {
+  it("identifies all contributing risk drivers", () => {
     const r = overdevelopmentRisk({
       cumulusDepthM: m(2500),
       midLevelHumidityFrac: 0.85,
@@ -170,7 +170,7 @@ describe("riesgo de sobredesarrollo", () => {
     expect(r.level).toBe("severe");
   });
 
-  it("una inhibición fuerte no cuenta como indicador", () => {
+  it("strong inhibition does not count as low_inhibition driver", () => {
     const r = overdevelopmentRisk({
       cumulusDepthM: m(1500),
       convectiveInhibitionJkg: -120,
@@ -178,7 +178,7 @@ describe("riesgo de sobredesarrollo", () => {
     expect(r.drivers).not.toContain("low_inhibition");
   });
 
-  it("la CAPE solo suma riesgo, nunca lo resta", () => {
+  it("CAPE strictly adds risk and never discounts it", () => {
     const without = overdevelopmentRisk({ cumulusDepthM: m(1500) });
     const with2500 = overdevelopmentRisk({
       cumulusDepthM: m(1500),
@@ -187,7 +187,7 @@ describe("riesgo de sobredesarrollo", () => {
     expect(with2500.riskPoints).toBeGreaterThan(without.riskPoints);
   });
 
-  it("es ordinal, no binario", () => {
+  it("is ordinal rather than binary", () => {
     const levels = [0, 1500, 2500, 3500].map(
       (depth) =>
         overdevelopmentRisk(
@@ -200,7 +200,7 @@ describe("riesgo de sobredesarrollo", () => {
   });
 });
 
-describe("techo utilizable", () => {
+describe("usable ceiling", () => {
   const base = {
     hcritAglM: m(2200),
     thermalTopAglM: m(2600),
@@ -210,33 +210,33 @@ describe("techo utilizable", () => {
   };
 
   // N-03, P-02
-  it("con nubes lo limita la base y lo dice", () => {
+  it("with clouds, ceiling is limited by cloudbase and reported as such", () => {
     const r = usableCeiling({ ...base, cloudBaseAglM: m(1800) });
     expect(r.aglM).toBe(1800);
     expect(r.limitedBy).toBe("cloudbase");
     expect(r.mslM).toBe(2801);
   });
 
-  it("en día azul lo limita la altura crítica", () => {
+  it("on blue thermal days ceiling is limited by hcrit", () => {
     const r = usableCeiling(base);
     expect(r.aglM).toBe(2200);
     expect(r.limitedBy).toBe("hcrit");
   });
 
-  it("si el techo térmico es el más bajo, manda él", () => {
+  it("if thermal top is lowest, it sets the limit", () => {
     const r = usableCeiling({ ...base, thermalTopAglM: m(1500) });
     expect(r.aglM).toBe(1500);
     expect(r.limitedBy).toBe("boundary_layer");
   });
 
   // N-04
-  it("el cielo cerrado corta el día", () => {
+  it("overcast conditions shut down thermal soaring ceiling", () => {
     const r = usableCeiling({ ...base, overcast: true, cloudBaseAglM: m(1800) });
     expect(r.aglM).toBe(0);
     expect(r.limitedBy).toBe("overcast");
   });
 
-  it("sin convección el techo es cero y se declara", () => {
+  it("without convection usable ceiling is zero and declared", () => {
     expect(usableCeiling({ ...base, hcritAglM: null }).limitedBy).toBe("no_convection");
     expect(usableCeiling({ ...base, thermalTopAglM: m(0) }).limitedBy).toBe(
       "no_convection",
@@ -244,7 +244,7 @@ describe("techo utilizable", () => {
   });
 
   // P-02
-  it("nunca supera el menor de la altura crítica y la base de nubes", () => {
+  it("never exceeds the lesser of hcrit and cloudbase", () => {
     for (const hcrit of [800, 1500, 2200, 3000]) {
       for (const cloud of [900, 1600, 2400, 4000]) {
         const r = usableCeiling({
@@ -258,15 +258,15 @@ describe("techo utilizable", () => {
     }
   });
 
-  it("la conversión a MSL es coherente con la elevación", () => {
+  it("MSL conversion is consistent with terrain elevation", () => {
     const r = usableCeiling({ ...base, elevationMslM: m(500) });
     expect(r.mslM - r.aglM).toBe(500);
     expect(kToCelsius(celsiusToK(0))).toBeCloseTo(0, 9);
   });
 });
 
-describe("indicadores parciales del sobredesarrollo", () => {
-  it("la humedad media alta suma menos que la muy alta", () => {
+describe("partial overdevelopment drivers", () => {
+  it("high mid-level moisture scores lower than very high moisture", () => {
     const moderate = overdevelopmentRisk({
       cumulusDepthM: m(0),
       midLevelHumidityFrac: 0.65,
@@ -279,13 +279,13 @@ describe("indicadores parciales del sobredesarrollo", () => {
     expect(high.riskPoints).toBe(2);
   });
 
-  it("la humedad baja no suma nada", () => {
+  it("low mid-level moisture contributes zero risk points", () => {
     const r = overdevelopmentRisk({ cumulusDepthM: m(0), midLevelHumidityFrac: 0.3 });
     expect(r.riskPoints).toBe(0);
     expect(r.drivers).not.toContain("midlevel_moisture");
   });
 
-  it("las bandas de CAPE bajas no suman", () => {
+  it("weak and absent CAPE bands contribute zero points", () => {
     expect(
       overdevelopmentRisk({ cumulusDepthM: m(0), capeBand: "none" }).riskPoints,
     ).toBe(0);
@@ -297,7 +297,7 @@ describe("indicadores parciales del sobredesarrollo", () => {
     ).toBe(3);
   });
 
-  it("una inhibición ausente no cuenta como débil", () => {
+  it("null convective inhibition does not count as low_inhibition", () => {
     const r = overdevelopmentRisk({
       cumulusDepthM: m(0),
       convectiveInhibitionJkg: null,

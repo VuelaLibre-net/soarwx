@@ -1,9 +1,9 @@
 /**
- * Base de los cumulus.
+ * Cumulus cloudbase computation.
  *
- * Se calcula como el nivel de condensación de una parcela de **capa mezclada**:
- * la temperatura máxima prevista en superficie con la razón de mezcla media de
- * la capa, no con el punto de rocío instantáneo de dos metros.
+ * Computed as the condensation level of a **mixed layer parcel**:
+ * forecast maximum surface temperature combined with mass-weighted mean
+ * mixing ratio of the convective boundary layer.
  */
 
 import { m } from "../units/branded.js";
@@ -20,15 +20,15 @@ export interface CloudBaseResult {
   readonly baseMslM: Metres;
   readonly method: "mixed_layer_ccl";
   readonly mixedLayerMixingRatioKgKg: KgPerKg;
-  /** Verdadero si la base queda por debajo del techo térmico: puede haber cumulus. */
+  /** True when cloudbase lies below thermal ceiling (cumulus formation possible). */
   readonly sufficientMoisture: boolean;
 }
 
 /**
- * Base de cumulus por el nivel de condensación de la parcela de capa mezclada.
+ * Cumulus cloudbase via condensation level of mixed-layer parcel.
  *
- * @source Bolton, D. (1980), Monthly Weather Review 108, ec. 15 (LCL);
- *         parcela de capa mezclada, Stull, Practical Meteorology, cap. 5.
+ * @source Bolton, D. (1980), Monthly Weather Review 108, eq. 15 (LCL);
+ *         mixed-layer parcel method, Stull, Practical Meteorology, ch. 5.
  */
 export function cumulusBase(
   sounding: Sounding,

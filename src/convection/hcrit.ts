@@ -1,21 +1,20 @@
 /**
- * Altura crítica: hasta dónde se puede subir de verdad.
+ * Critical height: maximum realistic climb altitude.
  *
- * `hcrit` es la altura a la que la ascendencia cae por debajo del umbral con el
- * que se declara la térmica todavía explotable. DrJack la describe como el
- * techo práctico de ascenso sobre terreno llano y sin nubes, y fija ese umbral
- * en 225 fpm.
+ * `hcrit` is the altitude where updraft strength falls below the threshold
+ * defining exploitable thermals. DrJack describes it as the practical climb
+ * ceiling over flat ground without clouds, fixing the threshold at 225 fpm.
  *
- * El umbral **no** es el hundimiento del avión que se vuele: es una convención
- * de RASP, la misma para todo el catálogo de perfiles. Lo que sí depende del
- * avión es la lectura de variómetro, `expectedVarioAt`, que resta
- * `circlingSinkMs`. Separarlos es lo que permite elegir velero sin que se mueva
- * el techo. Ver `aircraft/profiles.ts`.
+ * The threshold is **not** the sink rate of the chosen aircraft: it is a
+ * RASP convention, identical across the profile catalogue. What depends on
+ * the aircraft is the expected vario reading, `expectedVarioAt`, which subtracts
+ * `circlingSinkMs`. Separating them allows choosing an aircraft without shifting
+ * the ceiling. See `aircraft/profiles.ts`.
  *
- * Se mide contra el **núcleo** de la térmica, no contra la media sobre su
- * sección: con `w* = 2.56 m/s` y `zi = 1401 m` la media a media capa es
- * 0.91 m/s, por debajo de los 1.143 m/s del umbral, y el día saldría involable
- * cuando es un día medio normal.
+ * Evaluated against the thermal **core**, not the cross-sectional average:
+ * with `w* = 2.56 m/s` and `zi = 1401 m`, mid-layer average climb is 0.91 m/s
+ * (below the 1.143 m/s threshold), which would falsely declare a normal day
+ * unsoarable.
  */
 
 import { m, mps } from "../units/branded.js";
@@ -25,27 +24,26 @@ import type { Result } from "../types/result.js";
 import type { AircraftProfile } from "../aircraft/profiles.js";
 import { ZERO_CROSSING_RATIO, updraftPeakAt } from "./updraft.js";
 
-/** Muestreo grueso para localizar el máximo antes de refinar. */
+/** Coarse sampling to bracket the peak before refining. */
 const COARSE_SAMPLES = 200;
 const BISECTION_STEPS = 60;
 
 export interface CriticalHeightResult {
   readonly hcritAglM: Metres;
-  /** Altura del máximo de ascendencia en el núcleo. */
+  /** Height of peak core climb. */
   readonly peakHeightAglM: Metres;
-  /** Ascendencia máxima en el núcleo. */
+  /** Maximum core climb rate. */
   readonly peakClimbMs: MPerS;
 }
 
 /**
- * Altura donde la ascendencia del núcleo cae por debajo del umbral de `hcrit`
- * del perfil.
+ * Altitude where core updraft strength drops below the profile's `hcrit` threshold.
  *
- * Devuelve `NO_CONVECTION` cuando la térmica nunca llega a alcanzar el umbral:
- * eso es un día involable, no un `hcrit` de cero.
+ * Returns `NO_CONVECTION` when thermals never reach the threshold: this represents
+ * an unsoarable day, not an `hcrit` of zero.
  *
- * @source Glendening (DrJack), RASP BLIPMAP, definición de hcrit (225 fpm);
- *         Allen, M. J. (2006), AIAA 2006-1510, ec. 11-15 (perfil).
+ * @source Glendening (DrJack), RASP BLIPMAP, definition of hcrit (225 fpm);
+ *         Allen, M. J. (2006), AIAA 2006-1510, eq. 11-15 (profile).
  */
 export function criticalHeight(
   wStarMs: MPerS,
@@ -58,7 +56,7 @@ export function criticalHeight(
 
   const top = ziAglM * ZERO_CROSSING_RATIO;
 
-  // 1. Localizar el máximo del perfil de núcleo.
+  // 1. Locate peak of core profile.
   let peakHeight = 0;
   let peakClimb = -Infinity;
   for (let i = 1; i <= COARSE_SAMPLES; i++) {
@@ -79,7 +77,7 @@ export function criticalHeight(
     });
   }
 
-  // 2. Bisecar en la rama descendente, donde el perfil es monótono.
+  // 2. Bisect on descending branch where profile is monotonic.
   let low = peakHeight;
   let high = top;
   for (let i = 0; i < BISECTION_STEPS; i++) {
@@ -95,23 +93,23 @@ export function criticalHeight(
   });
 }
 
-/** Altura relativa desde la que se considera que empieza la banda de trabajo. */
+/** Relative height representing the bottom of the working band. */
 export const WORKING_BAND_BOTTOM_FRAC = 0.1;
 
 /**
- * Ascendencia media que ve el variómetro a lo largo de una subida completa,
- * desde el 10 % de la capa hasta la altura crítica.
+ * Mean climb rate seen on the vario throughout a full climb, from 10 %
+ * of the boundary layer up to the critical height.
  *
- * Es el número que corresponde a lo que el piloto experimenta subiendo, y no
- * depende de elegir una altura arbitraria: el perfil del núcleo tiene su máximo
- * cerca del 20 % de la capa, así que evaluarlo a media capa infravalora la
- * térmica y evaluarlo en el máximo la exagera.
+ * Represents what a pilot actually experiences during climbs without relying
+ * on arbitrary evaluation heights: the core peak sits near 20 % of the layer,
+ * so evaluating at mid-layer underestimates thermal strength while evaluating
+ * at the peak overestimates it.
  *
- * Mezcla las dos magnitudes del perfil a propósito: la banda la delimita el
- * umbral de `hcrit`, y el valor dentro de ella lo fija el hundimiento del avión.
+ * Blends both profile quantities intentionally: working band is bounded by
+ * the `hcrit` threshold, while the rate inside is determined by aircraft sink.
  *
- * @source Allen (2006), AIAA 2006-1510, ec. 11-15 (perfil); promediado sobre la
- *         banda de trabajo definida por `hcrit`.
+ * @source Allen (2006), AIAA 2006-1510, eq. 11-15 (profile); integrated over
+ *         working band defined by `hcrit`.
  */
 export function meanClimbOverBand(
   wStarMs: MPerS,
@@ -137,15 +135,16 @@ export function meanClimbOverBand(
 }
 
 /**
- * Lectura esperada de variómetro a una altura: ascendencia del núcleo menos el
- * régimen de caída del avión virando. Puede ser negativa, y eso es información.
+ * Expected variometer reading at altitude: core updraft minus circling sink rate.
+ * Can be negative, which conveys valuable information.
  *
- * Salvo con `RASP_REFERENCE`, no cruza cero en `hcrit` sino más arriba: en
- * `hcrit` vale `hcritThresholdMs - circlingSinkMs`, que para un velero real es
- * positivo. Es la consecuencia buscada de separar el criterio del avión.
+ * Except for `RASP_REFERENCE`, does not cross zero at `hcrit` but higher:
+ * at `hcrit` it equals `hcritThresholdMs - circlingSinkMs`, which is positive
+ * for real gliders. This is the intended consequence of decoupling the
+ * criterion from aircraft polar data.
  *
- * @source Glendening (DrJack): «restar el régimen de caída del planeador para
- *         obtener la lectura media de variómetro».
+ * @source Glendening (DrJack): "subtract glider sink rate to obtain average
+ *         variometer reading".
  */
 export function expectedVarioAt(
   wStarMs: MPerS,

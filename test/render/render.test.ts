@@ -37,7 +37,7 @@ const day = dayResult.value;
 const all = (): readonly [string, string][] => [
   ["skew-T", renderSkewT(sounding, { parcelFromK: celsiusToK(35.4) })],
   [
-    "perfil",
+    "profile",
     renderUpdraftProfile(mps(2.8), m(2600), GLIDER_CLUB, {
       marks: { hcritAglM: m(2300), cloudBaseAglM: m(3200) },
     }),
@@ -46,12 +46,12 @@ const all = (): readonly [string, string][] => [
 ];
 
 // R-01
-describe("los tres gráficos son SVG válido", () => {
+describe("all three charts produce valid SVG", () => {
   for (const [name, svg] of all()) {
-    it(`${name} abre y cierra bien`, () => {
+    it(`${name} opens and closes correctly`, () => {
       expect(svg.startsWith("<svg")).toBe(true);
       expect(svg.endsWith("</svg>")).toBe(true);
-      // Etiquetas balanceadas: cada apertura tiene su cierre o es auto-cerrada.
+      // Balanced tags: each open tag matches a closing tag or is self-closing.
       const opens = (svg.match(/<[a-zA-Z]+[^>]*[^/]>/g) ?? []).length;
       const closes = (svg.match(/<\/[a-zA-Z]+>/g) ?? []).length;
       expect(opens).toBe(closes);
@@ -60,10 +60,9 @@ describe("los tres gráficos son SVG válido", () => {
 });
 
 // R-02
-describe("son responsive", () => {
+describe("charts are responsive", () => {
   for (const [name, svg] of all()) {
-    it(`${name} lleva viewBox y la raíz no lleva tamaño en píxeles`, () => {
-      // Solo importa el elemento raíz: los `rect` internos sí llevan medidas.
+    it(`${name} includes viewBox and root element omits hardcoded pixel dimensions`, () => {
       const root = /^<svg[^>]*>/.exec(svg)?.[0] ?? "";
       expect(root).toMatch(/viewBox="0 0 [\d.]+ [\d.]+"/);
       expect(root).not.toMatch(/\swidth="/);
@@ -74,9 +73,9 @@ describe("son responsive", () => {
 });
 
 // R-03
-describe("son accesibles", () => {
+describe("charts are accessible", () => {
   for (const [name, svg] of all()) {
-    it(`${name} lleva title, desc y aria-labelledby`, () => {
+    it(`${name} includes title, desc, and aria-labelledby attributes`, () => {
       expect(svg).toMatch(/<title id="t">[^<]+<\/title>/);
       expect(svg).toMatch(/<desc id="d">[^<]+<\/desc>/);
       expect(svg).toContain('role="img"');
@@ -84,22 +83,25 @@ describe("son accesibles", () => {
     });
   }
 
-  it("los textos se pueden personalizar", () => {
-    const svg = renderDayTimeline(day, { title: "Mi día", desc: "Descripción propia" });
-    expect(svg).toContain('<title id="t">Mi día</title>');
-    expect(svg).toContain("Descripción propia");
+  it("titles and descriptions can be customized", () => {
+    const svg = renderDayTimeline(day, {
+      title: "Custom Day",
+      desc: "Custom description",
+    });
+    expect(svg).toContain('<title id="t">Custom Day</title>');
+    expect(svg).toContain("Custom description");
   });
 });
 
 // R-04
-describe("heredan el tema del consumidor", () => {
-  it("los colores por defecto son variables CSS con respaldo", () => {
+describe("theme adaptation", () => {
+  it("default palette entries use CSS custom properties with fallbacks", () => {
     for (const value of Object.values(DEFAULT_PALETTE)) {
       expect(value).toMatch(/^var\(--[a-z0-9-]+, #[0-9a-f]{6}\)$/);
     }
   });
 
-  it("la paleta se puede sustituir entera o en parte", () => {
+  it("palette can be overridden partially or completely", () => {
     const svg = renderUpdraftProfile(mps(2.5), m(2000), GLIDER_CLUB, {
       palette: { core: "tomato" },
     });
@@ -109,9 +111,9 @@ describe("heredan el tema del consumidor", () => {
 });
 
 // R-07
-describe("no hay texto ilegible", () => {
+describe("text legibility constraints", () => {
   for (const [name, svg] of all()) {
-    it(`${name} no baja de ${String(MIN_FONT_SIZE_PX)} px`, () => {
+    it(`${name} font size remains >= ${String(MIN_FONT_SIZE_PX)} px`, () => {
       for (const match of svg.matchAll(/font-size="([\d.]+)"/g)) {
         expect(Number(match[1])).toBeGreaterThanOrEqual(MIN_FONT_SIZE_PX);
       }
@@ -119,28 +121,28 @@ describe("no hay texto ilegible", () => {
   }
 });
 
-describe("primitivas", () => {
-  it("escapan lo que podría romper el documento", () => {
+describe("SVG primitives", () => {
+  it("escapes characters that could corrupt document XML", () => {
     expect(escapeText('<a href="x">&\'')).toBe("&lt;a href=&quot;x&quot;&gt;&amp;&#39;");
   });
 
-  it("redondean para no arrastrar ruido de coma flotante", () => {
+  it("rounds numbers to avoid floating point noise", () => {
     expect(round(1 / 3)).toBe("0.33");
     expect(round(2.5, 0)).toBe("3");
     expect(round(Number.NaN)).toBe("0");
     expect(round(Number.POSITIVE_INFINITY)).toBe("0");
   });
 
-  it("un título con comillas no rompe el SVG", () => {
-    const svg = renderDayTimeline(day, { title: 'Día "raro" & <peligroso>' });
-    expect(svg).toContain("&quot;raro&quot;");
-    expect(svg).not.toContain("<peligroso>");
+  it("title with special characters does not break SVG markup", () => {
+    const svg = renderDayTimeline(day, { title: 'Day "test" & <danger>' });
+    expect(svg).toContain("&quot;test&quot;");
+    expect(svg).not.toContain("<danger>");
   });
 });
 
 // R-05
-describe("sin dependencias externas", () => {
-  it("ningún módulo de render importa un paquete de terceros", () => {
+describe("zero external runtime dependencies", () => {
+  it("no render module imports third-party packages", () => {
     const files = ["svg.ts", "theme.ts", "skewt.ts", "profile.ts", "timeline.ts"];
     for (const file of files) {
       const source = readFileSync(
@@ -154,8 +156,8 @@ describe("sin dependencias externas", () => {
   });
 });
 
-describe("contenido de cada gráfico", () => {
-  it("el skew-T dibuja entorno, rocío, parcela y marcas", () => {
+describe("chart rendering content", () => {
+  it("skew-T renders environment, dewpoint, parcel trajectory, and level marks", () => {
     const svg = renderSkewT(sounding, {
       parcelFromK: celsiusToK(35.4),
       lclMslM: m(4000),
@@ -165,20 +167,17 @@ describe("contenido de cada gráfico", () => {
     expect(svg).toContain(DEFAULT_PALETTE.dewpoint);
     expect(svg).toContain(DEFAULT_PALETTE.parcel);
     expect(svg).toContain(
-      `techo utilizable ${String(Math.round(3300 - sounding.site.elevationMslM))} m AGL`,
+      `usable ceiling ${String(Math.round(3300 - sounding.site.elevationMslM))} m AGL`,
     );
-    // La base de nubes ya no lleva rótulo de texto: la marca el glifo de nube
-    // con su altura debajo, que es como se lee en un sondeo de verdad.
     expect(svg).toContain(">3000<");
-    // Etiquetas de presión de los niveles que existen.
     expect(svg).toContain(">850<");
   });
 
-  it("sin parcela no se dibuja la parcela", () => {
+  it("omits parcel trajectory when parcel temperature is not provided", () => {
     expect(renderSkewT(sounding)).not.toContain(DEFAULT_PALETTE.parcel);
   });
 
-  it("el perfil dibuja media, núcleo y variómetro", () => {
+  it("updraft profile renders mean, core, and variometer curves", () => {
     const svg = renderUpdraftProfile(mps(2.8), m(2600), GLIDER_CLUB, {
       marks: { hcritAglM: m(2300) },
     });
@@ -188,7 +187,7 @@ describe("contenido de cada gráfico", () => {
     expect((svg.match(/<polyline/g) ?? []).length).toBeGreaterThan(5);
   });
 
-  it("la timeline resalta las ventanas y el mejor momento", () => {
+  it("timeline highlights soaring windows and best hour", () => {
     const svg = renderDayTimeline(day);
     expect(day.windows.length).toBeGreaterThan(0);
     expect(svg).toContain(DEFAULT_PALETTE.window);
@@ -196,19 +195,16 @@ describe("contenido de cada gráfico", () => {
     expect(svg).toContain("2026-08-18");
   });
 
-  // La forma del día se lee de la envolvente, no de barras sueltas: dos
-  // superficies rellenas —la utilizable y la que sube pero no compensa— con su
-  // línea de techo y su línea de tope.
-  it("la timeline dibuja las dos superficies de la capa convectiva", () => {
+  it("timeline renders both convective layer surfaces", () => {
     const svg = renderDayTimeline(day);
     expect((svg.match(/<path[^>]*opacity="0\.16"/g) ?? []).length).toBe(1);
     expect((svg.match(/<path[^>]*opacity="0\.45"/g) ?? []).length).toBe(1);
     expect(svg).toContain(DEFAULT_PALETTE.core);
-    expect(svg).toContain("tope de térmica");
-    expect(svg).toContain("techo utilizable");
+    expect(svg).toContain("thermal top");
+    expect(svg).toContain("usable ceiling");
   });
 
-  it("suaviza las dos líneas de altura conservando los puntos de datos", () => {
+  it("smooths altitude curves while preserving data points", () => {
     const svg = renderDayTimeline(day);
     const paths = svg.match(/<path[^>]+\/>/g) ?? [];
     const top = paths.find((path) => path.includes(`stroke="${DEFAULT_PALETTE.core}"`));
@@ -238,12 +234,11 @@ describe("contenido de cada gráfico", () => {
     const ceilingAnchors = anchors(ceiling ?? "");
     for (const [x, ceilingY] of ceilingAnchors) {
       const topY = topAnchors.find(([topX]) => topX === x)?.[1];
-      // En SVG la y crece hacia abajo, así que estar más alto es tener menos y.
       expect(topY).toBeLessThanOrEqual(ceilingY);
     }
   });
 
-  it("parte el techo en los ceros sin cortar el tope ni su banda residual", () => {
+  it("splits ceiling curve across zero-soaring hours cleanly", () => {
     const gapped = {
       ...day,
       hours: day.hours.map((hour) => {
@@ -274,8 +269,6 @@ describe("contenido de cada gráfico", () => {
     expect(usableAreas).toHaveLength(2);
     expect(residual).toContain("218");
 
-    // Las dos curvas de techo terminan y empiezan en los puntos exactos que
-    // flanquean la hora a cero; ninguna baja hasta el eje en el trazo.
     expect(ceilingLines[0]).toContain('d="M 173.31 156.4');
     expect(ceilingLines[0]).toContain("246.06 156.4");
     expect(ceilingLines[1]).toContain('d="M 318.81 156.4');
@@ -283,31 +276,29 @@ describe("contenido de cada gráfico", () => {
     for (const line of ceilingLines) expect(line).not.toContain("218");
   });
 
-  it("la tira de viento se puede quitar, y sin ella no hay flechas", () => {
-    const conViento = renderDayTimeline(day);
-    expect(conViento).toContain(">viento<");
-    expect(conViento).toContain(DEFAULT_PALETTE.wind);
+  it("wind strip can be disabled to omit arrows", () => {
+    const withWind = renderDayTimeline(day);
+    expect(withWind).toContain(">wind<");
+    expect(withWind).toContain(DEFAULT_PALETTE.wind);
 
-    const sinViento = renderDayTimeline(day, { wind: false });
-    expect(sinViento).not.toContain(">viento<");
-    expect(sinViento).not.toContain(DEFAULT_PALETTE.wind);
+    const withoutWind = renderDayTimeline(day, { wind: false });
+    expect(withoutWind).not.toContain(">wind<");
+    expect(withoutWind).not.toContain(DEFAULT_PALETTE.wind);
   });
 
-  // El día de la fixture es azul. Dibujar una base de cumulus sería inventar
-  // una nube que no va a estar ahí.
-  it("en día azul no se dibuja la base de cumulus", () => {
+  it("omits cumulus base line on blue thermal days", () => {
     const svg = renderDayTimeline(day);
     expect(day.hours.every((hour) => hour.cloud.blue)).toBe(true);
-    expect(svg).not.toContain("base de cumulus");
+    expect(svg).not.toContain("cumulus base");
   });
 
-  it("un día sin horas volables se dibuja igual, sin reventar", () => {
+  it("renders empty soaring day without error", () => {
     const empty = { ...day, hours: [], windows: [], best: null };
     const svg = renderDayTimeline(empty);
     expect(svg.startsWith("<svg")).toBe(true);
   });
 
-  it("la franja horaria se puede acotar", () => {
+  it("supports narrowing display hour range", () => {
     const narrow = renderDayTimeline(day, { fromLocalHours: 12, toLocalHours: 14 });
     expect(narrow).toContain("<svg");
     expect(narrow.length).toBeLessThan(renderDayTimeline(day).length);
@@ -315,12 +306,12 @@ describe("contenido de cada gráfico", () => {
 });
 
 // R-06
-describe("instantáneas", () => {
-  it("el skew-T de Fuentemilanos es estable", () => {
+describe("rendering snapshot stability", () => {
+  it("Fuentemilanos skew-T snapshot matches", () => {
     expect(renderSkewT(sounding, { parcelFromK: celsiusToK(35.4) })).toMatchSnapshot();
   });
 
-  it("el perfil de ascendencias es estable", () => {
+  it("updraft profile snapshot matches", () => {
     expect(
       renderUpdraftProfile(mps(2.8), m(2600), GLIDER_CLUB, {
         marks: { hcritAglM: m(2300) },
@@ -328,74 +319,68 @@ describe("instantáneas", () => {
     ).toMatchSnapshot();
   });
 
-  it("la timeline del día es estable", () => {
+  it("day timeline snapshot matches", () => {
     expect(renderDayTimeline(day)).toMatchSnapshot();
   });
 });
 
-describe("alturas equivalentes en el eje de presión", () => {
-  it("rotula la altura sobre el terreno junto a cada nivel", () => {
+describe("pressure axis equivalent altitude labels", () => {
+  it("labels height AGL beside isobaric pressure levels", () => {
     const svg = renderSkewT(sounding);
     expect(svg).toContain(">hPa<");
     expect(svg).toContain(">m AGL<");
-    // 850 hPa está a 1566 m MSL en este sondeo, con el aeródromo a 1001 m:
-    // 565 m sobre el terreno, redondeado a la decena.
     expect(svg).toContain(">570<");
     expect(svg).toContain(">850<");
   });
 
-  it("puede rotularlas sobre el nivel del mar", () => {
+  it("supports MSL height reference mode", () => {
     const svg = renderSkewT(sounding, { heightReference: "msl" });
     expect(svg).toContain(">m MSL<");
     expect(svg).toContain(">1570<");
   });
 
-  it("las alturas salen del sondeo, no de la atmósfera estándar", () => {
-    // En atmósfera estándar 700 hPa está a 3012 m; este sondeo lo pone a 3225.
+  it("derives heights from sounding geopotential rather than standard atmosphere", () => {
     const svg = renderSkewT(sounding, { heightReference: "msl" });
     expect(svg).toContain(">3230<");
     expect(svg).not.toContain(">3010<");
   });
 
-  it("crecen con la altura y nunca son negativas", () => {
+  it("altitudes increase with height and remain non-negative", () => {
     const svg = renderSkewT(sounding);
     const labels = [...svg.matchAll(/opacity="0.75">(\d+)</g)].map((m) => Number(m[1]));
     expect(labels.length).toBeGreaterThan(3);
     for (const value of labels) expect(value).toBeGreaterThanOrEqual(0);
-    // El eje va de abajo arriba, así que las etiquetas salen en orden creciente.
     for (let i = 1; i < labels.length; i++) {
       expect(labels[i]!).toBeGreaterThan(labels[i - 1]!);
     }
   });
 });
 
-describe("columna de viento", () => {
-  it("aparece por defecto, con velocidad y rumbos", () => {
+describe("wind panel", () => {
+  it("renders by default with speed scale and direction arrows", () => {
     const svg = renderSkewT(sounding);
     expect(svg).toContain("km/h");
-    // Una flecha por cada tramo muestreado: trazos con dos barbas.
     const arrows = (svg.match(/<path d="M [^"]*M [^"]*L [^"]*L [^"]*"/g) ?? []).length;
     expect(arrows).toBeGreaterThanOrEqual(4);
   });
 
-  it("se puede quitar", () => {
+  it("can be disabled", () => {
     expect(renderSkewT(sounding, { wind: false })).not.toContain("km/h");
   });
 
-  it("acepta nudos y metros por segundo", () => {
+  it("supports knots and metres per second units", () => {
     expect(renderSkewT(sounding, { windUnit: "kt" })).toContain(">kt<");
     expect(renderSkewT(sounding, { windUnit: "ms" })).toContain(">m/s<");
   });
 
-  it("sombrea desde 30 km/h y desde el corte de Allen", () => {
+  it("shades brisk and cutoff wind threshold zones", () => {
     expect(WIND_SHADE_THRESHOLDS_MS.brisk).toBeCloseTo(8.33, 2);
     expect(WIND_SHADE_THRESHOLDS_MS.cutoff).toBe(12.87);
     const svg = renderSkewT(sounding);
     expect((svg.match(/opacity="0\.1"|opacity="0\.18"/g) ?? []).length).toBe(2);
   });
 
-  it("la flecha apunta hacia donde sopla, no de dónde viene", () => {
-    // Viento del norte (0°) sopla hacia el sur: en pantalla, hacia abajo.
+  it("wind arrow points downwind (toward flow direction)", () => {
     const northerly = {
       ...sounding,
       levels: sounding.levels.map((l) => ({
@@ -413,41 +398,36 @@ describe("columna de viento", () => {
     );
     expect(first).not.toBeNull();
     if (first === null) return;
-    // La punta queda por debajo de la cola: y crece hacia el sur.
     expect(Number(first[4])).toBeGreaterThan(Number(first[2]));
   });
 });
 
-describe("nube y capa", () => {
-  it("dibuja el glifo en la base y rotula su altura", () => {
+describe("cloud layer and base", () => {
+  it("renders cloud glyph at LCL and labels base altitude", () => {
     const svg = renderSkewT(sounding, {
       lclMslM: m(2600),
       cloudTopMslM: m(3300),
     });
     expect(svg).toContain("<path");
-    expect(svg).toContain(">1600<"); // 2600 MSL con el campo a 1001 m
-    // Banda de nube sombreada entre base y techo.
+    expect(svg).toContain(">1600<");
     expect(svg).toMatch(/opacity="0\.14"/);
   });
 
-  it("sin base de nubes no dibuja ni glifo ni banda", () => {
+  it("omits cloud glyph and layer when cloud base is omitted", () => {
     const svg = renderSkewT(sounding, { wind: false });
     expect(svg).not.toMatch(/opacity="0\.14"/);
   });
 });
 
-describe("higiene del panel de viento y de los ejes", () => {
+describe("wind panel and axis layout hygiene", () => {
   const svg = renderSkewT(sounding);
 
-  /** Extremos de cada flecha: cola y punta. */
   const arrowEnds = (markup: string) =>
     [...markup.matchAll(/<path d="M ([\d.-]+) ([\d.-]+) L ([\d.-]+) ([\d.-]+) M/g)].map(
       (m) => ({ tailY: Number(m[2]), tipY: Number(m[4]) }),
     );
 
-  it("las flechas no se amontonan junto al suelo", () => {
-    // Los niveles de altura caben todos en los primeros 200 m: repartirlas por
-    // índice ponía cinco flechas en unos pocos píxeles.
+  it("prevents wind arrow crowding near surface", () => {
     const ys = arrowEnds(svg)
       .map((a) => (a.tailY + a.tipY) / 2)
       .sort((a, b) => a - b);
@@ -457,27 +437,26 @@ describe("higiene del panel de viento y de los ejes", () => {
     }
   });
 
-  it("ninguna flecha se sale del cuadro", () => {
+  it("contains all wind arrows within panel bounds", () => {
     const panelTop = 30;
     for (const arrow of arrowEnds(svg)) {
       expect(Math.min(arrow.tailY, arrow.tipY)).toBeGreaterThanOrEqual(panelTop);
     }
   });
 
-  it("la escala de viento usa cifras redondas", () => {
+  it("formats wind speed scale with round step increments", () => {
     const labels = [...svg.matchAll(/transform="rotate\(90[^"]*">(\d+)</g)].map((m) =>
       Number(m[1]),
     );
     expect(labels.length).toBeGreaterThanOrEqual(3);
     for (const value of labels) expect(value % 5).toBe(0);
-    // Y el paso es constante.
     const step = labels[1]! - labels[0]!;
     for (let i = 1; i < labels.length; i++) {
       expect(labels[i]! - labels[i - 1]!).toBe(step);
     }
   });
 
-  it("la unidad va fuera del cuadro", () => {
+  it("positions wind unit label above panel", () => {
     const unit = /<text x="[\d.]+" y="([\d.]+)"[^>]*text-anchor="end">km\/h<\/text>/.exec(
       svg,
     );
@@ -485,12 +464,11 @@ describe("higiene del panel de viento y de los ejes", () => {
     if (unit !== null) expect(Number(unit[1])).toBeLessThan(30);
   });
 
-  it("los rótulos del eje izquierdo van abajo, no encima del último nivel", () => {
+  it("places left axis unit labels at bottom", () => {
     expect(svg).toContain(">hPa<");
     expect(svg).toContain(">m AGL<");
     const caption = /<text x="[\d.]+" y="([\d.]+)"[^>]*>hPa<\/text>/.exec(svg);
     expect(caption).not.toBeNull();
-    // Por debajo del gráfico, no en el margen superior donde estaba el 500 hPa.
     if (caption !== null) expect(Number(caption[1])).toBeGreaterThan(400);
   });
 });

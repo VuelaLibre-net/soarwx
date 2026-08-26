@@ -5,9 +5,9 @@ import { celsiusToK, hPaToPa } from "../../src/units/convert.js";
 import { Pa } from "../../src/units/branded.js";
 import { thetaEK } from "../golden/thetaE.js";
 
-describe("ascenso adiabático seco", () => {
+describe("dry adiabatic lift", () => {
   // T-05
-  it("va y vuelve exactamente", () => {
+  it("round-trips exactly", () => {
     const t = celsiusToK(22);
     const p1 = hPaToPa(950);
     const p2 = hPaToPa(600);
@@ -15,21 +15,21 @@ describe("ascenso adiabático seco", () => {
     expect(Math.abs(back - t)).toBeLessThan(1e-9);
   });
 
-  it("enfría al subir y calienta al bajar", () => {
+  it("cools on ascent and warms on descent", () => {
     const t = celsiusToK(20);
     expect(dryAdiabaticLift(t, hPaToPa(900), hPaToPa(700))).toBeLessThan(t);
     expect(dryAdiabaticLift(t, hPaToPa(900), hPaToPa(1000))).toBeGreaterThan(t);
   });
 });
 
-describe("ascenso pseudoadiabático", () => {
-  it("no mueve nada si el destino es el origen", () => {
+describe("pseudoadiabatic lift", () => {
+  it("does not change if target matches origin", () => {
     const t = celsiusToK(15);
     const r = moistAdiabaticLift(t, hPaToPa(850), hPaToPa(850));
     expect(r.ok && r.value).toBe(t);
   });
 
-  it("enfría menos que el adiabático seco", () => {
+  it("cools more slowly than dry adiabatic", () => {
     const t = celsiusToK(20);
     const from = hPaToPa(900);
     const to = hPaToPa(600);
@@ -39,7 +39,7 @@ describe("ascenso pseudoadiabático", () => {
   });
 
   // T-07
-  it("conserva la θe de Bolton dentro de 0.5 K de 900 a 500 hPa", () => {
+  it("conserves Bolton's θe within 0.5 K from 900 to 500 hPa", () => {
     for (const tc of [5, 10, 15, 20, 25, 30]) {
       const p0 = hPaToPa(900);
       const t0 = celsiusToK(tc);
@@ -51,13 +51,13 @@ describe("ascenso pseudoadiabático", () => {
         expect(r.ok).toBe(true);
         if (!r.ok) continue;
         const te1 = thetaEK(r.value, p1, saturationMixingRatio(r.value, p1), r.value);
-        // Medido: la deriva máxima es 0.495 K, a 30 °C hasta 500 hPa.
+        // Measured: maximum drift is 0.495 K, at 30 °C up to 500 hPa.
         expect(Math.abs(te1 - te0)).toBeLessThan(0.5);
       }
     }
   });
 
-  it("el descenso deshace el ascenso dentro de la tolerancia", () => {
+  it("descent reverses ascent within tolerance", () => {
     const t = celsiusToK(18);
     const up = moistAdiabaticLift(t, hPaToPa(900), hPaToPa(700));
     expect(up.ok).toBe(true);
@@ -68,7 +68,7 @@ describe("ascenso pseudoadiabático", () => {
   });
 
   // T-08
-  it("con tolerancia inalcanzable devuelve NOT_CONVERGED, no un número malo", () => {
+  it("returns NOT_CONVERGED with unreachable tolerance, not a bad number", () => {
     const r = moistAdiabaticLift(celsiusToK(25), hPaToPa(900), hPaToPa(500), {
       tolK: 1e-15,
       minStepPa: Pa(1000),
@@ -80,14 +80,13 @@ describe("ascenso pseudoadiabático", () => {
     }
   });
 
-  it("reduce el paso y continúa cuando el inicial es demasiado grueso", () => {
+  it("reduces step size and continues when initial step is too coarse", () => {
     const r = moistAdiabaticLift(celsiusToK(25), hPaToPa(950), hPaToPa(500), {
       maxStepPa: Pa(20000),
       tolK: 1e-9,
     });
     expect(r.ok).toBe(true);
-    // El resultado debe coincidir con el de un paso fino: la adaptación
-    // converge al mismo número, no a uno distinto.
+    // Result should match fine-step run: adaptation converges to same value.
     const fine = moistAdiabaticLift(celsiusToK(25), hPaToPa(950), hPaToPa(500), {
       maxStepPa: Pa(100),
       tolK: 1e-9,
@@ -96,7 +95,7 @@ describe("ascenso pseudoadiabático", () => {
     if (r.ok && fine.ok) expect(Math.abs(r.value - fine.value)).toBeLessThan(1e-4);
   });
 
-  it("con tope de iteraciones agotado devuelve NOT_CONVERGED", () => {
+  it("returns NOT_CONVERGED when iteration limit is reached", () => {
     const r = moistAdiabaticLift(celsiusToK(20), hPaToPa(950), hPaToPa(400), {
       maxStepPa: Pa(10),
       maxIterations: 3,
@@ -108,7 +107,7 @@ describe("ascenso pseudoadiabático", () => {
     }
   });
 
-  it("rechaza presiones no positivas", () => {
+  it("rejects non-positive pressures", () => {
     const r = moistAdiabaticLift(celsiusToK(20), Pa(0), hPaToPa(500));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("OUT_OF_VALID_RANGE");

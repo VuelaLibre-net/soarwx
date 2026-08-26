@@ -25,25 +25,23 @@ const hourAt = (d: typeof icon, local: string) =>
   d.hours.find((h) => h.timeUtc.slice(11, 16) === local);
 
 // G-01
-describe("un día real de Fuentemilanos", () => {
-  it("se calcula completo", () => {
+describe("real day at Fuentemilanos", () => {
+  it("computes complete day", () => {
     expect(icon.hours).toHaveLength(24);
     expect(icon.dateLocal).toBe("2026-08-18");
     expect(icon.site.icao).toBe("LEFM");
   });
 
-  it("usa el flujo del modelo, no la reconstrucción", () => {
+  it("uses model heat flux rather than energy balance reconstruction", () => {
     for (const hour of icon.hours) {
       expect(hour.quality.heatFluxSource).toBe("model");
       expect(hour.quality.heatFluxEstimated).not.toContain("sensible_heat_flux");
     }
   });
 
-  // El signo de `sensible_heat_flux` depende del modelo: ICON lo sirve
-  // positivo hacia abajo y GFS positivo hacia arriba. El informe tiene que
-  // publicarlo ya normalizado, positivo hacia arriba, o el consumidor pinta
-  // una tarde de agosto enfriándose. Ver OPEN_METEO_INTEGRATION.md §4.1.
-  it("publica el calentamiento en superficie con el signo normalizado", () => {
+  // Sensible heat flux sign depends on model convention: ICON is positive down,
+  // GFS is positive up. The report normalizes both to positive upward.
+  it("publishes surface heating with normalized sign convention", () => {
     for (const d of [icon, gfs]) {
       const noon = hourAt(d, "14:00")!;
       expect(noon.thermal.surfaceHeatFluxWm2).toBeGreaterThan(0);
@@ -56,12 +54,12 @@ describe("un día real de Fuentemilanos", () => {
     }
   });
 
-  it("conserva la calidad del sondeo: cuatro niveles bajo tierra", () => {
+  it("preserves sounding quality metadata: four underground levels discarded", () => {
     expect(hourAt(icon, "14:00")?.quality.levelsDiscardedBelowGround).toBe(4);
     expect(hourAt(icon, "14:00")?.quality.pressureLevelsUsed).toBe(6);
   });
 
-  it("de noche no hay convección y se dice", () => {
+  it("identifies nocturnal absence of convection", () => {
     const night = hourAt(icon, "04:00");
     expect(night?.thermal.wStarMs).toBe(0);
     expect(night?.ceiling.limitedBy).toBe("no_convection");
@@ -69,7 +67,7 @@ describe("un día real de Fuentemilanos", () => {
     expect(night?.score.level).toBe(1);
   });
 
-  it("el techo crece durante la mañana y el mejor momento es por la tarde", () => {
+  it("ceiling climbs through morning and peaks in afternoon", () => {
     const morning = hourAt(icon, "10:00")!.ceiling.aglM;
     const noon = hourAt(icon, "14:00")!.ceiling.aglM;
     const afternoon = hourAt(icon, "16:00")!.ceiling.aglM;
@@ -78,19 +76,17 @@ describe("un día real de Fuentemilanos", () => {
     expect(Number(icon.best?.timeUtc.slice(11, 13))).toBeGreaterThanOrEqual(13);
   });
 
-  it("el techo lo limita la altura crítica, no el modelo", () => {
+  it("ceiling is constrained by critical height hcrit rather than model boundary", () => {
     expect(hourAt(icon, "14:00")?.ceiling.limitedBy).toBe("hcrit");
   });
 
-  it("es un día azul, coherente con los 29 K de separación", () => {
+  it("diagnoses blue thermal day consistent with 29 K dewpoint depression", () => {
     expect(hourAt(icon, "14:00")?.cloud.blue).toBe(true);
     expect(hourAt(gfs, "14:00")?.cloud.blue).toBe(true);
   });
 
-  // R-10.6: el LI del modelo es positivo, pero la capa convectiva pasa de
-  // 2000 m. Un índice de convección profunda no puede topar un día de capa
-  // límite que funciona. Ver AUDIT.md O-1.
-  it("un LI positivo no topa el día si la capa convectiva da de sí", () => {
+  // R-10.6: positive model LI does not cap day if boundary layer is deep (> 2000 m).
+  it("positive Lifted Index does not cap day when boundary layer is deep", () => {
     const noon = hourAt(gfs, "14:00")!;
     expect(noon.stability.liftedIndexSource).toBe("model");
     expect(noon.stability.liftedIndex).toBeGreaterThanOrEqual(0);
@@ -99,18 +95,18 @@ describe("un día real de Fuentemilanos", () => {
     expect(noon.score.level).toBe(noon.score.levelBeforeVetoes);
   });
 
-  it("ICON no trae lifted_index y el respaldo se declara", () => {
+  it("ICON lacks model lifted_index and declares computed fallback", () => {
     expect(hourAt(icon, "14:00")?.stability.liftedIndexSource).toBe("computed");
   });
 
-  it("encuentra una ventana de tarde", () => {
+  it("identifies afternoon soaring window", () => {
     expect(icon.windows.length).toBeGreaterThan(0);
     const window = icon.windows[0]!;
     expect(Number(window.startUtc.slice(11, 13))).toBeGreaterThanOrEqual(11);
     expect(window.durationHours).toBeGreaterThanOrEqual(4);
   });
 
-  it("todos los factores traen su desglose", () => {
+  it("all factors include complete breakdown", () => {
     for (const hour of icon.hours) {
       expect(hour.score.factors).toHaveLength(7);
       for (const factor of hour.score.factors) {
@@ -124,19 +120,19 @@ describe("un día real de Fuentemilanos", () => {
   });
 
   // G-16
-  it("lleva la atribución obligatoria", () => {
+  it("includes required open-meteo attribution", () => {
     expect(icon.attribution).toContain("Open-Meteo");
     expect(icon.attribution).toContain("CC BY 4.0");
   });
 
   // V-09
-  it("es determinista", () => {
+  it("execution is deterministic", () => {
     const again = day("lefm-2026-08-18-icon_eu.json", "down_positive");
     expect(JSON.stringify(again.hours)).toBe(JSON.stringify(icon.hours));
   });
 
   // P-10
-  it("ningún campo numérico sale NaN", () => {
+  it("contains no NaN values across numeric fields", () => {
     const walk = (value: unknown): void => {
       if (typeof value === "number") {
         expect(Number.isNaN(value)).toBe(false);
@@ -150,9 +146,8 @@ describe("un día real de Fuentemilanos", () => {
   });
 });
 
-describe("los dos modelos, el mismo día", () => {
-  it("GFS da un día más fuerte que ICON, coherente con su flujo de calor", () => {
-    // ICON da 243 W/m² al mediodía y GFS 417: el techo y la ascendencia siguen.
+describe("two models on the same day", () => {
+  it("GFS predicts stronger day than ICON consistent with higher heat flux", () => {
     expect(hourAt(gfs, "14:00")!.thermal.wStarMs).toBeGreaterThan(
       hourAt(icon, "14:00")!.thermal.wStarMs,
     );
@@ -161,7 +156,7 @@ describe("los dos modelos, el mismo día", () => {
     );
   });
 
-  it("ambos coinciden en el diagnóstico: día azul de nivel 4", () => {
+  it("both models concur on diagnosis: level 4 blue thermal day", () => {
     for (const d of [icon, gfs]) {
       const noon = hourAt(d, "14:00")!;
       expect(noon.cloud.blue).toBe(true);
@@ -170,12 +165,12 @@ describe("los dos modelos, el mismo día", () => {
   });
 
   // G-04
-  it("con un solo modelo la confianza es null", () => {
+  it("confidence is null when only single model is provided", () => {
     expect(icon.confidence).toBeNull();
   });
 
   // G-03
-  it("la dispersión entre ambos se puede medir", () => {
+  it("measures spread across multiple models", () => {
     const confidence = confidenceFrom([
       {
         model: "icon_eu",
@@ -190,13 +185,12 @@ describe("los dos modelos, el mismo día", () => {
     ]);
     expect(confidence).not.toBeNull();
     expect(confidence?.modelsUsed).toHaveLength(2);
-    // 1943 frente a 2537 m: los modelos no concuerdan del todo.
     expect(confidence?.ceilingSpreadM).toBeGreaterThan(300);
   });
 });
 
-describe("casos degenerados", () => {
-  it("sin observaciones no se inventa un día", () => {
+describe("edge and fallback cases", () => {
+  it("returns MISSING_VARIABLE when no hourly observations supplied", () => {
     const result = computeDay({
       site: FUENTEMILANOS_SITE,
       hourly: [],
@@ -208,7 +202,7 @@ describe("casos degenerados", () => {
     if (!result.ok) expect(result.error.code).toBe("MISSING_VARIABLE");
   });
 
-  it("la confianza inyectada se propaga", () => {
+  it("propagates injected confidence struct into output", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const confidence = confidenceFrom([
       { model: "a", ceilingAglM: m(2000), wStarMs: mps(2.4) },
@@ -226,7 +220,7 @@ describe("casos degenerados", () => {
     if (result.ok) expect(result.value.confidence?.level).toBe("high");
   });
 
-  it("una configuración distinta cambia el veredicto del día", () => {
+  it("custom scoring configuration modifies day rating", () => {
     const fixture = loadFixture("lefm-2026-08-18-gfs_seamless.json");
     const hourly = toHourlyObservations(fixture, FUENTEMILANOS_SITE, "up_positive");
     const strict = computeDay({
@@ -244,7 +238,7 @@ describe("casos degenerados", () => {
   });
 });
 
-describe("caminos de respaldo", () => {
+describe("fallback pathways", () => {
   const base = {
     site: FUENTEMILANOS_SITE,
     dateLocal: "2026-08-18",
@@ -252,13 +246,13 @@ describe("caminos de respaldo", () => {
     sunsetUtc: "2026-08-18T19:11",
   };
 
-  it("sin lifted_index calculable, la fuente es «no disponible»", () => {
+  it("without computable lifted_index, source is reported as unavailable", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const hourly = toHourlyObservations(fixture, FUENTEMILANOS_SITE, "down_positive").map(
       (observation) => ({
         ...observation,
         modelLiftedIndex: null,
-        // Sondeo truncado por debajo de 500 hPa: el LI no se puede calcular.
+        // Sounding truncated below 500 hPa: LI cannot be computed.
         sounding: {
           ...observation.sounding,
           levels: observation.sounding.levels.filter((l) => l.pressurePa > 60000),
@@ -271,11 +265,11 @@ describe("caminos de respaldo", () => {
     const noon = result.value.hours.find((h) => h.timeUtc.slice(11, 16) === "14:00");
     expect(noon?.stability.liftedIndexSource).toBe("unavailable");
     expect(noon?.stability.liftedIndex).toBeNull();
-    // Y sin LI no se veta por estabilidad: ausente no es cero.
+    // Missing LI does not trigger stable_atmosphere veto.
     expect(noon?.score.vetoes.map((v) => v.id)).not.toContain("stable_atmosphere");
   });
 
-  it("un sondeo sin niveles altos usa el viento de superficie como respaldo", () => {
+  it("sounding without upper levels falls back to surface wind", () => {
     const fixture = loadFixture("lefm-2026-08-18-gfs_seamless.json");
     const hourly = toHourlyObservations(fixture, FUENTEMILANOS_SITE, "up_positive").map(
       (observation) => ({
@@ -295,7 +289,7 @@ describe("caminos de respaldo", () => {
     }
   });
 
-  it("con nubosidad baja cerrada el día se veta por cielo cubierto", () => {
+  it("dense low cloud cover triggers overcast veto", () => {
     const fixture = loadFixture("lefm-2026-08-18-gfs_seamless.json");
     const hourly = toHourlyObservations(fixture, FUENTEMILANOS_SITE, "up_positive").map(
       (observation) => ({
@@ -316,7 +310,7 @@ describe("caminos de respaldo", () => {
     expect(result.value.best).toBeNull();
   });
 
-  it("una superficie declarada por el emplazamiento se respeta", () => {
+  it("site-defined surface parameters are respected without estimating defaults", () => {
     const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
     const arid = {
       ...FUENTEMILANOS_SITE,

@@ -1,40 +1,39 @@
 /**
- * Reconciliación entre el techo calculado y el diagnóstico del modelo.
+ * Reconciliation between parcel-computed and model-diagnosed mixing heights.
  *
- * Los dos se exponen por separado. **Nunca se sustituye uno por otro en
- * silencio**, y el elegido es siempre el de la parcela: el método de la parcela
- * no es una alternativa, es el camino obligatorio, porque ICON-EU e ICON global
- * —los mejores modelos con sondeo para España— no sirven
- * `boundary_layer_height` en absoluto.
+ * Both are exposed separately. **One never silently replaces the other**, and
+ * the parcel method is always chosen as primary: parcel calculation is not
+ * an alternative but the required path, because ICON-EU and ICON global
+ * — the best sounding models for Spain — do not provide `boundary_layer_height`.
  */
 
 import { m } from "../units/branded.js";
 import type { Metres } from "../units/branded.js";
 
 export interface MixingHeightResult {
-  /** El que se usa aguas abajo. Siempre el de la parcela. */
+  /** Height used downstream. Always the parcel-derived value. */
   readonly chosenAglM: Metres;
   readonly parcelAglM: Metres;
   readonly modelAglM: Metres | null;
-  /** (modelo − parcela) / parcela. `null` si el modelo no lo sirve. */
+  /** (model − parcel) / parcel. `null` if model does not provide BL height. */
   readonly divergenceFrac: number | null;
   /**
-   * El modelo da bastante más que la parcela: la mezcla es por cizalladura o
-   * residual, no térmica, y esa altura no la alcanza un planeador.
+   * Model height significantly exceeds parcel height: mixing is likely
+   * shear-driven or residual rather than thermal, and unusable by gliders.
    */
   readonly likelyShearDriven: boolean;
 }
 
 /**
- * Umbral de divergencia por encima del cual se sospecha mezcla no convectiva.
- * Medido en Fuentemilanos con GFS a las 18:00 hora local, `boundary_layer_height`
- * marcaba 4035 m con la radiación ya un 30 % por debajo del pico.
+ * Divergence threshold above which non-convective mixing is suspected.
+ * Measured at Fuentemilanos with GFS at 18:00 local time, where `boundary_layer_height`
+ * reported 4035 m despite solar radiation having fallen 30 % below peak.
  */
 export const SHEAR_DRIVEN_DIVERGENCE_FRAC = 0.5;
 
 /**
- * @source Glendening (DrJack): «cuando la mezcla resulta de la cizalladura y no
- *         de las térmicas, esa altura no se alcanza».
+ * @source Glendening (DrJack): "when mixing results from shear rather than
+ *         thermals, that height is unreachable by gliders".
  */
 export function reconcileMixingHeight(
   parcelAglM: Metres,

@@ -17,8 +17,8 @@ const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 1
 if (!built.ok) throw new Error(built.error.message);
 const sounding = built.value;
 
-describe("índices sobre un sondeo real", () => {
-  it("el K-Index se calcula y queda en rango razonable", () => {
+describe("indices on a real sounding", () => {
+  it("computes K-Index within physically plausible bounds", () => {
     const r = kIndex(sounding);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -27,20 +27,20 @@ describe("índices sobre un sondeo real", () => {
     }
   });
 
-  it("Total Totals se calcula y se usa: no es un parámetro muerto", () => {
+  it("computes and evaluates Total Totals", () => {
     const r = totalTotals(sounding);
     expect(r.ok).toBe(true);
     if (r.ok) expect(Number.isFinite(r.value)).toBe(true);
   });
 
-  it("el Lifted Index de una masa seca y estable es positivo", () => {
+  it("Lifted Index is positive for dry and stable airmass", () => {
     const r = liftedIndex(sounding);
     expect(r.ok).toBe(true);
-    // Ese día ICON da lifted_index positivo: atmósfera estable en altura.
+    // On this day ICON produces positive lifted_index: upper-air stability.
     if (r.ok) expect(r.value).toBeGreaterThan(-3);
   });
 
-  it("una parcela más caliente baja el Lifted Index", () => {
+  it("warmer parcel decreases Lifted Index", () => {
     const cool = liftedIndex(sounding, celsiusToK(30));
     const warm = liftedIndex(sounding, celsiusToK(40));
     expect(cool.ok && warm.ok).toBe(true);
@@ -50,9 +50,9 @@ describe("índices sobre un sondeo real", () => {
 });
 
 // E-01
-describe("niveles ausentes", () => {
-  // Emplazamiento a 1600 m, con la presión de estación que le corresponde: el
-  // nivel de 850 hPa queda literalmente bajo tierra.
+describe("missing pressure levels", () => {
+  // High elevation site (1600 m MSL) with consistent station pressure:
+  // 850 hPa isobaric level lies below ground.
   const raw = toSoundingInput(fixture, indexOfLocalHour(fixture, 14));
   const high = buildSounding({
     ...raw,
@@ -60,7 +60,7 @@ describe("niveles ausentes", () => {
     surface: { ...raw.surface, pressurePa: hPaToPa(840) },
   });
 
-  it("sin 850 hPa el K-Index es MISSING_VARIABLE, no cero", () => {
+  it("without 850 hPa level K-Index returns MISSING_VARIABLE rather than zero", () => {
     expect(high.ok).toBe(true);
     if (!high.ok) return;
     const r = kIndex(high.value);
@@ -71,7 +71,7 @@ describe("niveles ausentes", () => {
     }
   });
 
-  it("sin 850 hPa Total Totals tampoco se inventa", () => {
+  it("without 850 hPa level Total Totals returns MISSING_VARIABLE", () => {
     expect(high.ok).toBe(true);
     if (!high.ok) return;
     const r = totalTotals(high.value);
@@ -79,7 +79,7 @@ describe("niveles ausentes", () => {
     if (!r.ok) expect(r.error.code).toBe("MISSING_VARIABLE");
   });
 
-  it("sin 500 hPa el Lifted Index es MISSING_VARIABLE", () => {
+  it("without 500 hPa level Lifted Index returns MISSING_VARIABLE", () => {
     const shallow = buildSounding({
       ...toSoundingInput(fixture, indexOfLocalHour(fixture, 14)),
       pressureLevels: toSoundingInput(
@@ -96,12 +96,12 @@ describe("niveles ausentes", () => {
 });
 
 // E-02
-describe("ausente frente a cero", () => {
-  it("un índice de valor 0.0 es un resultado válido, distinguible de la ausencia", () => {
+describe("missing versus zero distinction", () => {
+  it("an index value of 0.0 is distinct from an unavailable measurement", () => {
     const present = liftedIndex(sounding);
     expect(present.ok).toBe(true);
-    // El contrato es `Result`: `ok:false` marca ausencia y `ok:true` con valor
-    // 0 marca un cero real. Nunca se colapsan en el mismo número.
+    // Result contract: `ok:false` signals missing variable and `ok:true` with 0
+    // represents a true zero value. Never collapsed into zero.
     const absent = kIndex({ ...sounding, levels: sounding.levels.slice(0, 2) });
     expect(absent.ok).toBe(false);
     if (present.ok && !absent.ok) {
@@ -111,8 +111,8 @@ describe("ausente frente a cero", () => {
   });
 });
 
-describe("bandas del Lifted Index", () => {
-  it("clasifica según los umbrales al uso", () => {
+describe("Lifted Index classification bands", () => {
+  it("classifies according to standard operational bands", () => {
     expect(liftedIndexBand(4)).toBe("stable");
     expect(liftedIndexBand(1)).toBe("marginally_unstable");
     expect(liftedIndexBand(-2)).toBe("moderately_unstable");
@@ -122,8 +122,8 @@ describe("bandas del Lifted Index", () => {
 });
 
 // E-03
-describe("CAPE como riesgo", () => {
-  it("clasifica en las bandas de DrJack", () => {
+describe("CAPE as convective risk", () => {
+  it("classifies across DrJack RASP bands", () => {
     expect(capeRisk(0).band).toBe("none");
     expect(capeRisk(200).band).toBe("none");
     expect(capeRisk(500).band).toBe("weak");
@@ -138,25 +138,25 @@ describe("CAPE como riesgo", () => {
     });
   });
 
-  it("una CAPE ausente es banda nula, no una tormenta", () => {
+  it("null CAPE returns none band without diagnosing storms", () => {
     const r = capeRisk(null);
     expect(r.band).toBe("none");
     expect(r.stormPotential).toBe(false);
     expect(r.capeJkg).toBeNull();
   });
 
-  it("una inhibición fuerte tapa el potencial de tormenta", () => {
+  it("strong convective inhibition suppresses storm potential", () => {
     expect(capeRisk(3000, -10).stormPotential).toBe(true);
     expect(capeRisk(3000, -120).stormPotential).toBe(false);
     expect(capeRisk(3000, -120).inhibited).toBe(true);
   });
 
-  it("el signo de la inhibición no importa: los modelos discrepan", () => {
+  it("convective inhibition sign is normalised across model conventions", () => {
     expect(capeRisk(3000, 120).inhibited).toBe(capeRisk(3000, -120).inhibited);
   });
 
   // E-04
-  it("no existe ninguna forma de convertir la CAPE en puntuación positiva", () => {
+  it("contains no scoring fields converting CAPE into a soaring merit", () => {
     const risk = capeRisk(1800);
     expect(Object.keys(risk).sort()).toEqual([
       "band",
@@ -165,12 +165,11 @@ describe("CAPE como riesgo", () => {
       "inhibited",
       "stormPotential",
     ]);
-    // No hay `score`, ni `weight`, ni nada que suene a mérito.
     expect(Object.keys(risk)).not.toContain("score");
     expect(Object.keys(risk)).not.toContain("weight");
   });
 
-  it("más CAPE nunca mejora nada: solo sube de banda", () => {
+  it("higher CAPE monotonically escalates risk band", () => {
     const order = ["none", "weak", "moderate", "strong", "extreme"];
     let previous = -1;
     for (const cape of [0, 500, 1800, 3000, 6000]) {
@@ -181,10 +180,10 @@ describe("CAPE como riesgo", () => {
   });
 });
 
-describe("ascenso saturado en el Lifted Index", () => {
-  it("con aire húmedo el ascenso pasa por la fase saturada", () => {
-    // Rocío alto pone el LCL muy por debajo de 500 hPa: la parcela asciende
-    // saturada la mayor parte del camino y el índice baja mucho.
+describe("saturated ascent in Lifted Index", () => {
+  it("humid air activates moist adiabatic ascent above LCL", () => {
+    // High dewpoint places LCL below 500 hPa: parcel ascends moist-adiabatically,
+    // significantly lowering the resulting lifted index.
     const humid = syntheticSounding(30, 3000, 1, 22);
     const r = liftedIndex(humid, celsiusToK(30));
     expect(r.ok).toBe(true);
@@ -194,7 +193,7 @@ describe("ascenso saturado en el Lifted Index", () => {
     if (dry.ok) expect(r.value).toBeLessThan(dry.value);
   });
 
-  it("con aire muy seco todo el ascenso es adiabático seco", () => {
+  it("very dry air ascends purely along dry adiabat", () => {
     const r = liftedIndex(syntheticSounding(30, 3000, 1, -40), celsiusToK(30));
     expect(r.ok).toBe(true);
     if (r.ok) expect(Number.isFinite(r.value)).toBe(true);

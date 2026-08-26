@@ -1,11 +1,10 @@
 /**
- * Temperatura de disparo (temperatura convectiva) y nivel de condensación por
- * convección.
+ * Trigger temperature (convective temperature) and Convective Condensation Level (CCL).
  *
- * El CCL es donde la línea de razón de mezcla constante de la superficie corta
- * el perfil del entorno. La temperatura de disparo es la que hay que alcanzar
- * en superficie para que una parcela adiabática seca llegue justo a ese nivel:
- * por debajo de ella no hay cumulus, por encima empiezan a formarse.
+ * The CCL is where the surface constant mixing ratio line intersects the
+ * environmental temperature profile. Trigger temperature is the surface temperature
+ * required for a dry adiabatic parcel to reach this level: below it no cumulus
+ * forms, above it convective clouds begin to develop.
  */
 
 import { K, Pa, m } from "../units/branded.js";
@@ -18,7 +17,7 @@ import { consecutivePairs } from "../types/array.js";
 import type { Level, Sounding } from "../sounding/types.js";
 
 export interface TriggerResult {
-  /** Temperatura de superficie necesaria para disparar la convección hasta el CCL. */
+  /** Surface temperature required to initiate convection up to CCL. */
   readonly triggerTempK: Kelvin;
   readonly cclPressurePa: Pascal;
   readonly cclMslM: Metres;
@@ -28,10 +27,10 @@ export interface TriggerResult {
 const BISECTION_STEPS = 60;
 
 /**
- * Temperatura de disparo y nivel de condensación por convección.
+ * Trigger temperature and Convective Condensation Level (CCL).
  *
- * @source Método clásico del CCL y de la temperatura convectiva;
- *         Stull, Practical Meteorology, cap. 5.
+ * @source Classical CCL and convective temperature method;
+ *         Stull, Practical Meteorology, ch. 5.
  */
 export function triggerTemperature(sounding: Sounding): Result<TriggerResult> {
   const surfaceMixingRatio = mixingRatio(
@@ -39,8 +38,8 @@ export function triggerTemperature(sounding: Sounding): Result<TriggerResult> {
     sounding.surface.pressurePa,
   );
 
-  // Separación entre la temperatura del entorno y el punto de rocío que tendría
-  // la razón de mezcla de superficie a esa presión. Cambia de signo en el CCL.
+  // Temperature difference between environmental profile and dewpoint
+  // corresponding to surface mixing ratio at that pressure. Changes sign at CCL.
   const gap = (level: Level): number =>
     level.tempK - dewpointFromMixingRatio(surfaceMixingRatio, level.pressurePa);
 

@@ -1,11 +1,8 @@
 /**
- * Potencial de onda de montaña.
+ * Mountain wave soaring potential.
  *
- * El método principal es el parámetro de Scorer. El heurístico de viento y
- * sector existe solo como respaldo cuando el sondeo no llega por encima de la
- * cresta, y **el resultado siempre declara cuál de los dos se usó**: el
- * predecesor mezclaba ambos sin distinguirlos, y con el sector angular escrito
- * en el comentario distinto del programado.
+ * Evaluates trapped lee wave potential via Scorer parameter vertical profile,
+ * falling back to wind-and-geometry heuristics when sounding does not span both layers.
  */
 
 import { m } from "../units/branded.js";
@@ -23,32 +20,30 @@ export type WaveMethod = "scorer" | "heuristic";
 
 export interface WaveResult {
   readonly potential: WavePotential;
-  /** Siempre presente: el consumidor tiene derecho a saber de dónde sale. */
+  /** Evaluation method utilized: Scorer profile or geometric heuristic. */
   readonly method: WaveMethod;
   readonly trappedLeeWave: boolean;
   readonly estimatedWavelengthM: Metres | null;
-  /** Componente del viento perpendicular a la cresta, a la altura de la cresta. */
+  /** Cross-ridge perpendicular wind component at crest altitude. */
   readonly crossRidgeMs: MPerS;
   readonly reason: string;
 }
 
-/** Espesor de la capa baja sobre la cresta que se compara con la de arriba. */
+/** Lower layer depth above crest used for Scorer parameter comparison. */
 export const LOWER_LAYER_DEPTH_M = 1500;
-/** Techo de la capa alta que se compara con la baja. */
+/** Top altitude of upper layer used for Scorer parameter comparison. */
 export const UPPER_LAYER_TOP_M = 4000;
 
-/** Viento perpendicular mínimo para plantearse onda, en m/s (unos 15 nudos). */
+/** Minimum cross-ridge perpendicular wind speed threshold (approx 15 kt). */
 export const MIN_CROSS_RIDGE_MS = 7.5;
 
 /**
- * Potencial de onda a sotavento de una cresta.
+ * Evaluates lee wave potential downwind of a mountain ridge.
  *
- * Criterio de atrapamiento de Scorer: la onda queda atrapada cuando el
- * parámetro cae de la capa baja a la alta más de π²/(4·d²), con `d` el espesor
- * de la capa baja.
+ * Scorer trapping criterion: waves are trapped when Scorer parameter drops
+ * from lower to upper layer by more than π²/(4·d²), where `d` is lower layer depth.
  *
- * @source Scorer, R. S. (1949), Quarterly Journal of the RMS 75, 41-56;
- *         criterio de onda atrapada.
+ * @source Scorer, R. S. (1949), Quarterly Journal of the RMS 75, 41-56.
  */
 export function wavePotential(sounding: Sounding, ridge: RidgeSpec): Result<WaveResult> {
   const crestWind = interpolateAtHeight(sounding, ridge.crestMslM);
@@ -74,7 +69,7 @@ export function wavePotential(sounding: Sounding, ridge: RidgeSpec): Result<Wave
   const scorer = scorerParameter(sounding, flowTowardDeg);
 
   if (!scorer.ok) {
-    // Respaldo declarado: sin perfil utilizable solo queda el viento.
+    // Fallback: without usable Scorer profile, evaluate wind threshold.
     return ok({
       potential: crossRidgeMs >= MIN_CROSS_RIDGE_MS * 1.5 ? "marginal" : "none",
       method: "heuristic",
@@ -135,12 +130,7 @@ function meanScorer(
   return inside.reduce((sum, p) => sum + p.scorerSquaredPerM2, 0) / inside.length;
 }
 
-/**
- * El criterio de Scorer marca el **mínimo** para que exista el primer modo
- * atrapado. Duplicarlo deja margen para una onda bien desarrollada, y con
- * viento perpendicular holgado se califica de fuerte. El factor 2 es una
- * elección declarada, no un resultado.
- */
+/** Multiplier on Scorer trapping threshold required for strong wave rating. */
 export const STRONG_WAVE_DROP_FACTOR = 2;
 
 function gradePotential(

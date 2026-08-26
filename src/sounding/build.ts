@@ -1,10 +1,10 @@
 /**
- * Ensamblado y validación del sondeo.
+ * Sounding assembly and validation.
  *
- * La responsabilidad crítica es **descartar los niveles bajo tierra**: en
- * Fuentemilanos (1001 m) los de 1000, 975, 950 y 925 hPa están por debajo del
- * suelo y sus valores son extrapolaciones sin significado físico — el de
- * 1000 hPa marcaba 38 °C a 136 m de altura geopotencial.
+ * A critical responsibility is **discarding sub-surface pressure levels**:
+ * at Fuentemilanos (1001 m MSL) levels at 1000, 975, 950, and 925 hPa lie
+ * below ground where values represent non-physical extrapolations — the
+ * 1000 hPa level reported 38 °C at 136 m geopotential height.
  */
 
 import { m } from "../units/branded.js";
@@ -29,9 +29,9 @@ export interface RawPressureLevel {
 }
 
 export interface BuildOptions {
-  /** Mínimo de niveles de presión sobre el terreno. Por defecto 3 (R-1.4). */
+  /** Minimum valid pressure levels above ground. Defaults to 3 (R-1.4). */
   readonly minPressureLevels?: number;
-  /** Altura sobre el terreno hasta la que se mide el hueco vertical. Por defecto 4000 m. */
+  /** Height above ground up to which vertical gaps are measured. Defaults to 3500 m. */
   readonly gapWindowTopAglM?: Metres;
 }
 
@@ -47,18 +47,17 @@ export interface SoundingInput {
 
 const DEFAULT_MIN_PRESSURE_LEVELS = 3;
 /**
- * Techo por defecto de la ventana en la que se mide el hueco vertical. 3500 m
- * sobre el terreno cubre con holgura la capa límite de un día fuerte en la
- * meseta; por encima, los huecos son de atmósfera libre y no condicionan el
- * techo térmico.
+ * Default ceiling for the analysis window measuring vertical gap.
+ * 3500 m AGL covers strong boundary layer growth on high plateaus;
+ * higher gaps reside in the free troposphere and do not affect thermal top.
  */
 const DEFAULT_GAP_WINDOW_TOP_AGL_M = m(3500);
 
 /**
- * Ensambla el sondeo: superficie, niveles de altura y niveles de presión, en
- * orden de presión estrictamente descendente y sin nada bajo tierra.
+ * Assembles the atmospheric sounding: surface, AGL height levels, and pressure levels,
+ * ordered by strictly descending pressure with all sub-surface levels filtered out.
  *
- * @source R-1.1 a R-1.5 de docs/REQUIREMENTS.md.
+ * @source Requirements R-1.1 through R-1.5 from docs/REQUIREMENTS.md.
  */
 export function buildSounding(input: SoundingInput): Result<Sounding> {
   const { site, surface, pressureLevels } = input;
@@ -87,10 +86,9 @@ export function buildSounding(input: SoundingInput): Result<Sounding> {
     input.heightLevels ?? [],
   );
 
-  // Cuánto se separa la presión de superficie de donde la situaría la columna
-  // geopotencial del modelo. En Open-Meteo `surface_pressure` está reescalado a
-  // la elevación pedida y `geopotential_height_*hPa` no: medido en
-  // Fuentemilanos, la diferencia es de unos 37 m. Se declara, no se corrige.
+  // Offset between downscaled surface pressure and model geopotential column.
+  // In Open-Meteo `surface_pressure` is downscaled to requested elevation
+  // while `geopotential_height_*hPa` is not. Measured at Fuentemilanos: ~37 m.
   const surfacePressureOffsetM = geopotentialOffset(
     column,
     surface.pressurePa,
@@ -154,18 +152,16 @@ export function buildSounding(input: SoundingInput): Result<Sounding> {
 }
 
 /**
- * Mayor separación vertical entre niveles consecutivos por debajo de un techo.
+ * Largest vertical gap between consecutive levels below a specified ceiling.
  *
- * El hueco que cruza el techo se recorta en él: interesa la resolución dentro
- * de la ventana, no la de la atmósfera libre que queda encima.
+ * Gaps crossing the ceiling are clamped to the ceiling itself: analysis
+ * concerns resolution within the convective window, not free troposphere above.
  *
- * `quality.maxVerticalGapM` usa una ventana por defecto porque al ensamblar el
- * sondeo todavía no se conoce la altura de la capa límite. Cuando sí se
- * conoce, la fase de convección vuelve a llamar aquí con el techo real: un
- * techo interpolado a través de un hueco grande no merece la misma confianza
- * que uno acotado de cerca (R-1.4b).
+ * `quality.maxVerticalGapM` uses a default window during sounding assembly
+ * before boundary layer height is known. Later convection stages re-evaluate
+ * this with the actual thermal ceiling (R-1.4b).
  *
- * @source R-1.4b de docs/REQUIREMENTS.md.
+ * @source Requirements R-1.4b from docs/REQUIREMENTS.md.
  */
 export function maxGapBelow(sounding: Sounding, topMslM: Metres): Metres {
   return maxGapBelowLevels(sounding.levels, topMslM);
@@ -182,14 +178,13 @@ function maxGapBelowLevels(levels: readonly Level[], topMslM: Metres): Metres {
 }
 
 /**
- * Diferencia entre la elevación declarada del emplazamiento y la altura a la
- * que la columna geopotencial del modelo sitúa la presión de superficie.
+ * Difference between site elevation and where the model geopotential
+ * column places surface pressure.
  *
- * Positiva significa que la presión de superficie corresponde a un punto más
- * bajo que la elevación declarada.
+ * Positive indicates surface pressure corresponds to a point lower than
+ * declared elevation.
  *
- * @source docs/OPEN_METEO_INTEGRATION.md §4 (incoherencia medida entre
- *         `surface_pressure` reescalado y `geopotential_height_*hPa`).
+ * @source docs/OPEN_METEO_INTEGRATION.md §4.
  */
 function geopotentialOffset(
   column: readonly { pressurePa: Pascal; geopotentialMslM: Metres }[],

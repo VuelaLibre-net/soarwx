@@ -557,9 +557,9 @@ void [profile, timeline];
 """)
 
 M["i18n/es"] = dict(import_="soarwx/i18n/es", intro="""
-The **only** module with prose. The core returns enums and numbers; this is where
-they are translated. No physics function imports this module, and a test walks
-`src/` to enforce that.
+The Spanish localization module. The core returns enums and numbers; this is where
+they are translated into Spanish for pilots. No physics function imports this module,
+and a test walks `src/` to enforce that.
 
 The predecessor returned Rich markup inside values — `"[green]Bajo[/green]"` —
 and then needed a function to strip it. That is why the verdict carries no text.
@@ -583,6 +583,27 @@ es.formatHour("2026-08-19T14:00", site.timezone);      // "16:00" in summer
 es.formatInstant("2026-08-19T14:00", site.timezone);   // with day and month
 
 es.DISCLAIMER;   // does not replace an official briefing or the pilot's judgment
+""")
+
+M["i18n/en"] = dict(import_="soarwx/i18n/en", intro="""
+The English localization module. Turns numbers and enums from the core into natural
+English for pilots.
+
+Uses glider pilot terminology rather than meteorologist jargon. Date formatting
+uses the site's timezone with standard British English conventions (en-GB, 24h clock).
+""", example="""
+import * as en from "soarwx/i18n/en";
+
+en.describeLevel(4);                       // "Good"
+en.describeCeilingLimit("hcrit");          // "limited by thermal strength"
+en.describeVeto("stable_atmosphere");      // "Stable atmosphere above a shallow convective layer"
+en.describeThermalQuality("organised");    // "Well-organised thermals"
+en.describeConfidence("medium");           // "Medium confidence"
+
+en.formatHour("2026-08-19T14:00", site.timezone);      // "16:00"
+en.formatInstant("2026-08-19T14:00", site.timezone);   // "19 August at 16:00"
+
+en.DISCLAIMER;   // "Advisory forecast only. This does not replace..."
 """)
 
 out = {k: {"import": v["import_"], "intro": v["intro"], "example": v["example"]} for k, v in M.items()}

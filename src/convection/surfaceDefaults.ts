@@ -1,13 +1,12 @@
 /**
- * Valores por defecto de superficie: albedo, razón de Bowen y rugosidad.
+ * Surface default values: albedo, Bowen ratio, and aerodynamic roughness length.
  *
- * Solo se usan cuando el modelo no sirve `sensible_heat_flux`. **El `albedo` de
- * Open-Meteo llega nulo en todos los modelos probados**, así que esta tabla no
- * es opcional.
+ * Only used when the model does not provide `sensible_heat_flux`. **Open-Meteo's `albedo`
+ * arrives null across all tested models**, making this fallback table essential.
  *
- * Son valores orientativos de manual: la reconstrucción del flujo de calor por
- * balance energético es un respaldo, no la vía principal, y su incertidumbre se
- * declara en `HeatFluxResult.estimated`.
+ * These represent standard textbook values: energy-balance heat flux reconstruction
+ * is a fallback path rather than primary, and its uncertainty is explicitly declared
+ * in `HeatFluxResult.estimated`.
  */
 
 import { m } from "../units/branded.js";
@@ -16,16 +15,16 @@ import type { SurfaceType } from "../types/site.js";
 
 export interface SurfaceDefaults {
   readonly albedoFrac: number;
-  /** Razón de Bowen con suelo húmedo. */
+  /** Bowen ratio for wet soil. */
   readonly bowenWetRatio: number;
-  /** Razón de Bowen con suelo seco. */
+  /** Bowen ratio for dry soil. */
   readonly bowenDryRatio: number;
   readonly roughnessLengthM: Metres;
 }
 
 /**
- * @source Stull, Practical Meteorology, cap. 3 (razón de Bowen por terreno) y
- *         cap. 18 (longitud de rugosidad); albedos de manual.
+ * @source Stull, Practical Meteorology, ch. 3 (Bowen ratio by land cover) and
+ *         ch. 18 (roughness length); standard handbook albedos.
  */
 export const SURFACE_DEFAULTS: Readonly<Record<SurfaceType, SurfaceDefaults>> = {
   cropland: {
@@ -72,17 +71,17 @@ export const SURFACE_DEFAULTS: Readonly<Record<SurfaceType, SurfaceDefaults>> = 
   },
 };
 
-/** Terreno supuesto cuando el emplazamiento no lo declara. */
+/** Default surface type when site metadata leaves it unspecified. */
 export const DEFAULT_SURFACE_TYPE: SurfaceType = "cropland";
 
 /**
- * Razón de Bowen interpolada entre suelo seco y húmedo.
+ * Bowen ratio linearly interpolated between dry and wet soil moisture conditions.
  *
- * La humedad de suelo entra como fracción 0..1 del contenido volumétrico
- * respecto a un valor de referencia. Es una parametrización **gruesa** y así se
- * declara: la vía correcta es que el modelo sirva el flujo ya calculado.
+ * Soil moisture is supplied as a 0..1 fraction of volumetric content relative
+ * to reference saturation. This is a **rough** parameterisation and explicitly
+ * flagged as such: the primary method relies on model-provided heat flux.
  *
- * @source Stull, Practical Meteorology, cap. 3.
+ * @source Stull, Practical Meteorology, ch. 3.
  */
 export function bowenRatioFor(type: SurfaceType, soilMoistureFrac?: number): number {
   const defaults = SURFACE_DEFAULTS[type];

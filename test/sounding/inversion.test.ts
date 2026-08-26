@@ -29,16 +29,16 @@ const surface: SurfaceState = {
   cloudCoverHighFrac: 0,
 };
 
-/** Perfil sintético: capa mezclada hasta 2000 m e inversión de 2 K en 200 m. */
+/** Synthetic sounding profile: mixed layer up to 2000 m and 2 K inversion across 200 m. */
 function syntheticLevels(): RawPressureLevel[] {
   const spec: [number, number, number][] = [
-    // [hPa, altura MSL, temperatura °C]
+    // [hPa, height MSL, temperature °C]
     [1000, 110, 24.0],
     [950, 540, 19.8],
     [900, 990, 15.4],
     [850, 1460, 10.8],
     [800, 1950, 6.0],
-    [780, 2150, 8.0], // inversión de 2 K en 200 m
+    [780, 2150, 8.0], // 2 K inversion across 200 m
     [700, 3000, 2.0],
     [600, 4200, -6.0],
   ];
@@ -52,7 +52,7 @@ function syntheticLevels(): RawPressureLevel[] {
   }));
 }
 
-describe("detección de capas estables", () => {
+describe("stable layer detection", () => {
   const built = buildSounding({
     site: flatSite,
     timeUtc: "2026-08-18T12:00",
@@ -61,7 +61,7 @@ describe("detección de capas estables", () => {
   });
 
   // S-07
-  it("encuentra la inversión sintética con base y techo correctos", () => {
+  it("identifies synthetic inversion with correct base and top altitudes", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     const inversions = findInversions(built.value).filter((l) => l.kind === "inversion");
@@ -73,7 +73,7 @@ describe("detección de capas estables", () => {
     expect(found.lapseRateKPerM).toBeLessThan(0);
   });
 
-  it("no marca la capa mezclada como estable", () => {
+  it("does not flag mixed layer as stable", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     for (const layer of findInversions(built.value)) {
@@ -81,22 +81,22 @@ describe("detección de capas estables", () => {
     }
   });
 
-  it("respeta el techo de búsqueda", () => {
+  it("respects search ceiling altitude", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     expect(findInversions(built.value, m(1500))).toHaveLength(0);
   });
 });
 
-describe("capas espurias", () => {
+describe("spurious layers", () => {
   const fixture = loadFixture("lefm-2026-08-18-icon_eu.json");
   const built = buildSounding(toSoundingInput(fixture, indexOfLocalHour(fixture, 14)));
 
-  it("descarta microcapas por debajo del espesor mínimo", () => {
+  it("filters micro-layers below minimum thickness threshold", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // Sin el filtro aparece un tramo isotermo de 21 m entre 1060 y 1081 m,
-    // producto de comparar un nivel de presión con uno de altura.
+    // Without filter, a spurious 21 m isothermal segment appears between 1060 and 1081 m,
+    // caused by comparing an isobaric level with an AGL height level.
     const filtered = findInversions(built.value);
     for (const layer of filtered) {
       expect(layer.topMslM - layer.baseMslM).toBeGreaterThanOrEqual(
@@ -107,15 +107,15 @@ describe("capas espurias", () => {
     expect(unfiltered.length).toBeGreaterThan(filtered.length);
   });
 
-  it("en un día térmico real, la capa mezclada no aparece como estable", () => {
+  it("mixed layer does not appear as stable on a real thermal soaring day", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
-    // θ es casi constante de 1060 a 2094 m: capa límite bien mezclada.
+    // θ is virtually constant from 1060 to 2094 m: well-mixed convective boundary layer.
     const inBl = findInversions(built.value).filter((l) => l.baseMslM < 2094);
     expect(inBl).toHaveLength(0);
   });
 
-  it("detecta la atmósfera libre estable por encima de 700 hPa", () => {
+  it("detects stable free atmosphere above 700 hPa", () => {
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     const stable = findInversions(built.value).filter((l) => l.kind === "stable");
@@ -124,8 +124,8 @@ describe("capas espurias", () => {
   });
 });
 
-describe("entradas degeneradas", () => {
-  it("dos niveles a la misma altura no producen división por cero", () => {
+describe("degenerate inputs", () => {
+  it("duplicate levels at identical altitude do not cause division by zero", () => {
     const levels = syntheticLevels();
     const duplicated = [...levels, { ...levels[4]!, pressurePa: hPaToPa(799) }].map(
       (l, i) => (i === levels.length ? { ...l, geopotentialMslM: m(1950) } : l),

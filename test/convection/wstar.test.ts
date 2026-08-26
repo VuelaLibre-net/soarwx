@@ -16,8 +16,8 @@ const base = {
 const wstar = (over: Partial<typeof base> = {}) =>
   convectiveVelocityScale({ ...base, ...over });
 
-describe("velocidad convectiva", () => {
-  it("da un valor plausible para un día fuerte", () => {
+describe("convective velocity scale", () => {
+  it("yields a plausible value for a strong thermal day", () => {
     const r = wstar();
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -26,7 +26,7 @@ describe("velocidad convectiva", () => {
     expect(r.value.suppressedByWind).toBe(false);
   });
 
-  it("sigue la definición de Allen: (Qov·zi·g/θ)^(1/3)", () => {
+  it("follows Allen's definition: (Qov·zi·g/θ)^(1/3)", () => {
     const r = wstar();
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -35,7 +35,7 @@ describe("velocidad convectiva", () => {
   });
 
   // H-07
-  it("se anula con viento por encima del corte", () => {
+  it("suppresses w* when wind exceeds profile cutoff", () => {
     const r = wstar({ surfaceWindMs: mps(13) });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -44,7 +44,7 @@ describe("velocidad convectiva", () => {
   });
 
   // H-08
-  it("no se anula justo por debajo del corte", () => {
+  it("does not suppress w* just below the wind cutoff", () => {
     const r = wstar({ surfaceWindMs: mps(12.8) });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -52,14 +52,14 @@ describe("velocidad convectiva", () => {
     expect(r.value.suppressedByWind).toBe(false);
   });
 
-  it("el corte lo fija el perfil de aeronave, no una constante global", () => {
+  it("cutoff is defined by aircraft profile, not a global constant", () => {
     const cautious = { ...GLIDER_CLUB, maxSurfaceWindMs: mps(8) };
     const r = wstar({ surfaceWindMs: mps(9), profile: cautious });
     expect(r.ok && r.value.suppressedByWind).toBe(true);
   });
 
   // H-09
-  it("usa temperatura potencial: el mismo flujo a distinta presión da distinto w*", () => {
+  it("uses potential temperature: same flux at different pressures yields different w*", () => {
     const atSeaLevel = wstar({
       surfacePotentialTempK: potentialTemperature(celsiusToK(34), hPaToPa(1013)),
     });
@@ -69,7 +69,7 @@ describe("velocidad convectiva", () => {
     expect(atSeaLevel.ok && atAltitude.ok).toBe(true);
     if (!atSeaLevel.ok || !atAltitude.ok) return;
     expect(atSeaLevel.value.wStarMs).not.toBeCloseTo(atAltitude.value.wStarMs, 4);
-    // Una implementación con temperatura absoluta daría el mismo número.
+    // Absolute temperature formulation would incorrectly yield identical values.
     const withAbsolute = wstar({ surfacePotentialTempK: celsiusToK(34) });
     expect(withAbsolute.ok).toBe(true);
     if (withAbsolute.ok) {
@@ -78,7 +78,7 @@ describe("velocidad convectiva", () => {
   });
 
   // H-10, P-03
-  it("crece con el flujo de calor a zi fijo", () => {
+  it("increases with heat flux at fixed zi", () => {
     let previous = 0;
     for (let flux = 0.02; flux <= 0.4; flux += 0.02) {
       const r = wstar({ virtualHeatFluxKMs: flux });
@@ -90,7 +90,7 @@ describe("velocidad convectiva", () => {
   });
 
   // H-10, P-04
-  it("crece con zi a flujo fijo", () => {
+  it("increases with zi at fixed heat flux", () => {
     let previous = 0;
     for (let zi = 200; zi <= 4000; zi += 200) {
       const r = wstar({ mixingHeightAglM: m(zi) });
@@ -101,7 +101,7 @@ describe("velocidad convectiva", () => {
     }
   });
 
-  it("escala como la raíz cúbica", () => {
+  it("scales as cube root", () => {
     const single = wstar();
     const eightfold = wstar({ virtualHeatFluxKMs: 1.6 });
     expect(single.ok && eightfold.ok).toBe(true);
@@ -110,27 +110,27 @@ describe("velocidad convectiva", () => {
   });
 
   // H-06
-  it("sin flujo ascendente es NO_CONVECTION, no un w* negativo", () => {
+  it("returns NO_CONVECTION without upward heat flux, not negative w*", () => {
     const r = wstar({ virtualHeatFluxKMs: -0.05 });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("NO_CONVECTION");
     expect(wstar({ virtualHeatFluxKMs: 0 }).ok).toBe(false);
   });
 
-  it("sin capa de mezcla es NO_CONVECTION", () => {
+  it("returns NO_CONVECTION without mixing layer", () => {
     const r = wstar({ mixingHeightAglM: m(0) });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("NO_CONVECTION");
   });
 
-  it("el corte por viento manda incluso sin flujo", () => {
+  it("wind cutoff governs even with zero/negative flux", () => {
     const r = wstar({ surfaceWindMs: mps(20), virtualHeatFluxKMs: -1 });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.value.suppressedByWind).toBe(true);
   });
 
   // P-10
-  it("nunca devuelve NaN", () => {
+  it("never returns NaN", () => {
     for (const theta of [K(250), K(300), K(320)]) {
       const r = wstar({ surfacePotentialTempK: theta });
       if (r.ok) expect(Number.isFinite(r.value.wStarMs)).toBe(true);

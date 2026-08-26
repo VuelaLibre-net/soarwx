@@ -5,7 +5,7 @@ import { celsiusToK, hPaToPa, kToCelsius } from "../../src/units/convert.js";
 import { romps2017LclHeightM } from "../golden/romps.js";
 import { K } from "../../src/units/branded.js";
 
-/** Punto de rocío a partir de la humedad relativa, invirtiendo Bolton ec. 10. */
+/** Dewpoint from relative humidity by inverting Bolton eq. 10. */
 function dewpointFromRh(tempK: number, rhFrac: number): number {
   const pv = rhFrac * saturationVapourPressure(K(tempK));
   const lnr = Math.log(pv / 611.2);
@@ -13,7 +13,7 @@ function dewpointFromRh(tempK: number, rhFrac: number): number {
 }
 
 describe("LCL", () => {
-  it("con aire saturado el LCL está en el propio nivel", () => {
+  it("with saturated air LCL is at parcel level itself", () => {
     const t = celsiusToK(18);
     const r = lcl(t, t, hPaToPa(900));
     expect(r.heightAboveParcelM).toBeCloseTo(0, 6);
@@ -21,7 +21,7 @@ describe("LCL", () => {
     expect(r.pressurePa).toBeCloseTo(hPaToPa(900), 3);
   });
 
-  it("la temperatura del LCL nunca supera la de la parcela", () => {
+  it("LCL temperature never exceeds parcel temperature", () => {
     for (let tc = -20; tc <= 45; tc += 5) {
       for (let spread = 0; spread <= 30; spread += 5) {
         const t = celsiusToK(tc);
@@ -31,7 +31,7 @@ describe("LCL", () => {
     }
   });
 
-  it("el LCL sube al aumentar el spread", () => {
+  it("LCL rises as dewpoint spread increases", () => {
     const t = celsiusToK(30);
     let prev = -1;
     for (let spread = 0; spread <= 30; spread += 2) {
@@ -41,13 +41,13 @@ describe("LCL", () => {
     }
   });
 
-  it("la presión del LCL es menor que la de partida", () => {
+  it("LCL pressure is lower than parcel pressure", () => {
     const r = lcl(celsiusToK(30), celsiusToK(10), hPaToPa(900));
     expect(r.pressurePa).toBeLessThan(hPaToPa(900));
   });
 
   // T-06
-  it("coincide con Romps (2017) dentro de 20 m en toda la malla", () => {
+  it("matches Romps (2017) within 20 m across the full grid", () => {
     let worstM = 0;
     let worstFracAboveFloor = 0;
     for (let tc = -20; tc <= 45; tc += 2.5) {
@@ -65,16 +65,16 @@ describe("LCL", () => {
         }
       }
     }
-    // Medido: 17.1 m como peor error absoluto, a −20 °C con 10 % de humedad
-    // relativa sobre un LCL de 2836 m. El error relativo llega al 1.28 %, pero
-    // solo donde el LCL es de decenas de metros y el error absoluto es de 0.7 m:
-    // por eso el criterio que importa es el absoluto.
+    // Measured: 17.1 m worst absolute error at −20 °C with 10 % RH
+    // on a 2836 m LCL. Relative error reaches 1.28 %, but only where LCL
+    // is tens of metres and absolute error is 0.7 m: hence absolute error
+    // is the metric that matters.
     expect(worstM).toBeLessThan(20);
     expect(worstFracAboveFloor).toBeLessThan(0.015);
   });
 
-  // La regla de Espy que usaba el predecesor, para dejar constancia del sesgo.
-  it("la regla de Espy de 122 m/°C se queda corta a temperatura alta", () => {
+  // Espy's rule used by predecessor, kept to document bias.
+  it("Espy's 122 m/°C rule falls short at high temperature", () => {
     const t = celsiusToK(40);
     const td = celsiusToK(38);
     const exact = lcl(t, td, hPaToPa(1000)).heightAboveParcelM;

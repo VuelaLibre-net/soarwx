@@ -1,10 +1,7 @@
 /**
- * Catálogo de variables de Open-Meteo.
+ * Open-Meteo API variable catalog.
  *
- * Es una constante tipada, no cadenas sueltas: un nombre mal escrito **no
- * devuelve un hueco, devuelve HTTP 400 y tumba la petición entera**. El
- * predecesor vivió toda una versión con `aerosol_optical_depth_550nm`, que no
- * existe, y eso anuló la respuesta completa de calidad del aire.
+ * Typed constants defining requested surface and isobaric level variables.
  */
 
 export const SURFACE_VARIABLES = [
@@ -42,7 +39,7 @@ export const SURFACE_VARIABLES = [
 
 export type SurfaceVariable = (typeof SURFACE_VARIABLES)[number];
 
-/** Variables que se piden en cada nivel de presión. */
+/** Atmospheric variables requested at each isobaric pressure level. */
 export const PRESSURE_LEVEL_VARIABLES = [
   "temperature",
   "dew_point",
@@ -53,20 +50,18 @@ export const PRESSURE_LEVEL_VARIABLES = [
 ] as const;
 
 /**
- * Niveles de presión. Los de 600 y 500 hPa **no son opcionales**: en
- * emplazamientos elevados son los únicos claramente por encima de la capa
- * límite, y los índices de estabilidad necesitan el de 500.
+ * Standard pressure levels (hPa) requested for atmospheric soundings.
  */
 export const PRESSURE_LEVELS_HPA = [
   1000, 975, 950, 925, 900, 850, 800, 700, 600, 500,
 ] as const;
 
-/** Alturas sobre el terreno. GFS solo sirve la de 80 m; ICON las tres. */
+/** Height levels above ground (metres). GFS serves 80 m; ICON serves 80, 120, 180 m. */
 export const HEIGHT_LEVELS_M = [80, 120, 180] as const;
 
 export const DAILY_VARIABLES = ["sunrise", "sunset"] as const;
 
-/** Nombres completos de las variables de nivel para los niveles dados. */
+/** Returns full variable names for the specified pressure levels. */
 export function levelVariableNames(levelsHpa: readonly number[]): string[] {
   const names: string[] = [];
   for (const level of levelsHpa) {

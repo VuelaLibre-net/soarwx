@@ -1,10 +1,7 @@
 /**
- * Perfil de ascendencias.
+ * Updraft profile rendering.
  *
- * Tres curvas: la media sobre la sección de la térmica, la del núcleo y la
- * lectura esperada de variómetro —el núcleo menos el régimen de caída—. Ver las
- * tres juntas deja claro por qué `hcrit` cae donde cae, y por qué medir el
- * techo contra la media declararía involable un día normal.
+ * Visualizes mean thermal updraft velocity, core peak climb, and net variometer sink.
  */
 
 import type { MPerS, Metres } from "../units/branded.js";
@@ -28,9 +25,9 @@ export interface UpdraftProfileOptions extends RenderOptions {
 }
 
 /**
- * Perfil vertical de ascendencia para un `w*` y una capa dados.
+ * Renders vertical updraft profile for specified convective velocity scale (w*) and boundary layer depth.
  *
- * @source Allen (2006), AIAA 2006-1510, ec. 11-15.
+ * @source Allen (2006), AIAA 2006-1510, equations 11-15.
  */
 export function renderUpdraftProfile(
   wStarMs: MPerS,
@@ -49,8 +46,6 @@ export function renderUpdraftProfile(
   const maxClimb = options.maxClimbMs ?? Math.ceil(peak * 1.1);
   const sink: number = profile.circlingSinkMs;
   const threshold: number = profile.hcritThresholdMs;
-  // El eje se dimensiona con el mayor de los dos para que cambiar de perfil no
-  // reencuadre el dibujo: dos veleros distintos han de poder compararse a ojo.
   const minClimb = Math.floor(Math.min(0, -Math.max(sink, threshold)) * 2) / 2;
 
   const xOf = (climbMs: number): number =>
@@ -60,7 +55,7 @@ export function renderUpdraftProfile(
 
   const parts: string[] = [];
 
-  // Rejilla de alturas.
+  // Altitude grid lines.
   const step = ziAglM > 2500 ? 1000 : 500;
   for (let z = 0; z <= ziAglM; z += step) {
     const y = yOf(z);
@@ -82,7 +77,7 @@ export function renderUpdraftProfile(
     );
   }
 
-  // Cero de ascendencia.
+  // Zero-climb reference axis.
   parts.push(
     polyline(
       [
@@ -107,9 +102,7 @@ export function renderUpdraftProfile(
     );
   }
 
-  // Umbral de hcrit. Cruza la curva de núcleo justo a la altura de la marca
-  // `hcrit`, y eso es lo que explica por qué la marca cae donde cae: no es
-  // donde el variómetro llega a cero, que con un velero real es más arriba.
+  // hcrit threshold marker.
   if (threshold > minClimb && threshold < maxClimb) {
     const x = xOf(threshold);
     parts.push(
@@ -129,9 +122,6 @@ export function renderUpdraftProfile(
     (p) => [xOf(p.peakMs - profile.circlingSinkMs), yOf(p.zAglM)] as const,
   );
 
-  // Las curvas se recortan al área de dibujo: la de variómetro puede salir de
-  // la rejilla por arriba cuando el régimen de caída supera la ascendencia
-  // residual en el tope de la capa.
   const clipId = "plot-clip";
   parts.push(
     element(
@@ -161,7 +151,7 @@ export function renderUpdraftProfile(
   const marks: [Metres | undefined, string, string][] = [
     [options.marks?.hcritAglM, "hcrit", palette.accent],
     [options.marks?.cloudBaseAglM, "base", palette.cloud],
-    [options.marks?.thermalTopAglM, "techo", palette.ceiling],
+    [options.marks?.thermalTopAglM, "top", palette.ceiling],
   ];
   for (const [aglM, label, colour] of marks) {
     if (aglM === undefined) continue;
@@ -196,10 +186,10 @@ export function renderUpdraftProfile(
     }),
     legend(
       [
-        { label: "núcleo", colour: palette.core },
-        { label: "variómetro", colour: palette.accent },
-        { label: "media", colour: palette.climb, dashed: true },
-        { label: "umbral hcrit", colour: palette.accent, dashed: true },
+        { label: "core", colour: palette.core },
+        { label: "variometer", colour: palette.accent },
+        { label: "mean", colour: palette.climb, dashed: true },
+        { label: "hcrit threshold", colour: palette.accent, dashed: true },
       ],
       MARGIN.left,
       14,
@@ -212,10 +202,10 @@ export function renderUpdraftProfile(
     {
       widthPx,
       heightPx,
-      title: options.title ?? "Perfil de ascendencias",
+      title: options.title ?? "Updraft profile",
       desc:
         options.desc ??
-        `Ascendencia media, de núcleo y lectura de variómetro frente a la altura, hasta ${round(ziAglM, 0)} m sobre el terreno. La vertical marca el umbral con el que se fija hcrit.`,
+        `Mean updraft, core climb, and variometer reading vs height, up to ${round(ziAglM, 0)} m AGL. Vertical line marks the hcrit threshold.`,
       ...(options.className === undefined ? {} : { className: options.className }),
     },
     parts.join(""),

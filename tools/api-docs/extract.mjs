@@ -19,13 +19,14 @@ const SUBPATHS = {
   openmeteo: "dist/openmeteo/index.d.ts",
   render: "dist/render/index.d.ts",
   "i18n/es": "dist/i18n/es.d.ts",
+  "i18n/en": "dist/i18n/en.d.ts",
 };
 
-/** file -> Map(nombre local -> {kind, sig, doc}) */
+/** file -> Map(localName -> {kind, sig, doc}) */
 const DECLS = new Map();
-/** file -> Map(nombre local -> {file, name}) traído por import */
+/** file -> Map(localName -> {file, name}) brought by import */
 const IMPORTS = new Map();
-/** file -> Map(alias exportado -> nombre local) */
+/** file -> Map(exportedAlias -> localName) */
 const ALIASES = new Map();
 
 function parse(file) {
@@ -56,8 +57,8 @@ function parse(file) {
     }
     const m = /^(?:declare )?(function|const|type|interface|class|enum) (\w+)/.exec(line);
     if (!m) {
-      // Un docblock real va pegado a su declaración. Si hay una línea en blanco
-      // por medio es de módulo, y no describe lo que venga después.
+      // A true docblock sits directly above its declaration. If there is a blank line
+      // in between, it belongs to the module and does not describe what follows.
       if (!line.trim() || !/^import|^export/.test(line)) doc = [];
       continue;
     }
@@ -82,7 +83,7 @@ function parse(file) {
   }
   DECLS.set(file, decls);
 
-  // export { local as alias }  (sin `from`): alias local del chunk.
+  // export { local as alias }  (without `from`): local alias of the chunk.
   const aliases = new Map();
   for (const block of src.matchAll(/export\s*(?:type\s*)?{([^}]*)}\s*;/gs)) {
     for (const part of block[1].split(",")) {
@@ -158,7 +159,7 @@ for (const [sub, items] of Object.entries(result)) {
   total += items.length;
   missing += m.length;
   console.log(
-    `${sub.padEnd(11)} ${String(items.length).padStart(3)}  sin resolver: ${m.map((x) => x.name).join(", ") || "-"}`,
+    `${sub.padEnd(11)} ${String(items.length).padStart(3)}  unresolved: ${m.map((x) => x.name).join(", ") || "-"}`,
   );
 }
-console.log(`\ntotal ${total}, sin resolver ${missing}`);
+console.log(`\ntotal ${total}, unresolved ${missing}`);

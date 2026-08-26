@@ -20,21 +20,21 @@ function fluxSamples(name: string) {
   }));
 }
 
-describe("detección del signo del flujo (H-01, H-02)", () => {
-  it("ICON-EU da flujo positivo hacia abajo", () => {
+describe("flux sign detection (H-01, H-02)", () => {
+  it("ICON-EU reports positive downward flux", () => {
     const detected = detectFluxSign(fluxSamples("lefm-2026-08-18-icon_eu.json"));
     expect(detected.convention).toBe("down_positive");
     expect(detected.agreementFrac).toBe(1);
     expect(detected.samplesUsed).toBeGreaterThanOrEqual(6);
   });
 
-  it("GFS da flujo positivo hacia arriba", () => {
+  it("GFS reports positive upward flux", () => {
     const detected = detectFluxSign(fluxSamples("lefm-2026-08-18-gfs_seamless.json"));
     expect(detected.convention).toBe("up_positive");
     expect(detected.agreementFrac).toBe(1);
   });
 
-  it("la misma función acierta con los dos: normalizado, el mediodía sube", () => {
+  it("same detection handles both models: normalised midday flux is upward", () => {
     for (const name of [
       "lefm-2026-08-18-icon_eu.json",
       "lefm-2026-08-18-gfs_seamless.json",
@@ -49,7 +49,7 @@ describe("detección del signo del flujo (H-01, H-02)", () => {
     }
   });
 
-  it("sin muestras diurnas suficientes la convención es desconocida", () => {
+  it("returns unknown convention without sufficient daytime samples", () => {
     const detected = detectFluxSign([
       { shortwaveWm2: 0, fluxWm2: -10 },
       { shortwaveWm2: 900, fluxWm2: 200 },
@@ -58,7 +58,7 @@ describe("detección del signo del flujo (H-01, H-02)", () => {
     expect(normaliseUpwardFlux(200, "unknown")).toBeNull();
   });
 
-  it("ignora las muestras sin dato y las de flujo exactamente nulo", () => {
+  it("ignores missing values and exact zero flux samples", () => {
     const detected = detectFluxSign([
       { shortwaveWm2: 900, fluxWm2: null },
       { shortwaveWm2: 900, fluxWm2: 0 },
@@ -78,9 +78,9 @@ const commonSurface = {
   cloudCoverFrac: 0,
 };
 
-describe("flujo de calor sensible", () => {
+describe("sensible heat flux", () => {
   // H-03
-  it("usa el flujo de ICON tal cual, con el signo corregido", () => {
+  it("uses ICON model flux directly with corrected sign", () => {
     const r = surfaceHeatFlux({
       ...commonSurface,
       shortwaveDownWm2: wm2(926),
@@ -93,7 +93,7 @@ describe("flujo de calor sensible", () => {
   });
 
   // H-04
-  it("usa el flujo de GFS tal cual, sin cambiarle el signo", () => {
+  it("uses GFS model flux directly without sign change", () => {
     const r = surfaceHeatFlux({
       ...commonSurface,
       shortwaveDownWm2: wm2(913),
@@ -104,9 +104,9 @@ describe("flujo de calor sensible", () => {
     expect(r.sensibleHeatWm2).toBeCloseTo(416.7, 6);
   });
 
-  it("sin corregir el signo, ICON daría flujo negativo al mediodía", () => {
-    // Es el fallo que la normalización impide: no lanza, no rompe, y produce
-    // un informe plausible con cero convección todo el día.
+  it("without sign correction ICON would produce negative midday flux", () => {
+    // Normalisation prevents this silent failure mode where negative flux
+    // yields zero convection all day with no exceptions thrown.
     const wrong = surfaceHeatFlux({
       ...commonSurface,
       shortwaveDownWm2: wm2(926),
@@ -118,7 +118,7 @@ describe("flujo de calor sensible", () => {
   });
 
   // H-05
-  it("sin flujo del modelo reconstruye por balance energético y lo declara", () => {
+  it("reconstructs via energy balance and declares estimates when model flux is missing", () => {
     const r = surfaceHeatFlux({ ...commonSurface, shortwaveDownWm2: wm2(926) });
     expect(r.source).toBe("energy_balance");
     expect(r.estimated).toContain("sensible_heat_flux");
@@ -127,20 +127,20 @@ describe("flujo de calor sensible", () => {
     expect(r.sensibleHeatWm2).toBeGreaterThan(0);
   });
 
-  it("la reconstrucción queda en el orden de magnitud del modelo", () => {
+  it("energy balance reconstruction remains within model order of magnitude", () => {
     const reconstructed = surfaceHeatFlux({
       ...commonSurface,
       shortwaveDownWm2: wm2(926),
       surfaceType: "cropland",
       soilMoistureFrac: 0.1,
     });
-    // ICON da 243 W/m² a esa hora. No se pide que acierte, sí que no delire.
+    // ICON reports 243 W/m² at this hour; reconstruction must be physically plausible.
     expect(reconstructed.sensibleHeatWm2).toBeGreaterThan(150);
     expect(reconstructed.sensibleHeatWm2).toBeLessThan(600);
   });
 
   // H-06
-  it("de noche el flujo virtual no es positivo", () => {
+  it("virtual heat flux is not positive at night", () => {
     const night = surfaceHeatFlux({
       surfaceTempK: celsiusToK(15),
       surfaceDewpointK: celsiusToK(8),
@@ -152,19 +152,19 @@ describe("flujo de calor sensible", () => {
     expect(night.virtualHeatFluxKMs).toBeLessThanOrEqual(0);
   });
 
-  it("declara la razón de Bowen implícita cuando usa el modelo", () => {
+  it("declares implied Bowen ratio when using model flux", () => {
     const r = surfaceHeatFlux({
       ...commonSurface,
       shortwaveDownWm2: wm2(926),
       modelFluxWm2: -243.1,
       fluxConvention: "down_positive",
     });
-    // ICON reparte 243 de sensible frente a 125 de latente a esa hora: β ≈ 2.
+    // ICON allocates 243 sensible vs 125 latent at this hour: β ≈ 2.
     expect(r.bowenRatio).toBeGreaterThan(0.5);
     expect(r.bowenRatio).toBeLessThan(6);
   });
 
-  it("el flujo virtual supera al cinemático con aire húmedo", () => {
+  it("virtual flux exceeds kinematic flux in moist air", () => {
     const r = surfaceHeatFlux({
       ...commonSurface,
       surfaceDewpointK: celsiusToK(20),
@@ -175,15 +175,15 @@ describe("flujo de calor sensible", () => {
     expect(r.virtualHeatFluxKMs).toBeGreaterThan(r.kinematicHeatFluxKMs);
   });
 
-  it("la densidad del aire es razonable a 909 hPa y 34.7 °C", () => {
+  it("air density is realistic at 909 hPa and 34.7 °C", () => {
     const r = surfaceHeatFlux({ ...commonSurface, shortwaveDownWm2: wm2(900) });
     expect(r.airDensityKgM3).toBeGreaterThan(0.95);
     expect(r.airDensityKgM3).toBeLessThan(1.1);
   });
 });
 
-describe("onda larga neta", () => {
-  it("es mayor con cielo despejado que con cielo cubierto", () => {
+describe("net longwave radiation", () => {
+  it("is greater under clear skies than overcast skies", () => {
     const clear = netLongwaveUpWm2(celsiusToK(30), celsiusToK(5), 0);
     const overcast = netLongwaveUpWm2(celsiusToK(30), celsiusToK(5), 1);
     expect(clear).toBeGreaterThan(overcast);
@@ -191,23 +191,23 @@ describe("onda larga neta", () => {
     expect(clear).toBeLessThan(150);
   });
 
-  it("es menor con aire húmedo", () => {
+  it("is lower in humid air", () => {
     expect(netLongwaveUpWm2(celsiusToK(30), celsiusToK(25), 0)).toBeLessThan(
       netLongwaveUpWm2(celsiusToK(30), celsiusToK(0), 0),
     );
   });
 });
 
-describe("razón de Bowen por terreno", () => {
-  it("el suelo seco reparte más hacia sensible que el húmedo", () => {
+describe("Bowen ratio by land cover", () => {
+  it("dry soil allocates more energy to sensible heat than wet soil", () => {
     expect(bowenRatioFor("cropland", 0)).toBeGreaterThan(bowenRatioFor("cropland", 1));
   });
 
-  it("el terreno árido supera al cultivo", () => {
+  it("arid land Bowen ratio exceeds cropland", () => {
     expect(bowenRatioFor("arid", 0.5)).toBeGreaterThan(bowenRatioFor("cropland", 0.5));
   });
 
-  it("sin humedad de suelo toma el punto medio", () => {
+  it("defaults to midpoint when soil moisture is unspecified", () => {
     expect(bowenRatioFor("grass")).toBeCloseTo((0.4 + 2.5) / 2, 9);
   });
 });

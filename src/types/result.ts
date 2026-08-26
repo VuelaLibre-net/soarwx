@@ -1,53 +1,53 @@
 /**
- * Resultado tipado. Sin excepciones para condiciones esperadas.
+ * Typed result. No exceptions for expected domain conditions.
  *
- * Se lanzan excepciones solo por errores de programación. Nunca se captura una
- * excepción para devolver `null` (NF-10 de docs/REQUIREMENTS.md).
+ * Exceptions are thrown only for programmer bugs. An exception is never caught
+ * to return `null` (NF-10 in docs/REQUIREMENTS.md).
  *
- * Ver docs/SPEC.md §3.
+ * See docs/SPEC.md §3.
  */
 
 export type SoarwxErrorCode =
-  /** El sondeo tiene menos de 3 niveles sobre el terreno. */
+  /** Sounding has fewer than 3 levels above ground. */
   | "INSUFFICIENT_LEVELS"
-  /** Se pidió un nivel cuya altura geopotencial cae bajo el terreno. */
+  /** Requested level whose geopotential height falls below ground. */
   | "LEVEL_BELOW_GROUND"
-  /** Entrada fuera del rango de validez declarado de la fórmula. */
+  /** Input outside the declared validity range of the formula. */
   | "OUT_OF_VALID_RANGE"
-  /** Falta una variable necesaria. Distinto de que valga cero. */
+  /** Missing required variable. Distinct from being zero. */
   | "MISSING_VARIABLE"
-  /** Sin flujo de calor: es de noche o el cielo está cerrado. No es un fallo. */
+  /** No heat flux: night-time or overcast skies. Not a failure. */
   | "NO_CONVECTION"
-  /** La integración numérica no alcanzó la tolerancia pedida. */
+  /** Numerical integration did not converge to the required tolerance. */
   | "NOT_CONVERGED"
-  /** Fallo de red o HTTP. Solo puede originarse en `soarwx/openmeteo`. */
+  /** Network or HTTP failure. Can only originate in `soarwx/openmeteo`. */
   | "FETCH_FAILED"
-  /** La fecha queda fuera del alcance del modelo. */
+  /** Date is outside the model horizon. */
   | "OUT_OF_HORIZON";
 
 /**
- * Error de la librería. El identificador estable es `code`; `message` es prosa
- * en inglés para registros y puede cambiar sin aviso.
+ * Library error. Stable identifier is `code`; `message` is English prose for
+ * logs and may change without notice.
  */
 export interface SoarwxError {
   readonly code: SoarwxErrorCode;
-  /** Mensaje en inglés, para registros. El identificador estable es `code`. */
+  /** English message for logs. The stable identifier is `code`. */
   readonly message: string;
   readonly detail?: Readonly<Record<string, unknown>>;
 }
 
 /**
- * Resultado de una operación que puede no tener respuesta. Lo esperable —una
- * noche sin convección, una variable que el modelo no sirve— se devuelve así, no
- * se lanza: son estados válidos del dominio, no fallos del programa.
+ * Result of an operation that might not yield an answer. Expected conditions
+ * (night without convection, variable not served by model) are returned this
+ * way rather than thrown: they are valid domain states, not program failures.
  */
 export type Result<T, E = SoarwxError> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };
 
-/** Envuelve un valor como resultado correcto. */
+/** Wraps a value as a successful result. */
 export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 
-/** Construye un resultado fallido con su código estable y su contexto. */
+/** Builds an error result with its stable code and context. */
 export const err = (
   code: SoarwxErrorCode,
   message: string,
@@ -57,21 +57,21 @@ export const err = (
   error: detail === undefined ? { code, message } : { code, message, detail },
 });
 
-/** Estrecha el tipo al caso correcto. */
+/** Narrows the type to the success case. */
 export const isOk = <T, E>(r: Result<T, E>): r is { ok: true; value: T } => r.ok;
-/** Estrecha el tipo al caso fallido. */
+/** Narrows the type to the error case. */
 export const isErr = <T, E>(r: Result<T, E>): r is { ok: false; error: E } => !r.ok;
 
-/** Transforma el valor si lo hay, y propaga el error si no. */
+/** Maps the value if successful, propagating the error otherwise. */
 export const mapResult = <T, U, E>(r: Result<T, E>, f: (v: T) => U): Result<U, E> =>
   r.ok ? { ok: true, value: f(r.value) } : r;
 
-/** Encadena una operación que también puede fallar, sin anidar comprobaciones. */
+/** Chains an operation that may also fail, without nesting checks. */
 export const andThen = <T, U, E>(
   r: Result<T, E>,
   f: (v: T) => Result<U, E>,
 ): Result<U, E> => (r.ok ? f(r.value) : r);
 
-/** Devuelve el valor o el respaldo. Úsese solo cuando el respaldo se declare. */
+/** Returns the value or fallback. Use only when the fallback is explicitly declared. */
 export const unwrapOr = <T, E>(r: Result<T, E>, fallback: T): T =>
   r.ok ? r.value : fallback;

@@ -1,5 +1,5 @@
 /**
- * Ventanas volables y mejor hora del día.
+ * Soaring windows and best thermal hour computation.
  */
 
 import { m } from "../units/branded.js";
@@ -7,7 +7,7 @@ import type { Metres } from "../units/branded.js";
 import { at } from "../types/array.js";
 import type { SoaringLevel } from "./score.js";
 
-/** Lo mínimo que necesita esta capa de cada hora. */
+/** Minimum required fields for an hourly forecast evaluation. */
 export interface ScoredHour {
   readonly timeUtc: string;
   readonly level: SoaringLevel;
@@ -23,15 +23,15 @@ export interface SoaringWindow {
   readonly peakCeilingAglM: Metres;
 }
 
-/** Una hora suelta no hace ventana. */
+/** Minimum consecutive hours required to establish a soaring window. */
 export const MIN_WINDOW_HOURS = 2;
 
 /**
- * Ventanas continuas de horas que alcanzan al menos `minLevel`.
+ * Identifies contiguous windows of hours that achieve at least `minLevel`.
  *
- * Las contiguas se funden; una hora aislada no forma ventana.
+ * Adjacent eligible hours are merged into a continuous window.
  *
- * @source R-11.2 de docs/REQUIREMENTS.md.
+ * @source Requirement R-11.2 from docs/REQUIREMENTS.md.
  */
 export function findWindows(
   hours: readonly ScoredHour[],
@@ -67,14 +67,11 @@ export function findWindows(
 }
 
 /**
- * Mejor hora del día.
+ * Determines the best soaring hour of the day.
  *
- * Ordena por **nivel tras vetos**, luego por techo utilizable y luego por
- * ascendencia. **Nunca por número de factores en verde**: el predecesor
- * ordenaba por `(n_ok, w_vario)`, de modo que un día azul con 900 m de techo
- * podía ganar a uno con 2500 m y un factor menos cumplido.
+ * Ranks primarily by **post-veto rating level**, then by usable ceiling, and finally by climb rate.
  *
- * @source R-11.3 de docs/REQUIREMENTS.md.
+ * @source Requirement R-11.3 from docs/REQUIREMENTS.md.
  */
 export function bestHour<T extends ScoredHour>(hours: readonly T[]): T | null {
   let best: T | null = null;

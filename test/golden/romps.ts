@@ -1,14 +1,10 @@
 /**
- * LCL exacto de Romps (2017) mediante la función W de Lambert.
+ * Exact Romps (2017) LCL formulation using the Lambert W function.
  *
  * @source Romps, D. M. (2017), J. Atmos. Sci. 74, 3891-3900.
  *
- * Referencia independiente contra la que se valida la aproximación de Bolton
- * (prueba T-06 de docs/ACCEPTANCE.md). **Nunca se importa desde `src/`.**
- *
- * Las constantes son las del artículo, que difieren ligeramente de las de
- * `src/units/constants.ts`; esa independencia es justamente lo que hace útil
- * la comparación.
+ * Independent reference against which Bolton's approximation is validated (test T-06).
+ * Never imported into `src/`.
  */
 
 import { lambertWm1 } from "./lambertW.js";
@@ -25,7 +21,7 @@ const cvl = 4119;
 const cpa = cva + rgasa;
 const cpv = cvv + rgasv;
 
-/** Presión de vapor de saturación sobre agua líquida, formulación de Romps. */
+/** Saturation vapor pressure over liquid water (Romps formulation). */
 export function pvstarl(tempK: number): number {
   return (
     ptrip *
@@ -35,11 +31,11 @@ export function pvstarl(tempK: number): number {
 }
 
 /**
- * Altura del LCL sobre el nivel de la parcela, en metros.
+ * Height of LCL above parcel initial level in metres.
  *
- * @param pressurePa presión de la parcela, Pa
- * @param tempK temperatura de la parcela, K
- * @param rh humedad relativa respecto al agua líquida, fracción 0..1
+ * @param pressurePa parcel pressure, Pa
+ * @param tempK parcel temperature, K
+ * @param rh relative humidity with respect to liquid water (0..1 fraction)
  */
 export function romps2017LclHeightM(
   pressurePa: number,

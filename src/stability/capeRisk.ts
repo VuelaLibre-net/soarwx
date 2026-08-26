@@ -1,14 +1,11 @@
 /**
- * CAPE como riesgo, nunca como virtud.
+ * CAPE as risk, never as virtue.
  *
- * DrJack es explícito: la CAPE mide la estabilidad que afecta a la formación de
- * nubes convectivas **por encima** de la capa límite, no dentro, y «no es una
- * medida de la fuerza de las térmicas».
+ * DrJack is explicit: CAPE measures stability affecting convective cloud
+ * formation **above** the boundary layer, not within it, and "is not a measure
+ * of thermal strength".
  *
- * El predecesor la puntuaba como factor positivo con banda ideal de 1000 a
- * 2500 J/kg y a la vez la vetaba por encima de 2500: el mismo valor de
- * 2400 J/kg sacaba nota máxima en un factor y estaba a 100 J/kg de un veto.
- * Aquí **no existe ninguna función que convierta la CAPE en puntuación**.
+ * Here CAPE contributes strictly to storm potential and overdevelopment risk.
  */
 
 export type CapeBand = "none" | "weak" | "moderate" | "strong" | "extreme";
@@ -16,17 +13,17 @@ export type CapeBand = "none" | "weak" | "moderate" | "strong" | "extreme";
 export interface CapeRisk {
   readonly band: CapeBand;
   readonly stormPotential: boolean;
-  /** Hay inhibición suficiente para tapar la convección profunda. */
+  /** Sufficient convective inhibition exists to cap deep convection. */
   readonly inhibited: boolean;
   readonly capeJkg: number | null;
   readonly convectiveInhibitionJkg: number | null;
 }
 
 /**
- * Bandas de CAPE y probabilidad de tormenta asociada.
+ * CAPE classification bands and associated thunderstorm potential.
  *
- * @source Glendening (DrJack), RASP BLIPMAP: 0 nula · 300-1000 débil ·
- *         1000-2500 moderada · 2500-5300 fuerte.
+ * @source Glendening (DrJack), RASP BLIPMAP: 0 none · 300-1000 weak ·
+ *         1000-2500 moderate · 2500-5300 strong · >5300 extreme.
  */
 export const CAPE_BANDS_JKG = {
   weak: 300,
@@ -36,18 +33,15 @@ export const CAPE_BANDS_JKG = {
 } as const;
 
 /**
- * Inhibición convectiva a partir de la cual se considera que tapa. El signo se
- * ignora: distintos modelos la sirven positiva o negativa.
+ * Convective inhibition threshold considered sufficient to cap deep convection.
+ * Absolute value is evaluated to accommodate varying model sign conventions.
  */
 export const INHIBITING_CIN_JKG = 50;
 
 /**
- * Clasifica la CAPE como **riesgo**, con la inhibición que la tapa.
+ * Classifies CAPE as **convective risk**, taking capping inhibition into account.
  *
- * Nunca entra en la puntuación como mérito: una CAPE alta anuncia convección
- * profunda, no térmicas fuertes.
- *
- * @source Glendening (DrJack), RASP BLIPMAP, bandas de CAPE.
+ * @source Glendening (DrJack), RASP BLIPMAP, CAPE bands.
  */
 export function capeRisk(
   capeJkg: number | null,

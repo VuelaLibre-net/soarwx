@@ -1,8 +1,8 @@
 /**
- * Viento: componentes, medias vectoriales y cizalladura.
+ * Wind: vector components, vector averages, and vertical shear.
  *
- * Todo se promedia por componentes, nunca por módulos. Dos capas con vientos
- * opuestos dan media cero, y eso es información, no un artefacto (R-5.4).
+ * All wind operations are averaged by vector components, never by scalar speed and direction.
+ * Opposing wind layers yield zero vector mean, which provides physical insight (R-5.4).
  */
 
 import { deg, mps } from "../units/branded.js";
@@ -11,19 +11,19 @@ import { normaliseBearing } from "../units/convert.js";
 import type { WindVector } from "./types.js";
 
 export interface WindComponents {
-  /** Componente hacia el este, m/s. */
+  /** Eastward wind component, m/s. */
   readonly uMs: MPerS;
-  /** Componente hacia el norte, m/s. */
+  /** Northward wind component, m/s. */
   readonly vMs: MPerS;
 }
 
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Descompone un viento meteorológico (dirección DE DONDE viene) en componentes
- * cartesianas. Viento del 270° sopla hacia el este: u > 0, v = 0.
+ * Decomposes meteorological wind (direction FROM which wind blows) into Cartesian components.
+ * 270° westerly wind blows eastward: u > 0, v = 0.
  *
- * @source Convención meteorológica estándar; WMO.
+ * @source Standard meteorological convention; WMO.
  */
 export function toComponents(speedMs: MPerS, fromDeg: Degrees): WindComponents {
   const rad = fromDeg * DEG_TO_RAD;
@@ -32,9 +32,9 @@ export function toComponents(speedMs: MPerS, fromDeg: Degrees): WindComponents {
 }
 
 /**
- * Recompone módulo y dirección de procedencia a partir de las componentes.
+ * Reconstructs wind speed and meteorological direction from Cartesian components.
  *
- * @source Convención meteorológica estándar; WMO.
+ * @source Standard meteorological convention; WMO.
  */
 export function fromComponents(uMs: number, vMs: number): WindVector {
   const speed = Math.hypot(uMs, vMs);
@@ -46,20 +46,20 @@ export function fromComponents(uMs: number, vMs: number): WindVector {
 }
 
 export interface ShearResult {
-  /** Módulo de la diferencia vectorial de viento entre los dos extremos. */
+  /** Magnitude of vector wind difference between two endpoints. */
   readonly deltaMs: MPerS;
-  /** Cizalladura como diferencia vectorial por kilómetro de espesor. */
+  /** Vertical wind shear expressed as vector difference per kilometre depth. */
   readonly shearMsPerKm: number;
   readonly depthM: Metres;
 }
 
 /**
- * Cizalladura vectorial entre dos vientos separados por un espesor dado.
+ * Vector wind shear between two wind observations separated by vertical depth.
  *
- * Comparar solo módulos es un error: una inversión completa de dirección con el
- * mismo módulo da cizalladura cero, cuando en realidad es la máxima posible.
+ * Comparing scalar speeds alone is erroneous: a complete 180° wind reversal
+ * at constant speed would register zero scalar shear despite maximum vector shear.
  *
- * @source Definición estándar de cizalladura vectorial; Stull, cap. 18.
+ * @source Standard vector wind shear definition; Stull, ch. 18.
  */
 export function shearBetween(
   lower: WindVector,
@@ -78,9 +78,9 @@ export function shearBetween(
 }
 
 /**
- * Media vectorial de una lista de vientos con pesos (típicamente espesores).
+ * Weighted vector mean of wind observations (typically weighted by layer depth).
  *
- * @source Media vectorial; ver DrJack, «Boundary Layer Average Wind».
+ * @source Vector mean wind; see DrJack, "Boundary Layer Average Wind".
  */
 export function meanWind(
   samples: readonly { readonly wind: WindVector; readonly weight: number }[],

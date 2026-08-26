@@ -1,12 +1,8 @@
 /**
- * Vetos.
+ * Forecast veto mechanisms.
  *
- * **Los vetos topan, no restan** (R-10.3). Un cielo cerrado no quita medio
- * punto: impide que el día pase de nivel 1, por muy bien que puntúe todo lo
- * demás. Cada veto lleva su motivo y el nivel al que topa.
- *
- * Ningún factor premia lo que un veto castiga: la CAPE, el viento fuerte y la
- * estabilidad solo aparecen aquí.
+ * **Vetoes cap maximum ratings rather than subtracting points** (R-10.3).
+ * For example, an overcast sky caps the day at Level 1, regardless of other parameters.
  */
 
 import type { CapeRisk } from "../stability/capeRisk.js";
@@ -26,27 +22,26 @@ export type VetoLevel = 1 | 2 | 3;
 export interface Veto {
   readonly id: VetoId;
   readonly capsAtLevel: VetoLevel;
-  /** Clave de motivo. El texto para el piloto vive en `soarwx/i18n/es`. */
+  /** Reason key matching localized pilot message dictionaries. */
   readonly reason: VetoId;
 }
 
-/** Techo por debajo del cual el día no da para volar. */
+/** Usable ceiling threshold below which soaring is not viable. */
 export const UNUSABLE_CEILING_AGL_M = 800;
-/** CAPE a partir de la cual el veto es severo, en J/kg. */
+/** CAPE threshold above which severe storm veto triggers, in J/kg. */
 export const SEVERE_CAPE_JKG = 3500;
-/** K-Index a partir del cual una CAPE alta se considera tormentosa. */
+/** K-Index threshold above which elevated CAPE is considered stormy. */
 export const STORM_K_INDEX = 25;
-/** Viento en superficie a partir del cual el día se topa, en m/s (25 nudos). */
+/** Surface wind speed threshold triggering strong wind veto, in m/s (25 kt). */
 export const STRONG_WIND_MS = 12.87;
 /**
- * Techo por debajo del cual una atmósfera estable sí limita el día.
+ * Usable ceiling threshold below which upper-air atmospheric stability limits soaring.
  *
- * Por encima de esta altura la capa convectiva da de sí bastante para trabajar
- * aunque no haya inestabilidad profunda, y el LI deja de ser información
- * limitante. Es una elección de calibración, declarada como S6 en `AUDIT.md`.
+ * Above this height the convective boundary layer is deep enough for cross-country soaring
+ * even under positive lifted index aloft.
  */
 export const CAPPED_CEILING_AGL_M = 1500;
-/** LI por encima del cual la estabilidad es franca, no marginal. */
+/** Lifted Index threshold above which upper stability is pronounced. */
 export const STRONGLY_STABLE_LI = 2;
 
 export interface VetoInput {
@@ -60,17 +55,16 @@ export interface VetoInput {
 }
 
 /**
- * Vetos aplicables a una hora.
+ * Evaluates applicable vetoes for a forecast hour.
  *
- * Un índice ausente **no dispara veto**: `liftedIndex === null` significa que
- * no se pudo calcular, no que valga cero. El predecesor colapsaba ambos casos y
- * un LI ausente vetaba el día como «atmósfera estable».
+ * A missing index does **not** trigger a veto: `liftedIndex === null` indicates
+ * that the level was unavailable, not that it was zero.
  *
- * Un LI positivo **tampoco veta por sí solo**: describe la atmósfera por encima
- * de la capa límite, no dentro de ella (R-10.6).
+ * A positive Lifted Index does not veto by itself: it describes stability aloft
+ * above the boundary layer, not within it (R-10.6).
  *
- * @source R-10.3, R-10.6 y R-7.2 de docs/REQUIREMENTS.md; bandas de CAPE de
- *         Glendening (DrJack).
+ * @source Requirements R-10.3, R-10.6, and R-7.2 from docs/REQUIREMENTS.md;
+ *         CAPE bands from Glendening (DrJack).
  */
 export function evaluateVetoes(input: VetoInput): readonly Veto[] {
   const vetoes: Veto[] = [];
@@ -82,11 +76,9 @@ export function evaluateVetoes(input: VetoInput): readonly Veto[] {
   if (input.overcast) add("overcast", 1);
   if (input.usableCeilingAglM < UNUSABLE_CEILING_AGL_M) add("ceiling_too_low", 2);
 
-  // El LI evalúa una parcela alzada a 500 hPa: mide si hay convección profunda
-  // sobre la capa límite, no si la capa límite funciona. Una capa mezclada de
-  // 3000 m con LI +1.6 es un día excelente, y vetarla era heredar el error del
-  // predecesor. La estabilidad solo veta cuando además la capa convectiva se
-  // queda corta, y entonces sí gradúa según lo franca que sea.
+  // Lifted Index evaluates parcel lifted to 500 hPa: it measures deep convection aloft.
+  // A 3000 m boundary layer with LI +1.6 is an excellent soaring day. Stability only
+  // caps ratings when convective depth is restricted (< 1500 m AGL).
   if (
     input.liftedIndex !== null &&
     input.liftedIndex >= 0 &&
@@ -107,7 +99,7 @@ export function evaluateVetoes(input: VetoInput): readonly Veto[] {
   return vetoes;
 }
 
-/** Nivel máximo que permiten los vetos presentes. */
+/** Maximum soaring rating permitted across all active vetoes. */
 export function vetoCap(vetoes: readonly Veto[]): 1 | 2 | 3 | 4 | 5 {
   let cap: 1 | 2 | 3 | 4 | 5 = 5;
   for (const veto of vetoes) {

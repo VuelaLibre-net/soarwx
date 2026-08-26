@@ -1,9 +1,8 @@
 /**
- * Confianza por dispersión entre modelos.
+ * Forecast confidence via multi-model spread.
  *
- * **Con un solo modelo la confianza es `null`**, no un valor inventado
- * (R-12.3). La dispersión entre modelos deterministas tampoco es una
- * probabilidad: es una medida de acuerdo, y así se declara.
+ * **With only a single model available, confidence is `null`** (R-12.3).
+ * Spread across deterministic weather models measures consensus rather than Bayesian probability.
  */
 
 import { m, mps } from "../units/branded.js";
@@ -24,16 +23,15 @@ export interface ModelSample {
   readonly wStarMs: MPerS;
 }
 
-/** Dispersión de techo, en metros, que separa los niveles de confianza. */
+/** Ceiling spread thresholds in metres separating confidence tiers. */
 export const CEILING_SPREAD_THRESHOLDS_M = { high: 300, medium: 800 } as const;
 
 /**
- * Confianza medida como **dispersión entre modelos**, no inventada.
+ * Computes forecast confidence from multi-model spread.
  *
- * Devuelve `null` con una sola muestra: un modelo solo no permite medir acuerdo,
- * y fingir un número sería peor que no darlo.
+ * Returns `null` when fewer than 2 model samples are provided.
  *
- * @source R-12.1 a R-12.3 de docs/REQUIREMENTS.md.
+ * @source Requirements R-12.1 through R-12.3 from docs/REQUIREMENTS.md.
  */
 export function confidenceFrom(samples: readonly ModelSample[]): Confidence | null {
   if (samples.length < 2) return null;

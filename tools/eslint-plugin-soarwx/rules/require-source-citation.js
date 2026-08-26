@@ -1,9 +1,9 @@
 /**
- * Exige que toda función exportada de los módulos de física lleve la cita de su
- * fuente en el docblock: `@source Autor (año), ecuación N`.
+ * Requires every exported function in physics modules to cite its source
+ * in the docblock: `@source Author (year), equation N`.
  *
- * Regla de `docs/REQUIREMENTS.md` NF-6: sin cita, la fórmula no entra.
- * Se activa solo sobre los directorios que la configuración le indique.
+ * Rule from `docs/REQUIREMENTS.md` NF-6: uncited formulas do not merge.
+ * Only applies to directories specified by configuration.
  */
 
 /** @type {import("eslint").Rule.RuleModule} */
@@ -12,7 +12,7 @@ export default {
     type: "problem",
     docs: {
       description:
-        "Las funciones exportadas de los módulos de física deben citar su fuente con @source.",
+        "Exported functions in physics modules must cite their source with @source.",
     },
     schema: [
       {
@@ -23,7 +23,7 @@ export default {
     ],
     messages: {
       missing:
-        "`{{name}}` no cita su fuente. Añade `{{tag}} Autor (año), ecuación N` al docblock (NF-6).",
+        "`{{name}}` does not cite its source. Add `{{tag}} Author (year), equation N` to the docblock (NF-6).",
     },
   },
 

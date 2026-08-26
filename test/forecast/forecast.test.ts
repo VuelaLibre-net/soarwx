@@ -24,28 +24,28 @@ import { m, mps } from "../../src/units/branded.js";
 
 const INF = Number.POSITIVE_INFINITY;
 
-describe("puntuación por bandas", () => {
+describe("scoring bands", () => {
   const band = { idealMin: 10, idealMax: 20, zeroMin: 0, zeroMax: 30 };
 
-  it("vale 1 dentro de la banda ideal", () => {
+  it("evaluates to 1 within ideal range", () => {
     expect(scoreBand(10, band)).toBe(1);
     expect(scoreBand(15, band)).toBe(1);
     expect(scoreBand(20, band)).toBe(1);
   });
 
-  it("vale 0 fuera de los extremos", () => {
+  it("evaluates to 0 outside limits", () => {
     expect(scoreBand(0, band)).toBe(0);
     expect(scoreBand(-5, band)).toBe(0);
     expect(scoreBand(30, band)).toBe(0);
     expect(scoreBand(40, band)).toBe(0);
   });
 
-  it("interpola linealmente en las rampas", () => {
+  it("interpolates linearly along transition slopes", () => {
     expect(scoreBand(5, band)).toBeCloseTo(0.5, 9);
     expect(scoreBand(25, band)).toBeCloseTo(0.5, 9);
   });
 
-  it("acepta bandas abiertas por arriba", () => {
+  it("supports open-ended upper limits", () => {
     const open = { idealMin: 2, idealMax: INF, zeroMin: 0.4, zeroMax: INF };
     expect(scoreBand(100, open)).toBe(1);
     expect(scoreBand(0.4, open)).toBe(0);
@@ -54,8 +54,8 @@ describe("puntuación por bandas", () => {
 });
 
 // V-01
-describe("factores", () => {
-  it("cada factor trae valor, unidad, puntuación, peso y banda", () => {
+describe("scoring factors", () => {
+  it("each factor includes value, unit, score, weight, and band", () => {
     const factor = buildFactor("climb_strength", 2.5, DEFAULT_FACTORS.climb_strength);
     expect(factor).toMatchObject({
       id: "climb_strength",
@@ -68,26 +68,26 @@ describe("factores", () => {
     expect(factor.band.idealMin).toBe(2);
   });
 
-  it("todos los factores por defecto justifican su banda", () => {
+  it("all default factors provide physical rationale", () => {
     for (const spec of Object.values(DEFAULT_FACTORS)) {
       expect(spec.rationale.length).toBeGreaterThan(40);
       expect(spec.weight).toBeGreaterThan(0);
     }
   });
 
-  // V-03 y E-04
-  it("ninguna clave de factor menciona la CAPE", () => {
+  // V-03 & E-04
+  it("no factor key references CAPE", () => {
     const ids = Object.keys(DEFAULT_FACTORS);
     expect(ids).not.toContain("cape");
     expect(ids.join(" ")).not.toMatch(/cape/i);
   });
 
-  it("la calidad de térmica usa los umbrales de DrJack", () => {
+  it("thermal quality uses DrJack thresholds", () => {
     expect(DEFAULT_FACTORS.thermal_quality.band.zeroMin).toBe(5);
     expect(DEFAULT_FACTORS.thermal_quality.band.idealMin).toBe(10);
   });
 
-  it("el umbral de cumplimiento es 0.6", () => {
+  it("satisfaction threshold is 0.6", () => {
     expect(buildFactor("cloud_cover", 0.8, DEFAULT_FACTORS.cloud_cover).ok).toBe(false);
     expect(FACTOR_OK_THRESHOLD).toBe(0.6);
   });
@@ -109,7 +109,7 @@ const factorSet = (overrides: Partial<Record<FactorId, number>> = {}): Factor[] 
   );
 };
 
-describe("vetos", () => {
+describe("vetoes", () => {
   const baseInput = {
     hasConvection: true,
     overcast: false,
@@ -121,7 +121,7 @@ describe("vetos", () => {
   };
 
   // V-05
-  it("un día perfecto no dispara ninguno", () => {
+  it("perfect conditions trigger zero vetoes", () => {
     expect(evaluateVetoes(baseInput)).toEqual([]);
     const score = aggregate(factorSet(), []);
     expect(score.level).toBe(5);
@@ -129,14 +129,14 @@ describe("vetos", () => {
   });
 
   // V-07
-  it("el cielo cerrado topa en 1", () => {
+  it("overcast sky caps rating at level 1", () => {
     const vetoes = evaluateVetoes({ ...baseInput, overcast: true });
     expect(vetoes.map((v) => v.id)).toContain("overcast");
     expect(vetoCap(vetoes)).toBe(1);
     expect(aggregate(factorSet(), vetoes).level).toBe(1);
   });
 
-  it("un techo inservible topa en 2", () => {
+  it("unusable ceiling caps rating at level 2", () => {
     const vetoes = evaluateVetoes({ ...baseInput, usableCeilingAglM: m(500) });
     expect(vetoes.map((v) => v.id)).toContain("ceiling_too_low");
     expect(vetoCap(vetoes)).toBe(2);
@@ -144,7 +144,7 @@ describe("vetos", () => {
   });
 
   // V-06
-  it("el viento fuerte topa en 3", () => {
+  it("strong surface wind caps rating at level 3", () => {
     const vetoes = evaluateVetoes({ ...baseInput, surfaceWindMs: 15 });
     expect(vetoes.map((v) => v.id)).toContain("wind_too_strong");
     expect(aggregate(factorSet({ surface_wind: 15 }), vetoes).level).toBeLessThanOrEqual(
@@ -154,26 +154,26 @@ describe("vetos", () => {
   });
 
   // V-08
-  it("una CAPE severa topa en 2", () => {
+  it("severe CAPE caps rating at level 2", () => {
     const vetoes = evaluateVetoes({ ...baseInput, cape: capeRisk(3800) });
     expect(vetoes.map((v) => v.id)).toContain("cape_severe");
     expect(aggregate(factorSet(), vetoes).level).toBeLessThanOrEqual(2);
     expect(SEVERE_CAPE_JKG).toBe(3500);
   });
 
-  it("una CAPE alta con K-Index tormentoso también", () => {
+  it("elevated CAPE combined with stormy K-Index triggers veto", () => {
     const vetoes = evaluateVetoes({ ...baseInput, cape: capeRisk(2800), kIndex: 30 });
     expect(vetoes.map((v) => v.id)).toContain("cape_with_storm_index");
   });
 
-  // R-10.6: el LI describe la atmósfera sobre la capa límite, no dentro de ella.
-  it("un LI positivo no veta si la capa convectiva da de sí", () => {
+  // R-10.6: LI describes stability aloft above the boundary layer, not within it.
+  it("positive Lifted Index does not veto if boundary layer is deep enough", () => {
     const vetoes = evaluateVetoes({ ...baseInput, liftedIndex: 1.5 });
     expect(vetoes.map((v) => v.id)).not.toContain("stable_atmosphere");
     expect(vetoCap(vetoes)).toBe(5);
   });
 
-  it("la atmósfera estable sobre una capa corta topa en 3", () => {
+  it("stable atmosphere over shallow boundary layer caps at level 3", () => {
     const vetoes = evaluateVetoes({
       ...baseInput,
       liftedIndex: 1.5,
@@ -184,7 +184,7 @@ describe("vetos", () => {
     expect(CAPPED_CEILING_AGL_M).toBe(1500);
   });
 
-  it("una estabilidad franca sobre una capa corta topa en 2", () => {
+  it("pronounced stability over shallow boundary layer caps at level 2", () => {
     const vetoes = evaluateVetoes({
       ...baseInput,
       liftedIndex: 6,
@@ -194,20 +194,19 @@ describe("vetos", () => {
     expect(STRONGLY_STABLE_LI).toBe(2);
   });
 
-  // E-01 aplicado al veredicto
-  it("un índice ausente no veta: ausente no es cero", () => {
+  // E-01 applied to forecast verdict
+  it("missing index does not trigger veto: missing is not zero", () => {
     const vetoes = evaluateVetoes({ ...baseInput, liftedIndex: null });
     expect(vetoes.map((v) => v.id)).not.toContain("stable_atmosphere");
   });
 
-  it("sin convección topa en 1", () => {
+  it("absence of convection caps at level 1", () => {
     const vetoes = evaluateVetoes({ ...baseInput, hasConvection: false });
     expect(vetoCap(vetoes)).toBe(1);
   });
 
   // V-03
-  it("ningún valor saca nota máxima y dispara un veto a la vez", () => {
-    // 2400 J/kg sacaba nota máxima en el predecesor y estaba a 100 de un veto.
+  it("no parameter achieves perfect factor score and triggers a veto simultaneously", () => {
     const vetoes = evaluateVetoes({ ...baseInput, cape: capeRisk(2400) });
     const score = aggregate(factorSet(), vetoes);
     const capeInFactors = score.factors.some((f) => f.id.includes("cape"));
@@ -215,9 +214,9 @@ describe("vetos", () => {
   });
 });
 
-describe("agregación", () => {
+describe("aggregation", () => {
   // V-02
-  it("los vetos topan, no restan", () => {
+  it("vetoes cap maximum level without subtracting continuous points", () => {
     const factors = factorSet();
     const withoutVeto = aggregate(factors, []);
     const withVeto = aggregate(
@@ -232,14 +231,14 @@ describe("agregación", () => {
         surfaceWindMs: 4,
       }),
     );
-    // La puntuación no cambia: lo que cambia es el nivel.
+    // Continuous score value remains unchanged: rating level is capped.
     expect(withVeto.value).toBeCloseTo(withoutVeto.value, 12);
     expect(withVeto.levelBeforeVetoes).toBe(withoutVeto.level);
     expect(withVeto.level).toBe(1);
   });
 
   // P-07
-  it("añadir un veto nunca sube el nivel", () => {
+  it("adding a veto never raises the rating level", () => {
     const factors = factorSet();
     const none = aggregate(factors, []);
     for (const extra of [1, 2, 3] as const) {
@@ -250,13 +249,13 @@ describe("agregación", () => {
     }
   });
 
-  it("el nivel 5 exige todos los factores cumplidos", () => {
+  it("level 5 rating requires all individual factors to satisfy OK threshold", () => {
     const almost = aggregate(factorSet({ moisture: 3 }), []);
     expect(almost.factors.every((f) => f.ok)).toBe(false);
     expect(almost.level).toBeLessThanOrEqual(4);
   });
 
-  it("lista los factores limitantes de peor a mejor", () => {
+  it("ranks limiting factors from worst score to best", () => {
     const score = aggregate(factorSet({ moisture: 3, cloud_cover: 0.75 }), []);
     expect(score.limitingFactors.length).toBeGreaterThan(0);
     const scores = score.limitingFactors.map(
@@ -268,7 +267,7 @@ describe("agregación", () => {
   });
 
   // P-06
-  it("la puntuación cae en [0,1] y el nivel en {1..5}", () => {
+  it("score value falls in [0, 1] and level falls in 1..5", () => {
     for (const climb of [0, 0.5, 1, 2, 4]) {
       for (const ceiling of [0, 500, 1500, 3000]) {
         const score = aggregate(
@@ -283,21 +282,21 @@ describe("agregación", () => {
   });
 
   // V-09
-  it("es determinista", () => {
+  it("aggregation is deterministic", () => {
     const first = JSON.stringify(aggregate(factorSet(), []));
     for (let i = 0; i < 50; i++) {
       expect(JSON.stringify(aggregate(factorSet(), []))).toBe(first);
     }
   });
 
-  it("sin factores no divide por cero", () => {
+  it("handles empty factor list without division by zero", () => {
     expect(aggregate([], []).value).toBe(0);
   });
 });
 
 // V-04
-describe("configuración", () => {
-  it("cambiar un peso cambia el nivel: no es decorativa", () => {
+describe("configuration", () => {
+  it("modifying weights affects final level rating", () => {
     const values: Record<FactorId, number> = {
       climb_strength: 0.5,
       usable_ceiling: 2400,
@@ -319,7 +318,7 @@ describe("configuración", () => {
     expect(build(heavy.factors).level).toBeLessThan(build(base.factors).level);
   });
 
-  it("cambiar una banda cambia la puntuación", () => {
+  it("modifying a band adjusts factor score", () => {
     const lenient = resolveScoring({
       factors: {
         usable_ceiling: {
@@ -334,7 +333,7 @@ describe("configuración", () => {
     );
   });
 
-  it("cambiar los umbrales de nivel cambia el nivel", () => {
+  it("modifying level thresholds alters rating level", () => {
     const factors = factorSet({ climb_strength: 1.5 });
     const strict = aggregate(factors, [], [0.5, 0.7, 0.9, 0.99]);
     const loose = aggregate(factors, [], [0.1, 0.2, 0.3, 0.4]);
@@ -342,7 +341,7 @@ describe("configuración", () => {
     expect(DEFAULT_LEVEL_THRESHOLDS).toEqual([0.3, 0.58, 0.78, 0.9]);
   });
 
-  it("sin configuración usa los valores por defecto", () => {
+  it("uses default values when no config provided", () => {
     expect(resolveScoring().factors.climb_strength.weight).toBe(2);
   });
 });
@@ -354,21 +353,21 @@ const hour = (timeUtc: string, level: 1 | 2 | 3 | 4 | 5, ceiling: number, climb 
   climbMs: climb,
 });
 
-describe("ventanas y mejor hora", () => {
+describe("soaring windows and best hour", () => {
   // W-01
-  it("gana el techo alto, no el número de factores en verde", () => {
+  it("higher usable ceiling takes precedence over count of green factors", () => {
     const best = bestHour([hour("10:00", 4, 900, 2.4), hour("14:00", 4, 2500, 2.0)]);
     expect(best?.timeUtc).toBe("14:00");
   });
 
   // W-02
-  it("una hora vetada nunca es la mejor si hay otra sin vetar", () => {
+  it("vetoed hour is never best if non-vetoed hour exists", () => {
     const best = bestHour([hour("12:00", 2, 4000, 5), hour("14:00", 4, 1900, 2)]);
     expect(best?.timeUtc).toBe("14:00");
   });
 
   // W-03
-  it("funde las contiguas y descarta las aisladas", () => {
+  it("merges contiguous hours and discards isolated single hours", () => {
     const windows = findWindows(
       [
         hour("09:00", 2, 600),
@@ -387,7 +386,7 @@ describe("ventanas y mejor hora", () => {
     expect(windows[0]!.peakCeilingAglM).toBe(2200);
   });
 
-  it("la ventana declara su nivel mínimo", () => {
+  it("soaring window reports minimum rating level", () => {
     const windows = findWindows(
       [hour("10:00", 5, 2600), hour("11:00", 3, 1800), hour("12:00", 4, 2100)],
       3,
@@ -396,7 +395,7 @@ describe("ventanas y mejor hora", () => {
   });
 
   // W-04
-  it("sin horas volables no devuelve la menos mala", () => {
+  it("returns null when no soarable hours exist", () => {
     const flat = [hour("10:00", 1, 200), hour("11:00", 1, 150)];
     expect(bestHour(flat)).toBeNull();
     expect(findWindows(flat, 3)).toEqual([]);
@@ -404,15 +403,15 @@ describe("ventanas y mejor hora", () => {
 });
 
 // G-03, G-04
-describe("confianza", () => {
-  it("con un solo modelo es null, no un valor inventado", () => {
+describe("confidence", () => {
+  it("returns null with only a single model sample", () => {
     expect(
       confidenceFrom([{ model: "icon_eu", ceilingAglM: m(2000), wStarMs: mps(2.4) }]),
     ).toBeNull();
     expect(confidenceFrom([])).toBeNull();
   });
 
-  it("modelos que concuerdan dan confianza alta", () => {
+  it("agreeing models produce high confidence", () => {
     const c = confidenceFrom([
       { model: "icon_eu", ceilingAglM: m(2000), wStarMs: mps(2.4) },
       { model: "gfs_seamless", ceilingAglM: m(2150), wStarMs: mps(2.6) },
@@ -422,7 +421,7 @@ describe("confianza", () => {
     expect(c?.modelsUsed).toEqual(["icon_eu", "gfs_seamless"]);
   });
 
-  it("modelos que discrepan bajan la confianza", () => {
+  it("diverging models lower confidence rating", () => {
     expect(
       confidenceFrom([
         { model: "a", ceilingAglM: m(1200), wStarMs: mps(1.5) },

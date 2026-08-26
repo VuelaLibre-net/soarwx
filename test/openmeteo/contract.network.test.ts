@@ -1,11 +1,8 @@
 /**
- * Prueba de contrato con Open-Meteo.
+ * Open-Meteo contract test suite.
  *
- * **Toca la red y está excluida del CI**: se ejecuta con `pnpm test:network` y
- * en un cron semanal. La API es de terceros y no debe romper el build; un
- * fallo aquí abre incidencia.
- *
- * Verifica que sigue siendo cierto lo que afirma `docs/OPEN_METEO_INTEGRATION.md`.
+ * Excluded from standard CI runs; intended for manual execution via `pnpm test:network`
+ * and scheduled pipeline runs to verify external API stability against `docs/OPEN_METEO_INTEGRATION.md`.
  */
 
 import { describe, expect, it } from "vitest";
@@ -34,10 +31,10 @@ async function live(model: OpenMeteoModel): Promise<OpenMeteoResponse> {
 const numbers = (response: OpenMeteoResponse, key: string): (number | null)[] =>
   (response.hourly[key] ?? []) as HourlySeries as (number | null)[];
 
-describe("contrato con Open-Meteo", () => {
+describe("Open-Meteo API contract", () => {
   // CT-1, CT-3, CT-5, CT-6
   it(
-    "ICON-EU acepta todas las variables, con las unidades y el eco esperados",
+    "ICON-EU serves requested variables with expected units and echo",
     async () => {
       const response = await live("icon_eu");
       expect(validateEcho(response, FUENTEMILANOS_SITE).ok).toBe(true);
@@ -49,7 +46,7 @@ describe("contrato con Open-Meteo", () => {
 
   // CT-2, CT-7
   it(
-    "ICON-EU sigue sin servir boundary_layer_height ni lifted_index",
+    "ICON-EU continues omitting boundary_layer_height and lifted_index",
     async () => {
       const response = await live("icon_eu");
       expect(hasData(response, "sensible_heat_flux")).toBe(true);
@@ -60,7 +57,7 @@ describe("contrato con Open-Meteo", () => {
   );
 
   it(
-    "GFS sigue sirviendo boundary_layer_height y lifted_index",
+    "GFS continues serving boundary_layer_height and lifted_index",
     async () => {
       const response = await live("gfs_seamless");
       expect(hasData(response, "boundary_layer_height")).toBe(true);
@@ -70,9 +67,9 @@ describe("contrato con Open-Meteo", () => {
     TIMEOUT_MS,
   );
 
-  // CT-4: la trampa que más silenciosamente rompe todo.
+  // CT-4: flux sign inversion check
   it(
-    "el signo del flujo sigue siendo opuesto entre ICON y GFS",
+    "heat flux signs remain inverted between ICON and GFS",
     async () => {
       const icon = await live("icon_eu");
       const gfs = await live("gfs_seamless");
@@ -91,7 +88,7 @@ describe("contrato con Open-Meteo", () => {
 
   // CT-8
   it(
-    "ECMWF sigue sin servir niveles de presión aquí",
+    "ECMWF continues omitting pressure levels at this coordinate",
     async () => {
       const response = await live("ecmwf_ifs");
       expect(usableLevels(response, [900, 850, 800, 700])).toEqual([]);
@@ -101,16 +98,16 @@ describe("contrato con Open-Meteo", () => {
 
   // CT-9
   it(
-    "los niveles bajo tierra siguen llegando con valores, y por eso se podan",
+    "underground pressure levels return non-physical values and are pruned",
     async () => {
       const request = buildForecastRequest(
         { ...FUENTEMILANOS_SITE, elevationMslM: FUENTEMILANOS_SITE.elevationMslM },
         { model: "icon_eu", forecastDays: 1 },
       );
-      // La petición ya no los incluye...
+      // Pruned request omits 1000 hPa...
       expect(request.body.getAll("hourly")).not.toContain("temperature_1000hPa");
 
-      // ...pero si se piden, llegan con valores sin significado físico.
+      // Explicit query returns populated but non-physical values.
       const withUnderground = buildForecastRequest(
         { ...FUENTEMILANOS_SITE, elevationMslM: FUENTEMILANOS_SITE.elevationMslM },
         { model: "icon_eu", forecastDays: 1 },
@@ -130,7 +127,7 @@ describe("contrato con Open-Meteo", () => {
   );
 
   it(
-    "un nombre de variable inválido sigue devolviendo 400 y tumbando la petición",
+    "invalid variable names return HTTP 400 and fail request",
     async () => {
       const request = buildForecastRequest(FUENTEMILANOS_SITE, {
         model: "icon_eu",

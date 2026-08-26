@@ -1,16 +1,10 @@
 /**
- * Validación de la respuesta.
+ * Open-Meteo response validation.
  *
- * Tres comprobaciones que evitan errores silenciosos:
- *
- * 1. **Detección por contenido, no por clave.** Open-Meteo no da error si se
- *    pide una variable que el modelo no tiene: la acepta, la lista en
- *    `hourly_units` y devuelve un array de `null`. Un cliente ingenuo ve la
- *    clave y asume el dato.
- * 2. **Eco de la petición.** Si la elevación o la zona horaria devueltas no son
- *    las pedidas, todo lo que sigue está mal anclado.
- * 3. **Unidades.** Se envía `wind_speed_unit=ms`, pero la conversión no se
- *    asume: se comprueba antes de convertir.
+ * Performs three key verifications:
+ * 1. **Content-based detection**: checks for populated data rather than bare key presence.
+ * 2. **Request echo**: verifies returned elevation and timezone match query parameters.
+ * 3. **Units validation**: validates expected units before normalization.
  */
 
 import { err, ok } from "../types/result.js";
@@ -19,16 +13,14 @@ import type { Site } from "../types/site.js";
 import type { HourlySeries, OpenMeteoResponse } from "./types.js";
 
 /**
- * Unidad que Open-Meteo devuelve para una variable que el modelo **no sirve**:
- * la cadena literal `"undefined"`, no la ausencia de la clave ni `null`.
- * Medido con `boundary_layer_height` en ICON-EU.
+ * Unit string returned by Open-Meteo when a variable is unsupported by the requested model.
  */
 export const ABSENT_UNIT = "undefined";
 
-/** Tolerancia del eco de elevación, en metros. */
+/** Elevation echo tolerance in metres. */
 export const ELEVATION_ECHO_TOLERANCE_M = 1;
 
-/** Unidades que se esperan de cada familia de variable. */
+/** Expected units per variable category. */
 export const EXPECTED_UNITS: Readonly<Record<string, string>> = {
   temperature_2m: "°C",
   surface_pressure: "hPa",
@@ -42,10 +34,9 @@ export const EXPECTED_UNITS: Readonly<Record<string, string>> = {
 };
 
 /**
- * ¿La variable trae datos de verdad? Una clave presente con todo a `null` no
- * es un dato.
+ * Checks whether a variable contains non-null values.
  *
- * @source §4.8 de docs/OPEN_METEO_INTEGRATION.md.
+ * @source §4.8 of docs/OPEN_METEO_INTEGRATION.md.
  */
 export function hasData(response: OpenMeteoResponse, key: string): boolean {
   const series = response.hourly[key];
@@ -53,7 +44,7 @@ export function hasData(response: OpenMeteoResponse, key: string): boolean {
   return (series as HourlySeries).some((value) => value !== null);
 }
 
-/** Variables pedidas que llegaron completamente vacías. */
+/** Returns requested variable names that yielded entirely empty (all-null) series. */
 export function missingVariables(
   response: OpenMeteoResponse,
   requested: readonly string[],
@@ -62,9 +53,9 @@ export function missingVariables(
 }
 
 /**
- * Comprueba que la respuesta corresponde a lo que se pidió.
+ * Verifies that response metadata matches requested site parameters.
  *
- * @source R-13.3 y R-13.4 de docs/REQUIREMENTS.md.
+ * @source Requirements R-13.3 and R-13.4 from docs/REQUIREMENTS.md.
  */
 export function validateEcho(
   response: OpenMeteoResponse,
@@ -87,15 +78,13 @@ export function validateEcho(
 }
 
 /**
- * Comprueba las unidades declaradas antes de convertir nada.
+ * Validates declared response units against expected SI/meteorological units.
  *
- * @source §4.7 de docs/OPEN_METEO_INTEGRATION.md.
+ * @source §4.7 of docs/OPEN_METEO_INTEGRATION.md.
  */
 export function validateUnits(response: OpenMeteoResponse): Result<OpenMeteoResponse> {
   for (const [key, expected] of Object.entries(EXPECTED_UNITS)) {
     const actual = response.hourly_units[key];
-    // `"undefined"` significa que el modelo no sirve esa variable. No es un
-    // error de unidades: lo detecta `hasData`, que mira el contenido.
     if (actual !== undefined && actual !== ABSENT_UNIT && actual !== expected) {
       return err("MISSING_VARIABLE", `unexpected unit for ${key}`, {
         variable: key,
@@ -107,7 +96,7 @@ export function validateUnits(response: OpenMeteoResponse): Result<OpenMeteoResp
   return ok(response);
 }
 
-/** ¿La respuesta trae suficientes niveles de presión con datos? */
+/** Filters requested pressure levels down to those containing valid geopotential data. */
 export function usableLevels(
   response: OpenMeteoResponse,
   levelsHpa: readonly number[],

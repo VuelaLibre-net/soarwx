@@ -197,31 +197,31 @@ function height<T extends { aglM: number }>(r: Result<T>): number | null {
 
 | Signature | What it does |
 |---|---|
-| `const andThen: <T, U, E>(r: Result<T, E>, f: (v: T) => Result<U, E>) => Result<U, E>` | Encadena una operación que también puede fallar, sin anidar comprobaciones. |
-| `const err: (code: SoarwxErrorCode, message: string, detail?: Readonly<Record<string, unknown>>) => Result<never>` | Construye un resultado fallido con su código estable y su contexto. |
-| `const mapResult: <T, U, E>(r: Result<T, E>, f: (v: T) => U) => Result<U, E>` | Transforma el valor si lo hay, y propaga el error si no. |
+| `const andThen: <T, U, E>(r: Result<T, E>, f: (v: T) => Result<U, E>) => Result<U, E>` | Chains an operation that may also fail, without nesting checks. |
+| `const err: (code: SoarwxErrorCode, message: string, detail?: Readonly<Record<string, unknown>>) => Result<never>` | Builds an error result with its stable code and context. |
+| `const mapResult: <T, U, E>(r: Result<T, E>, f: (v: T) => U) => Result<U, E>` | Maps the value if successful, propagating the error otherwise. |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `isErr` | `const isErr: <T, E>(r: Result<T, E>) => r is { ok: false; error: E; }` | Estrecha el tipo al caso fallido. |
-| `isOk` | `const isOk: <T, E>(r: Result<T, E>) => r is { ok: true; value: T; }` | Estrecha el tipo al caso correcto. |
-| `ok` | `const ok: <T>(value: T) => Result<T, never>` | Envuelve un valor como resultado correcto. |
-| `OPEN_METEO_ATTRIBUTION` | `const OPEN_METEO_ATTRIBUTION = "Datos meteorol\u00F3gicos de Open-Meteo.com (https://open-meteo.com), licencia CC BY 4.0."` | Atribución exigida por la licencia CC BY 4.0 de los datos de Open-Meteo. |
-| `SOARWX_VERSION` | `const SOARWX_VERSION = "0.12.0"` | Versión de la librería. |
-| `unwrapOr` | `const unwrapOr: <T, E>(r: Result<T, E>, fallback: T) => T` | Devuelve el valor o el respaldo. |
+| `isErr` | `const isErr: <T, E>(r: Result<T, E>) => r is { ok: false; error: E; }` | Narrows the type to the error case. |
+| `isOk` | `const isOk: <T, E>(r: Result<T, E>) => r is { ok: true; value: T; }` | Narrows the type to the success case. |
+| `ok` | `const ok: <T>(value: T) => Result<T, never>` | Wraps a value as a successful result. |
+| `OPEN_METEO_ATTRIBUTION` | `const OPEN_METEO_ATTRIBUTION = "Weather data from Open-Meteo.com (https://open-meteo.com), CC BY 4.0 licence."` | Attribution required by the CC BY 4.0 licence for Open-Meteo data. |
+| `SOARWX_VERSION` | `const SOARWX_VERSION = "0.12.0"` | Library version. |
+| `unwrapOr` | `const unwrapOr: <T, E>(r: Result<T, E>, fallback: T) => T` | Returns the value or fallback. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
-| `Result` | `type Result<T, E = SoarwxError> = { readonly ok: true; readonly value: T; } \| { readonly ok: false; readonly error: E; }` | Resultado de una operación que puede no tener respuesta. |
-| `RidgeSpec` | `interface RidgeSpec — 5 fields` | Geometría de una cresta, como dato. |
-| `Site` | `interface Site — 8 fields` | Emplazamiento a evaluar. |
-| `SoarwxError` | `interface SoarwxError — 3 fields` | Error de la librería. |
-| `SoarwxErrorCode` | `type SoarwxErrorCode = …` | Resultado tipado. |
-| `SurfaceSpec` | `interface SurfaceSpec — 4 fields` | Terreno del emplazamiento. |
+| `Result` | `type Result<T, E = SoarwxError> = { readonly ok: true; readonly value: T; } \| { readonly ok: false; readonly error: E; }` | Result of an operation that might not yield an answer. |
+| `RidgeSpec` | `interface RidgeSpec — 5 fields` | Ridge geometry as data. |
+| `Site` | `interface Site — 8 fields` | Site to evaluate. |
+| `SoarwxError` | `interface SoarwxError — 3 fields` | Library error. |
+| `SoarwxErrorCode` | `type SoarwxErrorCode = …` | Typed result. |
+| `SurfaceSpec` | `interface SurfaceSpec — 4 fields` | Site surface characteristics. |
 | `SurfaceType` | `type SurfaceType = "cropland" \| "forest" \| "grass" \| "arid" \| "urban" \| "water" \| "snow"` | — |
 
 
@@ -261,7 +261,7 @@ GAMMA_D === G / CP;                        // true: derived, not tabulated
 | `const celsiusToK: (c: number) => Kelvin` | — |
 | `const deg: (v: number) => Degrees` | — |
 | `const feetToM: (ft: number) => Metres` | — |
-| `const fpmToMs: (fpm: number) => MPerS` | Pies por minuto a metros por segundo. |
+| `const fpmToMs: (fpm: number) => MPerS` | Feet per minute to metres per second. |
 | `const hPaToPa: (hpa: number) => Pascal` | — |
 | `const jkg: (v: number) => JPerKg` | — |
 | `const K: (v: number) => Kelvin` | — |
@@ -275,7 +275,7 @@ GAMMA_D === G / CP;                        // true: derived, not tabulated
 | `const msToKmh: (v: MPerS) => number` | — |
 | `const msToKnots: (v: MPerS) => number` | — |
 | `const mToFeet: (z: Metres) => number` | — |
-| `const normaliseBearing: (d: number) => Degrees` | Normaliza un rumbo al intervalo [0, 360). |
+| `const normaliseBearing: (d: number) => Degrees` | Normalizes a bearing to the interval [0, 360). |
 | `const Pa: (v: number) => Pascal` | — |
 | `const paToHPa: (p: Pascal) => number` | — |
 | `const wm2: (v: number) => WPerM2` | — |
@@ -284,24 +284,24 @@ GAMMA_D === G / CP;                        // true: derived, not tabulated
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `CP` | `const CP = 1004.67` | Calor específico del aire seco a presión constante, J/(kg·K). |
-| `CPV` | `const CPV = 1879` | Calor específico del vapor de agua a presión constante, J/(kg·K). |
-| `EPS` | `const EPS: number` | Cociente de constantes de gas, Rd/Rv. |
-| `G` | `const G = 9.80665` | Aceleración de la gravedad estándar, m/s². |
-| `GAMMA_D` | `const GAMMA_D: number` | Gradiente adiabático seco, K/m. |
-| `KAPPA` | `const KAPPA: number` | Exponente de Poisson, Rd/cp. |
-| `LV_SLOPE` | `const LV_SLOPE = 2370` | Pendiente de la dependencia térmica del calor latente, J/(kg·K). |
-| `LV0` | `const LV0 = 2501000` | Calor latente de vaporización a 0 °C, J/kg. |
-| `P0` | `const P0: Pascal` | Presión de referencia para la temperatura potencial, Pa. |
-| `RD` | `const RD = 287.05` | Constante específica del aire seco, J/(kg·K). |
-| `RV` | `const RV = 461.5` | Constante específica del vapor de agua, J/(kg·K). |
-| `T0_CELSIUS` | `const T0_CELSIUS: Kelvin` | Cero de la escala Celsius, en kelvin. |
+| `CP` | `const CP = 1004.67` | Specific heat of dry air at constant pressure, J/(kg·K). |
+| `CPV` | `const CPV = 1879` | Specific heat of water vapour at constant pressure, J/(kg·K). |
+| `EPS` | `const EPS: number` | Ratio of gas constants, Rd/Rv. |
+| `G` | `const G = 9.80665` | Standard gravitational acceleration, m/s². |
+| `GAMMA_D` | `const GAMMA_D: number` | Dry adiabatic lapse rate, K/m. |
+| `KAPPA` | `const KAPPA: number` | Poisson constant, Rd/cp. |
+| `LV_SLOPE` | `const LV_SLOPE = 2370` | Temperature dependence slope of latent heat of vaporisation, J/(kg·K). |
+| `LV0` | `const LV0 = 2501000` | Latent heat of vaporisation at 0 °C, J/kg. |
+| `P0` | `const P0: Pascal` | Reference pressure for potential temperature, Pa. |
+| `RD` | `const RD = 287.05` | Specific gas constant for dry air, J/(kg·K). |
+| `RV` | `const RV = 461.5` | Specific gas constant for water vapour, J/(kg·K). |
+| `T0_CELSIUS` | `const T0_CELSIUS: Kelvin` | Zero Celsius in kelvin. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
-| `Branded` | `type Branded<T, B extends string> = T & { readonly [brand]: B; }` | Número con una marca de unidad que solo existe en tiempo de compilación. |
+| `Branded` | `type Branded<T, B extends string> = T & { readonly [brand]: B; }` | Number carrying a compile-time unit brand. |
 | `Degrees` | `type Degrees = Branded<number, "deg">` | — |
 | `JPerKg` | `type JPerKg = Branded<number, "J/kg">` | — |
 | `Kelvin` | `type Kelvin = Branded<number, "K">` | — |
@@ -351,31 +351,31 @@ potentialTemperature(t, p);                // 316.3 K — nearly 9 K above T
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function checkSaturationRange(tempK: Kelvin): SoarwxError \| null` | Comprueba si la temperatura cae dentro del rango de validez de la ec. | Bolton (1980) |
-| `function dewpointFromMixingRatio(mixingRatioKgKg: KgPerKg, pressurePa: Pascal): Kelvin` | Punto de rocío a partir de la razón de mezcla y la presión. | Wallace & Hobbs (1980) |
-| `function dewpointFromRelativeHumidity(tempK: Kelvin, rhFrac: number): Kelvin` | Punto de rocío a partir de la humedad relativa. | Bolton (1980) |
-| `function dewpointFromVapourPressure(vapourPressurePa: Pascal): Kelvin` | Punto de rocío a partir de la presión de vapor, invirtiendo la ec. | Bolton (1980) |
-| `function dryAdiabaticLift(tempK: Kelvin, fromPa: Pascal, toPa: Pascal): Kelvin` | Ascenso adiabático seco: temperatura al llevar la parcela a otra presión conservando la temperatura potencial. | Poisson |
-| `function latentHeatOfVaporisation(tempK: Kelvin): number` | Calor latente de vaporización dependiente de la temperatura. | T (1980) |
-| `function lcl(tempK: Kelvin, dewpointK: Kelvin, pressurePa: Pascal): LclResult` | LCL completo: temperatura, presión y altura sobre el punto de partida. | Bolton (1980) |
-| `function lclTemperature(tempK: Kelvin, dewpointK: Kelvin): Kelvin` | Temperatura del LCL. | Bolton (1980) |
-| `function mixingRatio(dewpointK: Kelvin, pressurePa: Pascal): KgPerKg` | Razón de mezcla a partir del punto de rocío. | Wallace & Hobbs |
-| `function moistAdiabaticLift(tempK: Kelvin, fromPa: Pascal, toPa: Pascal, opts?: IntegrationOptions): Result<Kelvin>` | Ascenso pseudoadiabático saturado por integración numérica con paso adaptativo. | Wallace & Hobbs |
-| `function moistHeatCapacity(specificHumidity: number): number` | Calor específico a presión constante del aire húmedo. | Romps (2017) |
-| `function potentialTemperature(tempK: Kelvin, pressurePa: Pascal): Kelvin` | Temperatura potencial. | Poisson |
-| `function relativeHumidity(tempK: Kelvin, dewpointK: Kelvin): number` | Humedad relativa respecto al agua líquida, en fracción 0..1. | Bolton (1980) |
-| `function saturationMixingRatio(tempK: Kelvin, pressurePa: Pascal): KgPerKg` | Razón de mezcla de saturación. | Wallace & Hobbs |
-| `function saturationVapourPressure(tempK: Kelvin): Pascal` | Presión de vapor de saturación sobre agua líquida. | Bolton (1980) |
-| `function specificHumidity(mixingRatioKgKg: KgPerKg): number` | Humedad específica a partir de la razón de mezcla. | Wallace & Hobbs |
-| `function temperatureFromPotential(thetaK: Kelvin, pressurePa: Pascal): Kelvin` | Inversa de {@link potentialTemperature}: temperatura a una presión dada. | Poisson |
-| `function virtualPotentialTemperature(tempK: Kelvin, pressurePa: Pascal, mixingRatioKgKg: KgPerKg): Kelvin` | Temperatura potencial virtual. | Stull |
-| `function virtualTemperature(tempK: Kelvin, mixingRatioKgKg: KgPerKg): Kelvin` | Temperatura virtual. | Allen (2006) |
+| `function checkSaturationRange(tempK: Kelvin): SoarwxError \| null` | Checks whether temperature falls within Bolton (1980) eq. | Bolton (1980) |
+| `function dewpointFromMixingRatio(mixingRatioKgKg: KgPerKg, pressurePa: Pascal): Kelvin` | Dewpoint from mixing ratio and pressure. | Wallace & Hobbs (1980) |
+| `function dewpointFromRelativeHumidity(tempK: Kelvin, rhFrac: number): Kelvin` | Dewpoint from relative humidity. | Bolton (1980) |
+| `function dewpointFromVapourPressure(vapourPressurePa: Pascal): Kelvin` | Dewpoint from vapour pressure by analytical inversion of Bolton eq. | Bolton (1980) |
+| `function dryAdiabaticLift(tempK: Kelvin, fromPa: Pascal, toPa: Pascal): Kelvin` | Dry adiabatic lift: temperature when moving a parcel to a different pressure while conserving potential temperature. | Poisson |
+| `function latentHeatOfVaporisation(tempK: Kelvin): number` | Temperature-dependent latent heat of vaporisation. | T (1980) |
+| `function lcl(tempK: Kelvin, dewpointK: Kelvin, pressurePa: Pascal): LclResult` | Full LCL calculation: temperature, pressure, and height above starting level. | Bolton (1980) |
+| `function lclTemperature(tempK: Kelvin, dewpointK: Kelvin): Kelvin` | Temperature at the LCL. | Bolton (1980) |
+| `function mixingRatio(dewpointK: Kelvin, pressurePa: Pascal): KgPerKg` | Mixing ratio from dewpoint. | Wallace & Hobbs |
+| `function moistAdiabaticLift(tempK: Kelvin, fromPa: Pascal, toPa: Pascal, opts?: IntegrationOptions): Result<Kelvin>` | Saturated pseudoadiabatic ascent via adaptive-step numerical integration. | Wallace & Hobbs |
+| `function moistHeatCapacity(specificHumidity: number): number` | Specific heat of moist air at constant pressure. | Romps (2017) |
+| `function potentialTemperature(tempK: Kelvin, pressurePa: Pascal): Kelvin` | Potential temperature. | Poisson |
+| `function relativeHumidity(tempK: Kelvin, dewpointK: Kelvin): number` | Relative humidity with respect to liquid water, as fraction 0..1. | Bolton (1980) |
+| `function saturationMixingRatio(tempK: Kelvin, pressurePa: Pascal): KgPerKg` | Saturation mixing ratio. | Wallace & Hobbs |
+| `function saturationVapourPressure(tempK: Kelvin): Pascal` | Saturation vapour pressure over liquid water. | Bolton (1980) |
+| `function specificHumidity(mixingRatioKgKg: KgPerKg): number` | Specific humidity from mixing ratio. | Wallace & Hobbs |
+| `function temperatureFromPotential(thetaK: Kelvin, pressurePa: Pascal): Kelvin` | Inverse of {@link potentialTemperature}: temperature at a given pressure. | Poisson |
+| `function virtualPotentialTemperature(tempK: Kelvin, pressurePa: Pascal, mixingRatioKgKg: KgPerKg): Kelvin` | Virtual potential temperature. | Stull |
+| `function virtualTemperature(tempK: Kelvin, mixingRatioKgKg: KgPerKg): Kelvin` | Virtual temperature. | Allen (2006) |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `SATURATION_VALID_RANGE` | `const SATURATION_VALID_RANGE: { readonly minK: Kelvin; readonly maxK: Kelvin; }` | Rango de validez declarado por Bolton para su ec. |
+| `SATURATION_VALID_RANGE` | `const SATURATION_VALID_RANGE: { readonly minK: Kelvin; readonly maxK: Kelvin; }` | Validity range declared by Bolton for eq. |
 
 **Types**
 
@@ -439,27 +439,27 @@ mean.fromDeg;
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function buildSounding(input: SoundingInput): Result<Sounding>` | Ensambla el sondeo: superficie, niveles de altura y niveles de presión, en orden de presión estrictamente descendente y sin nada bajo tierra. | R-1.1 a R-1.5 de docs/REQUIREMENTS.md |
-| `function findInversions(sounding: Sounding, maxMslM?: Metres, minThicknessM?: number): readonly StableLayer[]` | Capas estables e inversiones por debajo de una altura dada. | Definición estándar de inversión y de estabilidad estática seca |
-| `function fromComponents(uMs: number, vMs: number): WindVector` | Recompone módulo y dirección de procedencia a partir de las componentes. | Convención meteorológica estándar |
-| `function heightLevelsToLevels(context: HeightLevelContext, raw: readonly RawHeightLevel[]): readonly Level[]` | Convierte niveles de altura en niveles del sondeo. | Conservación de la razón de mezcla en la capa mezclada (Stull |
-| `function interpolateAtAgl(sounding: Sounding, aglM: Metres): Result<Level>` | Nivel interpolado a una altura sobre el terreno. |  |
-| `function interpolateAtHeight(sounding: Sounding, mslM: Metres): Result<Level>` | Nivel interpolado a una altura sobre el nivel del mar. | Interpolación logarítmica en presión |
-| `function interpolateAtPressure(sounding: Sounding, pressurePa: Pascal): Result<Level>` | Nivel interpolado a una presión dada. | Interpolación logarítmica en presión |
-| `function maxGapBelow(sounding: Sounding, topMslM: Metres): Metres` | Mayor separación vertical entre niveles consecutivos por debajo de un techo. | R-1.4b de docs/REQUIREMENTS.md |
-| `function meanWind(samples: readonly { readonly wind: WindVector; readonly weight: number; }[]): WindVector` | Media vectorial de una lista de vientos con pesos (típicamente espesores). | Media vectorial |
-| `function pressureAtHeight(surfacePressurePa: Pascal, surfaceTempK: Kelvin, tempAtHeightK: Kelvin, mixingRatioKgKg: number, depthM: Metres): Pascal` | Presión a una altura sobre la superficie por la ecuación hipsométrica. | Wallace & Hobbs |
-| `function pressureFromGeopotentialProfile(column: readonly PressureHeightPair[], targetMslM: Metres): Pascal \| null` | Presión a una altura, interpolando linealmente `ln(p)` frente a la altura geopotencial **del propio modelo**. | Relación hidrostática log-lineal |
-| `function shearBetween(lower: WindVector, upper: WindVector, depthM: Metres): ShearResult` | Cizalladura vectorial entre dos vientos separados por un espesor dado. | Definición estándar de cizalladura vectorial |
-| `function toComponents(speedMs: MPerS, fromDeg: Degrees): WindComponents` | Descompone un viento meteorológico (dirección DE DONDE viene) en componentes cartesianas. | Convención meteorológica estándar |
+| `function buildSounding(input: SoundingInput): Result<Sounding>` | Assembles the atmospheric sounding: surface, AGL height levels, and pressure levels, ordered by strictly descending pressure with all sub-surface levels filtered out. | Requirements R-1.1 through R-1.5 from docs/REQUIREMENTS.md |
+| `function findInversions(sounding: Sounding, maxMslM?: Metres, minThicknessM?: number): readonly StableLayer[]` | Identifies stable layers and temperature inversions below a specified altitude. | Standard definitions of inversion and dry static stability (dθ/dz > 0) |
+| `function fromComponents(uMs: number, vMs: number): WindVector` | Reconstructs wind speed and meteorological direction from Cartesian components. | Standard meteorological convention |
+| `function heightLevelsToLevels(context: HeightLevelContext, raw: readonly RawHeightLevel[]): readonly Level[]` | Converts raw AGL height levels into sounding levels. | Mixing ratio conservation in convective mixed layer (Stull |
+| `function interpolateAtAgl(sounding: Sounding, aglM: Metres): Result<Level>` | Interpolates sounding level at specified height above ground level (AGL). |  |
+| `function interpolateAtHeight(sounding: Sounding, mslM: Metres): Result<Level>` | Interpolates sounding level at specified geopotential altitude above MSL. | Standard atmospheric sounding interpolation |
+| `function interpolateAtPressure(sounding: Sounding, pressurePa: Pascal): Result<Level>` | Interpolates sounding level at specified pressure. | Log-pressure interpolation |
+| `function maxGapBelow(sounding: Sounding, topMslM: Metres): Metres` | Largest vertical gap between consecutive levels below a specified ceiling. | Requirements R-1.4b from docs/REQUIREMENTS.md |
+| `function meanWind(samples: readonly { readonly wind: WindVector; readonly weight: number; }[]): WindVector` | Weighted vector mean of wind observations (typically weighted by layer depth). | Vector mean wind |
+| `function pressureAtHeight(surfacePressurePa: Pascal, surfaceTempK: Kelvin, tempAtHeightK: Kelvin, mixingRatioKgKg: number, depthM: Metres): Pascal` | Pressure at height above surface via the hypsometric equation. | Wallace & Hobbs |
+| `function pressureFromGeopotentialProfile(column: readonly PressureHeightPair[], targetMslM: Metres): Pascal \| null` | Pressure at height by linearly interpolating `ln(p)` against model geopotential height. | Hydrostatic log-linear relation |
+| `function shearBetween(lower: WindVector, upper: WindVector, depthM: Metres): ShearResult` | Vector wind shear between two wind observations separated by vertical depth. | Standard vector wind shear definition |
+| `function toComponents(speedMs: MPerS, fromDeg: Degrees): WindComponents` | Decomposes meteorological wind (direction FROM which wind blows) into Cartesian components. | Standard meteorological convention |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `ISOTHERMAL_LAPSE_K_PER_KM` | `const ISOTHERMAL_LAPSE_K_PER_KM = 0.5` | Por debajo de este gradiente térmico en módulo la capa se llama isoterma. |
-| `MIN_LAYER_THICKNESS_M` | `const MIN_LAYER_THICKNESS_M = 100` | Espesor mínimo para considerar una capa. |
-| `STABLE_THETA_GRADIENT_K_PER_KM` | `const STABLE_THETA_GRADIENT_K_PER_KM = 2` | Umbral de estabilidad en temperatura potencial. |
+| `ISOTHERMAL_LAPSE_K_PER_KM` | `const ISOTHERMAL_LAPSE_K_PER_KM = 0.5` | Below this absolute lapse rate, the layer is classified as isothermal. |
+| `MIN_LAYER_THICKNESS_M` | `const MIN_LAYER_THICKNESS_M = 100` | Minimum thickness required to identify a stable layer. |
+| `STABLE_THETA_GRADIENT_K_PER_KM` | `const STABLE_THETA_GRADIENT_K_PER_KM = 2` | Stability threshold in potential temperature gradient. |
 
 **Types**
 
@@ -469,7 +469,7 @@ mean.fromDeg;
 | `HeightLevelContext` | `interface HeightLevelContext — 5 fields` | — |
 | `Level` | `interface Level — 8 fields` | — |
 | `LevelSource` | `type LevelSource = "surface" \| "pressure_level" \| "height_level" \| "interpolated"` | — |
-| `PressureHeightPair` | `interface PressureHeightPair — 2 fields` | Par (presión, altura) del que se deduce la relación p(z) del modelo. |
+| `PressureHeightPair` | `interface PressureHeightPair — 2 fields` | (pressure, height) pair defining model p(z) relation. |
 | `RawHeightLevel` | `interface RawHeightLevel — 4 fields` | — |
 | `RawPressureLevel` | `interface RawPressureLevel — 7 fields` | — |
 | `ShearResult` | `interface ShearResult — 3 fields` | — |
@@ -556,47 +556,47 @@ if (climb.ok) climb.value;   // 1.11 m/s
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function bowenRatioFor(type: SurfaceType, soilMoistureFrac?: number): number` | Razón de Bowen interpolada entre suelo seco y húmedo. | Stull |
-| `function buoyancyShearRatio(input: BuoyancyShearInput): Result<BuoyancyShearResult>` | Relación boyancia/cizalladura y calidad resultante de la térmica. | Glendening (DrJack) |
-| `function convectiveVelocityScale(input: WStarInput): Result<WStarResult>` | Velocidad convectiva de Deardorff. | Allen (2006) |
-| `function criticalHeight(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile): Result<CriticalHeightResult>` | Altura donde la ascendencia del núcleo cae por debajo del umbral de `hcrit` del perfil. | Glendening (DrJack) |
-| `function detectFluxSign(samples: readonly FluxSample[], radiationThresholdWm2?: number, minSamples?: number): FluxSignDetection` | Detecta la convención de signo correlacionando el flujo con la radiación de onda corta: cuando la superficie recibe más de 200 W/m², el flujo de calor sensible va **hacia arriba**, y el signo que tome en esas horas define la convención del modelo. | docs/OPEN_METEO_INTEGRATION.md §4.1 (convenciones medidas) |
-| `function expectedVarioAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres, profile: AircraftProfile): MPerS` | Lectura esperada de variómetro a una altura: ascendencia del núcleo menos el régimen de caída del avión virando. | Glendening (DrJack): «restar el régimen de caída del planeador para |
-| `function frictionVelocity(surfaceWindMs: MPerS, roughnessLengthM: Metres, windHeightM?: number): number` | Velocidad de fricción por la ley logarítmica del viento. | Ley logarítmica del perfil de viento |
-| `function innerRadiusRatio(outerRadiusM: Metres): number` | Cociente entre radio interior y exterior del trapecio revuelto. | Allen (2006) |
-| `function meanClimbOverBand(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile, samples?: number): Result<MPerS>` | Ascendencia media que ve el variómetro a lo largo de una subida completa, desde el 10 % de la capa hasta la altura crítica. | Allen (2006) |
-| `function netLongwaveUpWm2(tempK: Kelvin, dewpointK: Kelvin, cloudCoverFrac: number): number` | Onda larga neta ascendente en superficie, parametrización de FAO-56 con la nubosidad en lugar del cociente de radiación medida frente a cielo claro. | Allen (1998) |
-| `function normaliseUpwardFlux(fluxWm2: number, convention: FluxSignConvention): number \| null` | Devuelve el flujo con el criterio interno: **positivo hacia arriba**. | docs/OPEN_METEO_INTEGRATION.md §4.1 |
-| `function reconcileMixingHeight(parcelAglM: Metres, modelAglM: Metres \| null, toleranceFrac?: number): MixingHeightResult` | — | Glendening (DrJack): «cuando la mezcla resulta de la cizalladura y no |
-| `function superadiabaticExcessK(sounding: Sounding, referenceAglM?: Metres): number` | Exceso de temperatura potencial de la superficie sobre la capa mezclada. | Estructura de la capa superficial convectiva |
-| `function surfaceHeatFlux(input: HeatFluxInput): HeatFluxResult` | Flujo de calor sensible y su forma cinemática y virtual. | Allen (2006) |
-| `function thermalIndexAt(sounding: Sounding, maxSurfaceTempK: Kelvin, mslM: Metres): Result<number>` | Índice térmico a una altura sobre el nivel del mar. | Método clásico del índice térmico |
-| `function thermalTop(sounding: Sounding, maxSurfaceTempK: Kelvin): Result<ThermalTopResult>` | Techo térmico por el método de la parcela: altura a la que una parcela que parte de la superficie con la temperatura máxima prevista deja de estar más caliente que el entorno. | Método de la parcela |
-| `function triggerTemperature(sounding: Sounding): Result<TriggerResult>` | Temperatura de disparo y nivel de condensación por convección. | Método clásico del CCL y de la temperatura convectiva |
-| `function updraftMeanAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS` | Velocidad media de ascenso dentro de la térmica. | Allen (2006) |
-| `function updraftOuterRadius(zAglM: Metres, ziAglM: Metres): Metres` | Radio exterior de la térmica. | Allen (2006) |
-| `function updraftPeakAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS` | Velocidad en el núcleo de la térmica, a partir de la media y de la geometría del trapecio revuelto. | Allen (2006) |
-| `function updraftProfile(wStarMs: MPerS, ziAglM: Metres, options?: ProfileOptions): readonly ProfilePoint[]` | Perfil muestreado, para gráfica y para búsquedas numéricas. | Allen (2006) |
+| `function bowenRatioFor(type: SurfaceType, soilMoistureFrac?: number): number` | Bowen ratio linearly interpolated between dry and wet soil moisture conditions. | Stull |
+| `function buoyancyShearRatio(input: BuoyancyShearInput): Result<BuoyancyShearResult>` | Buoyancy to shear ratio and resulting thermal organisation quality. | Glendening (DrJack) |
+| `function convectiveVelocityScale(input: WStarInput): Result<WStarResult>` | Deardorff convective velocity scale. | Allen (2006) |
+| `function criticalHeight(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile): Result<CriticalHeightResult>` | Altitude where core updraft strength drops below the profile's `hcrit` threshold. | Glendening (DrJack) |
+| `function detectFluxSign(samples: readonly FluxSample[], radiationThresholdWm2?: number, minSamples?: number): FluxSignDetection` | Detects sign convention by correlating heat flux with shortwave radiation: | docs/OPEN_METEO_INTEGRATION.md §4.1 (measured conventions) |
+| `function expectedVarioAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres, profile: AircraftProfile): MPerS` | Expected variometer reading at altitude: core updraft minus circling sink rate. | Glendening (DrJack): "subtract glider sink rate to obtain average |
+| `function frictionVelocity(surfaceWindMs: MPerS, roughnessLengthM: Metres, windHeightM?: number): number` | Friction velocity from logarithmic wind profile law. | Logarithmic wind profile law |
+| `function innerRadiusRatio(outerRadiusM: Metres): number` | Ratio between inner and outer radius of the inverted trapezoid thermal model. | Allen (2006) |
+| `function meanClimbOverBand(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile, samples?: number): Result<MPerS>` | Mean climb rate seen on the vario throughout a full climb, from 10 % of the boundary layer up to the critical height. | Allen (2006) |
+| `function netLongwaveUpWm2(tempK: Kelvin, dewpointK: Kelvin, cloudCoverFrac: number): number` | Net upward surface longwave radiation, FAO-56 parameterisation adapted with cloud cover fraction instead of clear-sky solar ratio. | Allen (1998) |
+| `function normaliseUpwardFlux(fluxWm2: number, convention: FluxSignConvention): number \| null` | Normalises heat flux to internal convention: **positive upward**. | docs/OPEN_METEO_INTEGRATION.md §4.1 |
+| `function reconcileMixingHeight(parcelAglM: Metres, modelAglM: Metres \| null, toleranceFrac?: number): MixingHeightResult` | — | Glendening (DrJack): "when mixing results from shear rather than |
+| `function superadiabaticExcessK(sounding: Sounding, referenceAglM?: Metres): number` | Surface layer superadiabatic potential temperature excess. | Convective surface layer structure |
+| `function surfaceHeatFlux(input: HeatFluxInput): HeatFluxResult` | Sensible heat flux, along with kinematic and virtual representations. | Allen (2006) |
+| `function thermalIndexAt(sounding: Sounding, maxSurfaceTempK: Kelvin, mslM: Metres): Result<number>` | Thermal index at a specified altitude above mean sea level. | Classical thermal index method |
+| `function thermalTop(sounding: Sounding, maxSurfaceTempK: Kelvin): Result<ThermalTopResult>` | Thermal ceiling via parcel method: altitude where a surface parcel lifted at maximum temperature ceases to be warmer than the environment. | Parcel method |
+| `function triggerTemperature(sounding: Sounding): Result<TriggerResult>` | Trigger temperature and Convective Condensation Level (CCL). | Classical CCL and convective temperature method |
+| `function updraftMeanAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS` | Mean updraft velocity across the thermal cross-section. | Allen (2006) |
+| `function updraftOuterRadius(zAglM: Metres, ziAglM: Metres): Metres` | Thermal outer radius. | Allen (2006) |
+| `function updraftPeakAt(wStarMs: MPerS, zAglM: Metres, ziAglM: Metres): MPerS` | Peak core updraft velocity derived from cross-sectional mean and inverted trapezoid geometry. | Allen (2006) |
+| `function updraftProfile(wStarMs: MPerS, ziAglM: Metres, options?: ProfileOptions): readonly ProfilePoint[]` | Sampled vertical thermal profile for plotting and numerical searches. | Allen (2006) |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `BROKEN_THRESHOLD` | `const BROKEN_THRESHOLD = 5` | Umbrales empíricos de DrJack. |
-| `DAYTIME_RADIATION_THRESHOLD_WM2` | `const DAYTIME_RADIATION_THRESHOLD_WM2 = 200` | Radiación por encima de la cual se considera que la superficie se calienta. |
-| `DEFAULT_SURFACE_TYPE` | `const DEFAULT_SURFACE_TYPE: SurfaceType` | Terreno supuesto cuando el emplazamiento no lo declara. |
-| `GROUND_FLUX_FRACTION` | `const GROUND_FLUX_FRACTION = 0.1` | Fracción de la radiación neta que se va al suelo (Stull, método del porcentaje). |
-| `MIN_OUTER_RADIUS_M` | `const MIN_OUTER_RADIUS_M = 10` | Radio exterior mínimo, en metros (Allen ec. |
-| `MIN_SAMPLES_FOR_DETECTION` | `const MIN_SAMPLES_FOR_DETECTION = 3` | Muestras diurnas mínimas para decidir. |
+| `BROKEN_THRESHOLD` | `const BROKEN_THRESHOLD = 5` | DrJack's empirical thresholds. |
+| `DAYTIME_RADIATION_THRESHOLD_WM2` | `const DAYTIME_RADIATION_THRESHOLD_WM2 = 200` | Radiation threshold above which the surface is considered heating up. |
+| `DEFAULT_SURFACE_TYPE` | `const DEFAULT_SURFACE_TYPE: SurfaceType` | Default surface type when site metadata leaves it unspecified. |
+| `GROUND_FLUX_FRACTION` | `const GROUND_FLUX_FRACTION = 0.1` | Fraction of net radiation entering the ground (Stull percentage method). |
+| `MIN_OUTER_RADIUS_M` | `const MIN_OUTER_RADIUS_M = 10` | Minimum outer radius in metres (Allen eq. |
+| `MIN_SAMPLES_FOR_DETECTION` | `const MIN_SAMPLES_FOR_DETECTION = 3` | Minimum daytime samples required for reliable detection. |
 | `ORGANISED_THRESHOLD` | `const ORGANISED_THRESHOLD = 10` | — |
-| `SHEAR_DRIVEN_DIVERGENCE_FRAC` | `const SHEAR_DRIVEN_DIVERGENCE_FRAC = 0.5` | Umbral de divergencia por encima del cual se sospecha mezcla no convectiva. |
+| `SHEAR_DRIVEN_DIVERGENCE_FRAC` | `const SHEAR_DRIVEN_DIVERGENCE_FRAC = 0.5` | Divergence threshold above which non-convective mixing is suspected. |
 | `SURFACE_DEFAULTS` | `const SURFACE_DEFAULTS: Readonly<Record<SurfaceType, SurfaceDefaults>>` | — |
-| `SURFACE_LAYER_TOP_AGL_M` | `const SURFACE_LAYER_TOP_AGL_M = 200` | Altura de referencia para medir el exceso superadiabático de la capa superficial. |
-| `SURFACE_WIND_HEIGHT_M` | `const SURFACE_WIND_HEIGHT_M = 10` | Altura de referencia del viento de superficie. |
-| `VON_KARMAN` | `const VON_KARMAN = 0.4` | Constante de von Kármán. |
-| `WORKING_BAND_BOTTOM_FRAC` | `const WORKING_BAND_BOTTOM_FRAC = 0.1` | Altura relativa desde la que se considera que empieza la banda de trabajo. |
-| `WORKING_THERMAL_INDEX_K` | `const WORKING_THERMAL_INDEX_K = -2` | Índice térmico de trabajo. |
-| `ZERO_CROSSING_RATIO` | `const ZERO_CROSSING_RATIO: number` | Altura relativa a la que la velocidad media se anula: 1/1.1. |
+| `SURFACE_LAYER_TOP_AGL_M` | `const SURFACE_LAYER_TOP_AGL_M = 200` | Reference height for measuring superadiabatic surface layer excess. |
+| `SURFACE_WIND_HEIGHT_M` | `const SURFACE_WIND_HEIGHT_M = 10` | Reference height for surface wind. |
+| `VON_KARMAN` | `const VON_KARMAN = 0.4` | Von Kármán constant. |
+| `WORKING_BAND_BOTTOM_FRAC` | `const WORKING_BAND_BOTTOM_FRAC = 0.1` | Relative height representing the bottom of the working band. |
+| `WORKING_THERMAL_INDEX_K` | `const WORKING_THERMAL_INDEX_K = -2` | Working thermal index. |
+| `ZERO_CROSSING_RATIO` | `const ZERO_CROSSING_RATIO: number` | Relative altitude where mean velocity drops to zero: 1/1.1. |
 
 **Types**
 
@@ -606,7 +606,7 @@ if (climb.ok) climb.value;   // 1.11 m/s
 | `BuoyancyShearResult` | `interface BuoyancyShearResult — 4 fields` | — |
 | `CriticalHeightResult` | `interface CriticalHeightResult — 3 fields` | — |
 | `FluxSample` | `interface FluxSample — 2 fields` | — |
-| `FluxSignConvention` | `type FluxSignConvention = "up_positive" \| "down_positive" \| "unknown"` | Normalización del signo del flujo de calor sensible. |
+| `FluxSignConvention` | `type FluxSignConvention = "up_positive" \| "down_positive" \| "unknown"` | Sensible heat flux sign normalisation. |
 | `FluxSignDetection` | `interface FluxSignDetection — 3 fields` | — |
 | `HeatFluxInput` | `interface HeatFluxInput — 12 fields` | — |
 | `HeatFluxResult` | `interface HeatFluxResult — 10 fields` | — |
@@ -676,19 +676,19 @@ od.drivers;   // ["depth", "midlevel_moisture", ...] — what's pushing it up
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function cumulusBase(sounding: Sounding, mixingHeightAglM: Metres, maxSurfaceTempK: Kelvin, thermalTopAglM?: Metres): Result<CloudBaseResult>` | Base de cumulus por el nivel de condensación de la parcela de capa mezclada. | Bolton (1980) |
-| `function cumulusDepth(cloudBaseAglM: Metres, thermalTopAglM: Metres): Metres` | Espesor del cumulus: cuánto se desarrolla la nube por encima de su base. | Indicador clásico de desarrollo convectivo |
-| `function isBlueDay(cloudBaseAglM: Metres, thermalTopAglM: Metres): boolean` | Día azul: la condensación queda por encima del techo térmico, así que las térmicas no llegan a marcarse con nubes. | Definición operativa habitual en vuelo a vela |
-| `function mixedLayerMean(sounding: Sounding, topAglM: Metres): Result<MixedLayerResult>` | Medias ponderadas por masa (por espesor en presión) desde la superficie hasta el techo de la capa mezclada. | Definición de parcela de capa mezclada |
-| `function overdevelopmentRisk(input: OverdevelopmentInput): OverdevelopmentResult` | — | Indicadores clásicos de desarrollo convectivo |
-| `function usableCeiling(input: CeilingInput): CeilingResult` | Techo utilizable: el menor de la altura crítica, el techo térmico y la base de nubes, con el motivo declarado. | Composición de los criterios de Glendening (DrJack): `hcrit` como |
+| `function cumulusBase(sounding: Sounding, mixingHeightAglM: Metres, maxSurfaceTempK: Kelvin, thermalTopAglM?: Metres): Result<CloudBaseResult>` | Cumulus cloudbase via condensation level of mixed-layer parcel. | Bolton (1980) |
+| `function cumulusDepth(cloudBaseAglM: Metres, thermalTopAglM: Metres): Metres` | Cumulus cloud vertical depth: extent of convective cloud development above cloudbase. | Standard convective development indicator |
+| `function isBlueDay(cloudBaseAglM: Metres, thermalTopAglM: Metres): boolean` | Blue thermal day: convective condensation level sits above thermal ceiling, so convective thermals do not trigger cloud formation. | Standard soaring operational definition |
+| `function mixedLayerMean(sounding: Sounding, topAglM: Metres): Result<MixedLayerResult>` | Mass-weighted averages (weighted by layer pressure depth) from surface up to mixed layer top. | Mixed-layer parcel definition |
+| `function overdevelopmentRisk(input: OverdevelopmentInput): OverdevelopmentResult` | — | Classic convective development indicators |
+| `function usableCeiling(input: CeilingInput): CeilingResult` | Computes usable ceiling: minimum of critical climb height (hcrit), thermal ceiling, and cumulus cloudbase, declaring the active limiting factor. | Glendening (DrJack) criteria: `hcrit` as operational ceiling and cloudbase as hard upper bound |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `DEPTH_THRESHOLDS_M` | `const DEPTH_THRESHOLDS_M: readonly [1000, 2000, 3000]` | Espesores de cumulus, en metros, a partir de los que empieza a preocupar. |
-| `WEAK_INHIBITION_JKG` | `const WEAK_INHIBITION_JKG = 25` | Inhibición por debajo de la cual nada frena el desarrollo, en J/kg. |
+| `DEPTH_THRESHOLDS_M` | `const DEPTH_THRESHOLDS_M: readonly [1000, 2000, 3000]` | Cumulus vertical depth thresholds in metres triggering elevated risk. |
+| `WEAK_INHIBITION_JKG` | `const WEAK_INHIBITION_JKG = 25` | Convective inhibition (CIN) threshold in J/kg below which development is uninhibited. |
 
 **Types**
 
@@ -737,26 +737,26 @@ risk.capeJkg;         // null if the model didn't serve it
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function capeRisk(capeJkg: number \| null, convectiveInhibitionJkg?: number \| null): CapeRisk` | Clasifica la CAPE como **riesgo**, con la inhibición que la tapa. | Glendening (DrJack) |
-| `function kIndex(sounding: Sounding): Result<number>` | K-Index de George. | George (1960) |
-| `function liftedIndex(sounding: Sounding, surfaceTempK?: Kelvin): Result<number>` | Lifted Index de parcela de superficie. | Galway (1956) |
-| `function liftedIndexBand(li: number): LiftedIndexBand` | Diagnóstico ordinal del Lifted Index. | Galway (1956) |
-| `function totalTotals(sounding: Sounding): Result<number>` | Total Totals. | Miller (1972) |
+| `function capeRisk(capeJkg: number \| null, convectiveInhibitionJkg?: number \| null): CapeRisk` | Classifies CAPE as **convective risk**, taking capping inhibition into account. | Glendening (DrJack) |
+| `function kIndex(sounding: Sounding): Result<number>` | George's K-Index. | George (1960) |
+| `function liftedIndex(sounding: Sounding, surfaceTempK?: Kelvin): Result<number>` | Surface parcel Lifted Index. | Galway (1956) |
+| `function liftedIndexBand(li: number): LiftedIndexBand` | Ordinal classification of Lifted Index. | Galway (1956) |
+| `function totalTotals(sounding: Sounding): Result<number>` | Total Totals Index. | Miller (1972) |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `CAPE_BANDS_JKG` | `const CAPE_BANDS_JKG: { readonly weak: 300; readonly moderate: 1000; readonly strong: 2500; readonly extreme: 5300; }` | Bandas de CAPE y probabilidad de tormenta asociada. |
-| `INHIBITING_CIN_JKG` | `const INHIBITING_CIN_JKG = 50` | Inhibición convectiva a partir de la cual se considera que tapa. |
+| `CAPE_BANDS_JKG` | `const CAPE_BANDS_JKG: { readonly weak: 300; readonly moderate: 1000; readonly strong: 2500; readonly extreme: 5300; }` | CAPE classification bands and associated thunderstorm potential. |
+| `INHIBITING_CIN_JKG` | `const INHIBITING_CIN_JKG = 50` | Convective inhibition threshold considered sufficient to cap deep convection. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
-| `CapeBand` | `type CapeBand = "none" \| "weak" \| "moderate" \| "strong" \| "extreme"` | CAPE como riesgo, nunca como virtud. |
+| `CapeBand` | `type CapeBand = "none" \| "weak" \| "moderate" \| "strong" \| "extreme"` | CAPE as risk, never as virtue. |
 | `CapeRisk` | `interface CapeRisk — 5 fields` | — |
-| `LiftedIndexBand` | `type LiftedIndexBand = "stable" \| "marginally_unstable" \| "moderately_unstable" \| "very_unstable" \| "extremely_unstable"` | Bandas ordinales del Lifted Index, para el diagnóstico de convección profunda. |
+| `LiftedIndexBand` | `type LiftedIndexBand = "stable" \| "marginally_unstable" \| "moderately_unstable" \| "very_unstable" \| "extremely_unstable"` | Ordinal bands for Lifted Index deep convection diagnosis. |
 
 
 ### `soarwx/orographic`
@@ -798,20 +798,20 @@ if (wave.ok) {
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function ridgeLift(ridge: RidgeSpec, windAtCrest: WindVector): RidgeLiftResult` | Sustentación de ladera a partir del viento a la altura de la cresta. | Flujo forzado sobre relieve |
-| `function scorerParameter(sounding: Sounding, flowTowardDeg: number): Result<readonly ScorerPoint[]>` | Perfil del parámetro de Scorer a lo largo de una dirección de flujo. | Scorer (1949) |
-| `function wavePotential(sounding: Sounding, ridge: RidgeSpec): Result<WaveResult>` | Potencial de onda a sotavento de una cresta. | Scorer (1949) |
+| `function ridgeLift(ridge: RidgeSpec, windAtCrest: WindVector): RidgeLiftResult` | Computes orographic ridge lift from wind at crest altitude. | Forced airflow over topography |
+| `function scorerParameter(sounding: Sounding, flowTowardDeg: number): Result<readonly ScorerPoint[]>` | Computes Scorer parameter profile along the direction of airflow. | Scorer (1949) |
+| `function wavePotential(sounding: Sounding, ridge: RidgeSpec): Result<WaveResult>` | Evaluates lee wave potential downwind of a mountain ridge. | Scorer (1949) |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `LOWER_LAYER_DEPTH_M` | `const LOWER_LAYER_DEPTH_M = 1500` | Espesor de la capa baja sobre la cresta que se compara con la de arriba. |
-| `MIN_ALONG_FLOW_MS` | `const MIN_ALONG_FLOW_MS = 2` | Viento mínimo a lo largo del flujo por debajo del cual el parámetro no significa nada. |
-| `MIN_CROSS_RIDGE_MS` | `const MIN_CROSS_RIDGE_MS = 7.5` | Viento perpendicular mínimo para plantearse onda, en m/s (unos 15 nudos). |
-| `RIDGE_LIFT_THRESHOLDS_MS` | `const RIDGE_LIFT_THRESHOLDS_MS: { readonly marginal: 4.1; readonly optimal: 7.7; readonly dangerous: 14.4; }` | Umbrales de la componente perpendicular, en m/s. |
-| `STRONG_WAVE_DROP_FACTOR` | `const STRONG_WAVE_DROP_FACTOR = 2` | El criterio de Scorer marca el **mínimo** para que exista el primer modo atrapado. |
-| `UPPER_LAYER_TOP_M` | `const UPPER_LAYER_TOP_M = 4000` | Techo de la capa alta que se compara con la baja. |
+| `LOWER_LAYER_DEPTH_M` | `const LOWER_LAYER_DEPTH_M = 1500` | Lower layer depth above crest used for Scorer parameter comparison. |
+| `MIN_ALONG_FLOW_MS` | `const MIN_ALONG_FLOW_MS = 2` | Minimum along-flow wind speed threshold required for meaningful Scorer calculation. |
+| `MIN_CROSS_RIDGE_MS` | `const MIN_CROSS_RIDGE_MS = 7.5` | Minimum cross-ridge perpendicular wind speed threshold (approx 15 kt). |
+| `RIDGE_LIFT_THRESHOLDS_MS` | `const RIDGE_LIFT_THRESHOLDS_MS: { readonly marginal: 4.1; readonly optimal: 7.7; readonly dangerous: 14.4; }` | Perpendicular wind speed thresholds in m/s (approx 8, 15, and 28 kt). |
+| `STRONG_WAVE_DROP_FACTOR` | `const STRONG_WAVE_DROP_FACTOR = 2` | Multiplier on Scorer trapping threshold required for strong wave rating. |
+| `UPPER_LAYER_TOP_M` | `const UPPER_LAYER_TOP_M = 4000` | Top altitude of upper layer used for Scorer parameter comparison. |
 
 **Types**
 
@@ -877,37 +877,37 @@ AIRCRAFT_PROFILES.length;                           // 12
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function circlingSinkFactor(bankDeg: number): number` | Cuánto crece el mínimo hundimiento al virar, respecto al de vuelo recto. | Relación clásica de viraje en planeador |
-| `function findAircraftProfile(id: string): AircraftProfile \| undefined` | Busca un perfil por identificador. |  |
+| `function circlingSinkFactor(bankDeg: number): number` | Factor by which minimum sink increases when banking compared to straight flight. | Classical glider turning mechanics |
+| `function findAircraftProfile(id: string): AircraftProfile \| undefined` | Looks up a profile by identifier. |  |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `AIRCRAFT_PROFILES` | `const AIRCRAFT_PROFILES: readonly AircraftProfile[]` | El catálogo completo, en orden de presentación. |
-| `ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS` | `const ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS: MPerS` | Los 25 nudos exactos, para quien prefiera el redondeo del nudo al del artículo. |
+| `AIRCRAFT_PROFILES` | `const AIRCRAFT_PROFILES: readonly AircraftProfile[]` | Complete catalogue in display order. |
+| `ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS` | `const ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS: MPerS` | Exact 25 knots, for callers preferring knot-rounded cutoffs. |
 | `ASH_25` | `const ASH_25: AircraftProfile` | Schleicher ASH 25. |
 | `ASK_21` | `const ASK_21: AircraftProfile` | Schleicher ASK 21. |
 | `ASTIR_CS` | `const ASTIR_CS: AircraftProfile` | Grob Astir CS. |
-| `BANK_40_SINK_FACTOR` | `const BANK_40_SINK_FACTOR: number` | El factor a `REFERENCE_BANK_DEG`. |
+| `BANK_40_SINK_FACTOR` | `const BANK_40_SINK_FACTOR: number` | Factor at `REFERENCE_BANK_DEG`. |
 | `DG_1001_CLUB` | `const DG_1001_CLUB: AircraftProfile` | DG-1001 Club. |
 | `DUO_DISCUS` | `const DUO_DISCUS: AircraftProfile` | Schempp-Hirth Duo Discus. |
 | `G103A_TWIN_II` | `const G103A_TWIN_II: AircraftProfile` | Grob G103A Twin II Acro. |
-| `GLIDER_CLUB` | `const GLIDER_CLUB: AircraftProfile` | Planeador de club. |
-| `GLIDER_PERFORMANCE` | `const GLIDER_PERFORMANCE: AircraftProfile` | Monoplaza moderno de 15 a 18 m. |
-| `GLIDER_TRAINER` | `const GLIDER_TRAINER: AircraftProfile` | Biplaza de escuela a peso doble, o club con el ala sucia. |
+| `GLIDER_CLUB` | `const GLIDER_CLUB: AircraftProfile` | Club glider. |
+| `GLIDER_PERFORMANCE` | `const GLIDER_PERFORMANCE: AircraftProfile` | Modern 15m to 18m single-seater. |
+| `GLIDER_TRAINER` | `const GLIDER_TRAINER: AircraftProfile` | Two-seater trainer at double occupancy, or club glider with buggy wings. |
 | `LS8E_15` | `const LS8E_15: AircraftProfile` | LS8-e neo, 15 m. |
 | `LS8E_18` | `const LS8E_18: AircraftProfile` | LS8-e neo, 18 m. |
-| `RASP_HCRIT_THRESHOLD_MS` | `const RASP_HCRIT_THRESHOLD_MS: MPerS` | Umbral de `hcrit`. |
-| `RASP_REFERENCE` | `const RASP_REFERENCE: AircraftProfile` | El criterio de DrJack tal cual, usado como si fuera un avión. |
-| `REFERENCE_BANK_DEG` | `const REFERENCE_BANK_DEG = 40` | Alabeo de referencia para virar en térmica. |
+| `RASP_HCRIT_THRESHOLD_MS` | `const RASP_HCRIT_THRESHOLD_MS: MPerS` | `hcrit` threshold. |
+| `RASP_REFERENCE` | `const RASP_REFERENCE: AircraftProfile` | DrJack's baseline criterion, modeled as an aircraft profile. |
+| `REFERENCE_BANK_DEG` | `const REFERENCE_BANK_DEG = 40` | Reference bank angle for thermalling. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
 | `AircraftProfile` | `interface AircraftProfile — 7 fields` | — |
-| `AircraftProfileId` | `type AircraftProfileId = …` | Identificadores del catálogo. |
+| `AircraftProfileId` | `type AircraftProfileId = …` | Catalogue identifiers. |
 
 
 ### `soarwx/forecast`
@@ -966,37 +966,37 @@ confidence?.modelsUsed;        // null altogether if only one model was availabl
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function aggregate(factors: readonly Factor[], vetoes: readonly Veto[], thresholds?: readonly [number, number, number, number]): SoaringScore` | Índice de vuelo a partir de los factores y los vetos. | R-10.1 a R-10.5 de docs/REQUIREMENTS.md |
-| `function bestHour<T extends ScoredHour>(hours: readonly T[]): T \| null` | Mejor hora del día. | R-11.3 de docs/REQUIREMENTS.md |
-| `function buildFactor(id: FactorId, value: number, spec: FactorSpec): Factor` | Construye un factor a partir de su valor crudo y su especificación. | R-10.2 de docs/REQUIREMENTS.md |
-| `function confidenceFrom(samples: readonly ModelSample[]): Confidence \| null` | Confianza medida como **dispersión entre modelos**, no inventada. | R-12.1 a R-12.3 de docs/REQUIREMENTS.md |
-| `function evaluateVetoes(input: VetoInput): readonly Veto[]` | Vetos aplicables a una hora. | R-10.3 |
-| `function findWindows(hours: readonly ScoredHour[], minLevel: SoaringLevel, minWindowHours?: number): readonly SoaringWindow[]` | Ventanas continuas de horas que alcanzan al menos `minLevel`. | R-11.2 de docs/REQUIREMENTS.md |
-| `function resolveScoring(config?: ScoringConfig): ResolvedScoring` | Mezcla la configuración del consumidor con los valores por defecto. | R-10.4 de docs/REQUIREMENTS.md |
-| `function scoreBand(value: number, band: Band): number` | Puntuación de un valor dentro de su banda, en el intervalo [0, 1]. | Versión pura del criterio de bandas del predecesor |
-| `function vetoCap(vetoes: readonly Veto[]): 1 \| 2 \| 3 \| 4 \| 5` | Nivel máximo que permiten los vetos presentes. |  |
+| `function aggregate(factors: readonly Factor[], vetoes: readonly Veto[], thresholds?: readonly [number, number, number, number]): SoaringScore` | Computes soaring index from individual factor scores and veto conditions. | Requirements R-10.1 through R-10.5 from docs/REQUIREMENTS.md |
+| `function bestHour<T extends ScoredHour>(hours: readonly T[]): T \| null` | Determines the best soaring hour of the day. | Requirement R-11.3 from docs/REQUIREMENTS.md |
+| `function buildFactor(id: FactorId, value: number, spec: FactorSpec): Factor` | Builds a scoring factor from its raw value and specification. | Requirement R-10.2 from docs/REQUIREMENTS.md |
+| `function confidenceFrom(samples: readonly ModelSample[]): Confidence \| null` | Computes forecast confidence from multi-model spread. | Requirements R-12.1 through R-12.3 from docs/REQUIREMENTS.md |
+| `function evaluateVetoes(input: VetoInput): readonly Veto[]` | Evaluates applicable vetoes for a forecast hour. | Requirements R-10.3 |
+| `function findWindows(hours: readonly ScoredHour[], minLevel: SoaringLevel, minWindowHours?: number): readonly SoaringWindow[]` | Identifies contiguous windows of hours that achieve at least `minLevel`. | Requirement R-11.2 from docs/REQUIREMENTS.md |
+| `function resolveScoring(config?: ScoringConfig): ResolvedScoring` | Merges consumer overrides with default scoring configuration. | Requirement R-10.4 from docs/REQUIREMENTS.md |
+| `function scoreBand(value: number, band: Band): number` | Evaluates parameter score within specified band, normalized to [0, 1]. |  |
+| `function vetoCap(vetoes: readonly Veto[]): 1 \| 2 \| 3 \| 4 \| 5` | Maximum soaring rating permitted across all active vetoes. |  |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `CAPPED_CEILING_AGL_M` | `const CAPPED_CEILING_AGL_M = 1500` | Techo por debajo del cual una atmósfera estable sí limita el día. |
-| `CEILING_SPREAD_THRESHOLDS_M` | `const CEILING_SPREAD_THRESHOLDS_M: { readonly high: 300; readonly medium: 800; }` | Dispersión de techo, en metros, que separa los niveles de confianza. |
-| `DEFAULT_FACTORS` | `const DEFAULT_FACTORS: Readonly<Record<FactorId, FactorSpec>>` | Configuración por defecto, calibrada para planeador. |
-| `DEFAULT_LEVEL_THRESHOLDS` | `const DEFAULT_LEVEL_THRESHOLDS: readonly [number, number, number, number]` | Umbrales de nivel sobre la puntuación agregada. |
-| `FACTOR_OK_THRESHOLD` | `const FACTOR_OK_THRESHOLD = 0.6` | Un factor se da por cumplido a partir de esta puntuación. |
-| `MIN_WINDOW_HOURS` | `const MIN_WINDOW_HOURS = 2` | Una hora suelta no hace ventana. |
-| `SEVERE_CAPE_JKG` | `const SEVERE_CAPE_JKG = 3500` | CAPE a partir de la cual el veto es severo, en J/kg. |
-| `STORM_K_INDEX` | `const STORM_K_INDEX = 25` | K-Index a partir del cual una CAPE alta se considera tormentosa. |
-| `STRONG_WIND_MS` | `const STRONG_WIND_MS = 12.87` | Viento en superficie a partir del cual el día se topa, en m/s (25 nudos). |
-| `STRONGLY_STABLE_LI` | `const STRONGLY_STABLE_LI = 2` | LI por encima del cual la estabilidad es franca, no marginal. |
-| `UNUSABLE_CEILING_AGL_M` | `const UNUSABLE_CEILING_AGL_M = 800` | Techo por debajo del cual el día no da para volar. |
+| `CAPPED_CEILING_AGL_M` | `const CAPPED_CEILING_AGL_M = 1500` | Usable ceiling threshold below which upper-air atmospheric stability limits soaring. |
+| `CEILING_SPREAD_THRESHOLDS_M` | `const CEILING_SPREAD_THRESHOLDS_M: { readonly high: 300; readonly medium: 800; }` | Ceiling spread thresholds in metres separating confidence tiers. |
+| `DEFAULT_FACTORS` | `const DEFAULT_FACTORS: Readonly<Record<FactorId, FactorSpec>>` | Default soaring scoring factor configuration calibrated for gliders. |
+| `DEFAULT_LEVEL_THRESHOLDS` | `const DEFAULT_LEVEL_THRESHOLDS: readonly [number, number, number, number]` | Default aggregated score thresholds separating the 5 soaring rating levels. |
+| `FACTOR_OK_THRESHOLD` | `const FACTOR_OK_THRESHOLD = 0.6` | Minimum factor score threshold for `ok` status. |
+| `MIN_WINDOW_HOURS` | `const MIN_WINDOW_HOURS = 2` | Minimum consecutive hours required to establish a soaring window. |
+| `SEVERE_CAPE_JKG` | `const SEVERE_CAPE_JKG = 3500` | CAPE threshold above which severe storm veto triggers, in J/kg. |
+| `STORM_K_INDEX` | `const STORM_K_INDEX = 25` | K-Index threshold above which elevated CAPE is considered stormy. |
+| `STRONG_WIND_MS` | `const STRONG_WIND_MS = 12.87` | Surface wind speed threshold triggering strong wind veto, in m/s (25 kt). |
+| `STRONGLY_STABLE_LI` | `const STRONGLY_STABLE_LI = 2` | Lifted Index threshold above which upper stability is pronounced. |
+| `UNUSABLE_CEILING_AGL_M` | `const UNUSABLE_CEILING_AGL_M = 800` | Usable ceiling threshold below which soaring is not viable. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
-| `Band` | `interface Band — 4 fields` | Puntuación por bandas. |
+| `Band` | `interface Band — 4 fields` | Piecewise-linear scoring band interpolation. |
 | `Confidence` | `interface Confidence — 4 fields` | — |
 | `ConfidenceLevel` | `type ConfidenceLevel = "low" \| "medium" \| "high"` | — |
 | `Factor` | `interface Factor — 7 fields` | — |
@@ -1004,7 +1004,7 @@ confidence?.modelsUsed;        // null altogether if only one model was availabl
 | `FactorSpec` | `interface FactorSpec — 4 fields` | — |
 | `ModelSample` | `interface ModelSample — 3 fields` | — |
 | `ResolvedScoring` | `interface ResolvedScoring — 2 fields` | — |
-| `ScoredHour` | `interface ScoredHour — 4 fields` | Lo mínimo que necesita esta capa de cada hora. |
+| `ScoredHour` | `interface ScoredHour — 4 fields` | Minimum required fields for an hourly forecast evaluation. |
 | `ScoringConfig` | `interface ScoringConfig — 3 fields` | — |
 | `SoaringLevel` | `type SoaringLevel = 1 \| 2 \| 3 \| 4 \| 5` | — |
 | `SoaringScore` | `interface SoaringScore — 6 fields` | — |
@@ -1063,15 +1063,15 @@ for (const hour of day.hours as readonly SoaringHour[]) {
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function computeDay(input: ComputeDayInput): Result<SoaringDay>` | Calcula el día completo. | docs/SPEC.md §12 |
+| `function computeDay(input: ComputeDayInput): Result<SoaringDay>` | Computes daily soaring report across all daylight hours without network access. | docs/SPEC.md §12 |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `BROKEN_COVER_FRAC` | `const BROKEN_COVER_FRAC = 0.625` | Cobertura a partir de la cual se considera cielo roto (BKN). |
-| `LOW_MID_CUTOFF_MSL_M` | `const LOW_MID_CUTOFF_MSL_M = 3000` | Altura sobre el nivel del mar que separa nubosidad baja de media. |
-| `OVERCAST_COVER_FRAC` | `const OVERCAST_COVER_FRAC = 0.875` | Cobertura total a partir de la cual se considera cubierto (OVC). |
+| `BROKEN_COVER_FRAC` | `const BROKEN_COVER_FRAC = 0.625` | Cloud cover fraction threshold for broken (BKN) sky conditions. |
+| `LOW_MID_CUTOFF_MSL_M` | `const LOW_MID_CUTOFF_MSL_M = 3000` | Altitude threshold (m MSL) separating low cloud cover from mid-level cloud cover. |
+| `OVERCAST_COVER_FRAC` | `const OVERCAST_COVER_FRAC = 0.875` | Total cloud cover fraction threshold for overcast (OVC) sky conditions. |
 
 **Types**
 
@@ -1079,7 +1079,7 @@ for (const hour of day.hours as readonly SoaringHour[]) {
 |---|---|---|
 | `ComputeDayInput` | `interface ComputeDayInput — 8 fields` | — |
 | `HourCloud` | `interface HourCloud — 5 fields` | — |
-| `HourlyObservation` | `interface HourlyObservation — 10 fields` | Una hora de entrada, ya normalizada a SI. |
+| `HourlyObservation` | `interface HourlyObservation — 10 fields` | An hourly input observation normalized to SI units. |
 | `HourQuality` | `interface HourQuality extends SoundingQuality — 2 fields` | — |
 | `HourStability` | `interface HourStability — 5 fields` | — |
 | `HourThermal` | `interface HourThermal — 12 fields` | — |
@@ -1143,47 +1143,47 @@ soundingModels();                                    // models that serve vertic
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function buildForecastRequest(site: Site, options: ForecastRequestOptions): HttpRequest` | Petición de previsión para un modelo. | R-13.3 a R-13.5 de docs/REQUIREMENTS.md |
-| `function cacheKey(url: string, body: URLSearchParams): string` | Clave estable a partir del cuerpo de la petición. |  |
-| `function centredRadiationWm2(response: OpenMeteoResponse, index: number): number` | Radiación centrada en la hora. | §4.7 de docs/OPEN_METEO_INTEGRATION.md |
-| `function fetchForecast(site: Site, options: ForecastRequestOptions, clientOptions?: OpenMeteoOptions): Promise<Result<{ response: OpenMeteoResponse; request: HttpRequest; }>>` | Pide la previsión de un modelo y valida el eco y las unidades. |  |
-| `function fetchSoaringDay(site: Site, dateLocal: string, options?: SoaringDayOptions): Promise<Result<MultiModelResult>>` | Día de vuelo para un emplazamiento y una fecha local. | docs/OPEN_METEO_INTEGRATION.md §6.1 y §6.4 |
-| `function hasData(response: OpenMeteoResponse, key: string): boolean` | ¿La variable trae datos de verdad? Una clave presente con todo a `null` no es un dato. | §4.8 de docs/OPEN_METEO_INTEGRATION.md |
-| `function levelsForSite(site: Site, available: readonly number[], marginM?: number): readonly number[]` | Niveles que merece la pena pedir para un emplazamiento. | R-1.2 y §5.2 de docs/OPEN_METEO_INTEGRATION.md |
-| `function levelVariableNames(levelsHpa: readonly number[]): string[]` | Nombres completos de las variables de nivel para los niveles dados. |  |
-| `function memoryCache(now?: () => number): CacheAdapter` | Caché en memoria, para Node y para pruebas. |  |
-| `function missingVariables(response: OpenMeteoResponse, requested: readonly string[]): readonly string[]` | Variables pedidas que llegaron completamente vacías. |  |
-| `function noopCache(): CacheAdapter` | Caché que no guarda nada. |  |
-| `function normaliseForecast(response: OpenMeteoResponse, site: Site, requestedLevelsHpa: readonly number[]): Result<NormalisedForecast>` | Convierte la respuesta en observaciones horarias listas para `computeDay`. | docs/OPEN_METEO_INTEGRATION.md §6.1 |
-| `function sendRequest(request: HttpRequest, options?: OpenMeteoOptions): Promise<Result<OpenMeteoResponse>>` | Lanza una petición con reintentos y caché. | §6.4 de docs/OPEN_METEO_INTEGRATION.md |
-| `function sessionCache(): CacheAdapter` | Caché sobre `sessionStorage`, para navegador. |  |
-| `function soundingModels(): readonly OpenMeteoModel[]` | Modelos utilizables para sondeo, ordenados por idoneidad. |  |
-| `function standardAtmosphereHeightM(pressureHpa: number): number` | Altura de un nivel de presión en la atmósfera estándar internacional. | Atmósfera estándar internacional (ISA) |
-| `function usableLevels(response: OpenMeteoResponse, levelsHpa: readonly number[]): readonly number[]` | ¿La respuesta trae suficientes niveles de presión con datos? */ |  |
-| `function validateEcho(response: OpenMeteoResponse, site: Site): Result<OpenMeteoResponse>` | Comprueba que la respuesta corresponde a lo que se pidió. | R-13.3 y R-13.4 de docs/REQUIREMENTS.md |
-| `function validateUnits(response: OpenMeteoResponse): Result<OpenMeteoResponse>` | Comprueba las unidades declaradas antes de convertir nada. | §4.7 de docs/OPEN_METEO_INTEGRATION.md |
+| `function buildForecastRequest(site: Site, options: ForecastRequestOptions): HttpRequest` | Constructs an HTTP request for Open-Meteo forecast API. | Requirements R-13.3 through R-13.5 from docs/REQUIREMENTS.md |
+| `function cacheKey(url: string, body: URLSearchParams): string` | Computes stable cache key from endpoint URL and query payload. |  |
+| `function centredRadiationWm2(response: OpenMeteoResponse, index: number): number` | Returns centered shortwave radiation value (W/m²). | §4.7 of docs/OPEN_METEO_INTEGRATION.md |
+| `function fetchForecast(site: Site, options: ForecastRequestOptions, clientOptions?: OpenMeteoOptions): Promise<Result<{ response: OpenMeteoResponse; request: HttpRequest; }>>` | Fetches model forecast and validates request echo and returned units. |  |
+| `function fetchSoaringDay(site: Site, dateLocal: string, options?: SoaringDayOptions): Promise<Result<MultiModelResult>>` | Fetches and computes soaring day forecast for site and date across ensemble models. | docs/OPEN_METEO_INTEGRATION.md §6.1 and §6.4 |
+| `function hasData(response: OpenMeteoResponse, key: string): boolean` | Checks whether a variable contains non-null values. | §4.8 of docs/OPEN_METEO_INTEGRATION.md |
+| `function levelsForSite(site: Site, available: readonly number[], marginM?: number): readonly number[]` | Identifies pressure levels above ground elevation for a site. | Requirement R-1.2 and §5.2 of docs/OPEN_METEO_INTEGRATION.md |
+| `function levelVariableNames(levelsHpa: readonly number[]): string[]` | Returns full variable names for the specified pressure levels. |  |
+| `function memoryCache(now?: () => number): CacheAdapter` | In-memory cache adapter for Node.js environments and testing. |  |
+| `function missingVariables(response: OpenMeteoResponse, requested: readonly string[]): readonly string[]` | Returns requested variable names that yielded entirely empty (all-null) series. |  |
+| `function noopCache(): CacheAdapter` | No-op cache adapter. |  |
+| `function normaliseForecast(response: OpenMeteoResponse, site: Site, requestedLevelsHpa: readonly number[]): Result<NormalisedForecast>` | Normalizes Open-Meteo response into hourly observations for `computeDay`. | docs/OPEN_METEO_INTEGRATION.md §6.1 |
+| `function sendRequest(request: HttpRequest, options?: OpenMeteoOptions): Promise<Result<OpenMeteoResponse>>` | Dispatches an HTTP request with caching, exponential backoff, and jitter. | §6.4 of docs/OPEN_METEO_INTEGRATION.md |
+| `function sessionCache(): CacheAdapter` | Browser `sessionStorage` cache adapter. |  |
+| `function soundingModels(): readonly OpenMeteoModel[]` | Models usable for atmospheric sounding generation, sorted by preference rank. |  |
+| `function standardAtmosphereHeightM(pressureHpa: number): number` | Computes geopotential altitude of a pressure level in the International Standard Atmosphere (ISA). | International Standard Atmosphere (ISA) tropospheric formula |
+| `function usableLevels(response: OpenMeteoResponse, levelsHpa: readonly number[]): readonly number[]` | Filters requested pressure levels down to those containing valid geopotential data. |  |
+| `function validateEcho(response: OpenMeteoResponse, site: Site): Result<OpenMeteoResponse>` | Verifies that response metadata matches requested site parameters. | Requirements R-13.3 and R-13.4 from docs/REQUIREMENTS.md |
+| `function validateUnits(response: OpenMeteoResponse): Result<OpenMeteoResponse>` | Validates declared response units against expected SI/meteorological units. | §4.7 of docs/OPEN_METEO_INTEGRATION.md |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `ABSENT_UNIT` | `const ABSENT_UNIT = "undefined"` | Unidad que Open-Meteo devuelve para una variable que el modelo **no sirve**: |
-| `BELOW_GROUND_MARGIN_M` | `const BELOW_GROUND_MARGIN_M = 150` | Margen bajo la elevación por debajo del cual un nivel se considera bajo tierra. |
+| `ABSENT_UNIT` | `const ABSENT_UNIT = "undefined"` | Unit string returned by Open-Meteo when a variable is unsupported by the requested model. |
+| `BELOW_GROUND_MARGIN_M` | `const BELOW_GROUND_MARGIN_M = 150` | Margin below site elevation (metres) below which pressure levels are pruned. |
 | `COMMERCIAL_FORECAST_URL` | `const COMMERCIAL_FORECAST_URL = "https://customer-api.open-meteo.com/v1/forecast"` | — |
 | `DAILY_VARIABLES` | `const DAILY_VARIABLES: readonly ["sunrise", "sunset"]` | — |
 | `DEFAULT_RETRIES` | `const DEFAULT_RETRIES = 2` | — |
 | `DEFAULT_TIMEOUT_MS` | `const DEFAULT_TIMEOUT_MS = 10000` | — |
-| `ELEVATION_ECHO_TOLERANCE_M` | `const ELEVATION_ECHO_TOLERANCE_M = 1` | Tolerancia del eco de elevación, en metros. |
-| `EXPECTED_UNITS` | `const EXPECTED_UNITS: Readonly<Record<string, string>>` | Unidades que se esperan de cada familia de variable. |
+| `ELEVATION_ECHO_TOLERANCE_M` | `const ELEVATION_ECHO_TOLERANCE_M = 1` | Elevation echo tolerance in metres. |
+| `EXPECTED_UNITS` | `const EXPECTED_UNITS: Readonly<Record<string, string>>` | Expected units per variable category. |
 | `FORECAST_URL` | `const FORECAST_URL = "https://api.open-meteo.com/v1/forecast"` | — |
-| `HEIGHT_LEVELS_M` | `const HEIGHT_LEVELS_M: readonly [80, 120, 180]` | Alturas sobre el terreno. |
-| `MIN_LEVELS_FOR_SOUNDING` | `const MIN_LEVELS_FOR_SOUNDING = 4` | Un modelo sirve para sondeo si aporta al menos cuatro niveles de presión. |
-| `MODEL_CAPABILITIES` | `const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabilities>>` | Qué sirve cada modelo, **verificado contra la API en vivo** y no copiado de la documentación: la documentación lista variables que llegan como `null` para una coordenada dada. |
-| `PRESSURE_LEVEL_VARIABLES` | `const PRESSURE_LEVEL_VARIABLES: readonly ["temperature", "dew_point", "wind_speed", "wind_direction", "geopotential_height", "cloud_cover"]` | Variables que se piden en cada nivel de presión. |
-| `PRESSURE_LEVELS_HPA` | `const PRESSURE_LEVELS_HPA: readonly [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500]` | Niveles de presión. |
-| `RECOMMENDED_ENSEMBLE` | `const RECOMMENDED_ENSEMBLE: readonly OpenMeteoModel[]` | Trío recomendado para dispersión: tres centros de predicción distintos. |
-| `RETRYABLE_STATUS` | `const RETRYABLE_STATUS: readonly [429, 500, 502, 503, 504]` | Reintentos solo para estos códigos. |
-| `SURFACE_VARIABLES` | `const SURFACE_VARIABLES: readonly ["temperature_2m", "relative_humidity_2m", "dew_point_2m", "surface_pressure", "pressure_msl", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "temperature_80m", "wind_speed_80m", "wind_direction_80m", "temperature_120m", "wind_speed_120m", "wind_direction_120m", "temperature_180m", "wind_speed_180m", "wind_direction_180m", "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "shortwave_radiation", "sensible_heat_flux", "latent_heat_flux", "cape", "convective_inhibition", "lifted_index", "boundary_layer_height", "soil_moisture_0_to_1cm", "is_day"]` | Catálogo de variables de Open-Meteo. |
+| `HEIGHT_LEVELS_M` | `const HEIGHT_LEVELS_M: readonly [80, 120, 180]` | Height levels above ground (metres). |
+| `MIN_LEVELS_FOR_SOUNDING` | `const MIN_LEVELS_FOR_SOUNDING = 4` | Minimum pressure levels required from a model to construct a valid atmospheric sounding. |
+| `MODEL_CAPABILITIES` | `const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabilities>>` | Model capability catalog verified against live API responses. |
+| `PRESSURE_LEVEL_VARIABLES` | `const PRESSURE_LEVEL_VARIABLES: readonly ["temperature", "dew_point", "wind_speed", "wind_direction", "geopotential_height", "cloud_cover"]` | Atmospheric variables requested at each isobaric pressure level. |
+| `PRESSURE_LEVELS_HPA` | `const PRESSURE_LEVELS_HPA: readonly [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500]` | Standard pressure levels (hPa) requested for atmospheric soundings. |
+| `RECOMMENDED_ENSEMBLE` | `const RECOMMENDED_ENSEMBLE: readonly OpenMeteoModel[]` | Recommended 3-model multi-agency ensemble for multi-model confidence analysis. |
+| `RETRYABLE_STATUS` | `const RETRYABLE_STATUS: readonly [429, 500, 502, 503, 504]` | Retryable HTTP status codes. |
+| `SURFACE_VARIABLES` | `const SURFACE_VARIABLES: readonly ["temperature_2m", "relative_humidity_2m", "dew_point_2m", "surface_pressure", "pressure_msl", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "temperature_80m", "wind_speed_80m", "wind_direction_80m", "temperature_120m", "wind_speed_120m", "wind_direction_120m", "temperature_180m", "wind_speed_180m", "wind_direction_180m", "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "shortwave_radiation", "sensible_heat_flux", "latent_heat_flux", "cape", "convective_inhibition", "lifted_index", "boundary_layer_height", "soil_moisture_0_to_1cm", "is_day"]` | Open-Meteo API variable catalog. |
 
 **Types**
 
@@ -1200,7 +1200,7 @@ soundingModels();                                    // models that serve vertic
 | `MultiModelResult` | `interface MultiModelResult — 3 fields` | — |
 | `NormalisedForecast` | `interface NormalisedForecast — 6 fields` | — |
 | `OpenMeteoError` | `interface OpenMeteoError — 2 fields` | — |
-| `OpenMeteoModel` | `type OpenMeteoModel = …` | Capacidades por modelo, **verificadas contra la API en vivo**. |
+| `OpenMeteoModel` | `type OpenMeteoModel = …` | Model capabilities verified against live Open-Meteo APIs. |
 | `OpenMeteoOptions` | `interface OpenMeteoOptions — 8 fields` | — |
 | `OpenMeteoResponse` | `interface OpenMeteoResponse — 8 fields` | — |
 | `SoaringDayOptions` | `interface SoaringDayOptions extends OpenMeteoOptions — 2 fields` | — |
@@ -1255,39 +1255,39 @@ void [profile, timeline];
 
 | Signature | What it does | Source |
 |---|---|---|
-| `function document(options: DocumentOptions, body: string): string` | Documento SVG responsive y accesible. | R-14.4 y R-14.5 de docs/REQUIREMENTS.md |
-| `function element(tag: string, attrs: Attrs, children?: string): string` | Elemento SVG con sus atributos escapados. |  |
-| `function escapeText(value: string): string` | Escapa texto para que no pueda romper el documento. |  |
-| `function legend(entries: readonly LegendEntry[], x: number, y: number, fontSizePx: number, labelColour: string): string` | Leyenda en una fila. |  |
-| `function polygon(points: readonly (readonly [number, number])[], attrs: Attrs): string` | Polígono cerrado a partir de puntos ya proyectados. |  |
-| `function polyline(points: readonly (readonly [number, number])[], attrs: Attrs): string` | Polilínea a partir de puntos ya proyectados a coordenadas del lienzo. |  |
-| `function renderDayTimeline(day: SoaringDay, options?: TimelineOptions): string` | Evolución de la capa convectiva a lo largo del día. | R-14.2 de docs/REQUIREMENTS.md |
-| `function renderSkewT(sounding: Sounding, options?: SkewTOptions): string` | Skew-T log-P de un sondeo. | Diagrama oblicuo estándar |
-| `function renderUpdraftProfile(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile, options?: UpdraftProfileOptions): string` | Perfil vertical de ascendencia para un `w*` y una capa dados. | Allen (2006) |
-| `function resolvePalette(overrides?: Partial<Palette>): Palette` | Mezcla los colores que sobrescriba el consumidor sobre la paleta por defecto. |  |
-| `function round(value: number, decimals?: number): string` | Redondea para no arrastrar ruido de coma flotante en el documento. |  |
-| `function text(content: string, attrs: Attrs): string` | Elemento `<text>` con el contenido escapado. |  |
+| `function document(options: DocumentOptions, body: string): string` | Wraps SVG markup in responsive and accessible root document container. | Requirements R-14.4 and R-14.5 from docs/REQUIREMENTS.md |
+| `function element(tag: string, attrs: Attrs, children?: string): string` | Constructs an XML element string with escaped attributes. |  |
+| `function escapeText(value: string): string` | Escapes XML special characters in string values. |  |
+| `function legend(entries: readonly LegendEntry[], x: number, y: number, fontSizePx: number, labelColour: string): string` | Single-line chart legend. |  |
+| `function polygon(points: readonly (readonly [number, number])[], attrs: Attrs): string` | Constructs an SVG `<polygon>` element from projected 2D coordinate pairs. |  |
+| `function polyline(points: readonly (readonly [number, number])[], attrs: Attrs): string` | Constructs an SVG `<polyline>` element from projected 2D coordinate pairs. |  |
+| `function renderDayTimeline(day: SoaringDay, options?: TimelineOptions): string` | Renders daily soaring timeline visualization. | Requirement R-14.2 from docs/REQUIREMENTS.md |
+| `function renderSkewT(sounding: Sounding, options?: SkewTOptions): string` | Renders a Skew-T log-P thermodynamic diagram from an atmospheric sounding. | Standard oblique thermodynamic chart |
+| `function renderUpdraftProfile(wStarMs: MPerS, ziAglM: Metres, profile: AircraftProfile, options?: UpdraftProfileOptions): string` | Renders vertical updraft profile for specified convective velocity scale (w*) and boundary layer depth. | Allen (2006) |
+| `function resolvePalette(overrides?: Partial<Palette>): Palette` | Merges user-defined palette overrides onto the default color palette. |  |
+| `function round(value: number, decimals?: number): string` | Rounds numerical values to minimize floating point noise in SVG output. |  |
+| `function text(content: string, attrs: Attrs): string` | Constructs an SVG `<text>` element with escaped text content. |  |
 
 **Constants**
 
 | Name | Declaration | What it is |
 |---|---|---|
-| `DEFAULT_PALETTE` | `const DEFAULT_PALETTE: Palette` | Paleta por defecto. |
-| `LEVEL_OPACITY` | `const LEVEL_OPACITY: Readonly<Record<1 \| 2 \| 3 \| 4 \| 5, number>>` | Opacidad de la banda del índice: a más nivel, más sólida. |
-| `MIN_FONT_SIZE_PX` | `const MIN_FONT_SIZE_PX = 10` | Tamaño de fuente mínimo. |
-| `WIND_SHADE_THRESHOLDS_MS` | `const WIND_SHADE_THRESHOLDS_MS: { readonly brisk: 8.33; readonly cutoff: 12.87; }` | Umbrales de viento que se sombrean en la columna, en m/s. |
-| `WINDOW_FILL_OPACITY` | `const WINDOW_FILL_OPACITY = 0.22` | Opacidad del fondo de una ventana volable. |
+| `DEFAULT_PALETTE` | `const DEFAULT_PALETTE: Palette` | Default color palette utilizing theme-aware CSS custom properties with fallbacks. |
+| `LEVEL_OPACITY` | `const LEVEL_OPACITY: Readonly<Record<1 \| 2 \| 3 \| 4 \| 5, number>>` | Score level bar opacity mapping. |
+| `MIN_FONT_SIZE_PX` | `const MIN_FONT_SIZE_PX = 10` | Minimum font size in pixels to ensure legibility across viewports. |
+| `WIND_SHADE_THRESHOLDS_MS` | `const WIND_SHADE_THRESHOLDS_MS: { readonly brisk: 8.33; readonly cutoff: 12.87; }` | Wind speed shading thresholds in m/s. |
+| `WINDOW_FILL_OPACITY` | `const WINDOW_FILL_OPACITY = 0.22` | Soaring window background fill opacity. |
 
 **Types**
 
 | Name | Shape | Purpose |
 |---|---|---|
-| `Attrs` | `type Attrs = Readonly<Record<string, string \| number \| undefined>>` | Primitivas mínimas de SVG. |
+| `Attrs` | `type Attrs = Readonly<Record<string, string \| number \| undefined>>` | SVG rendering primitives. |
 | `DocumentOptions` | `interface DocumentOptions — 5 fields` | — |
-| `HeightReference` | `type HeightReference = "agl" \| "msl"` | Referencia de las alturas rotuladas junto a la presión. |
+| `HeightReference` | `type HeightReference = "agl" \| "msl"` | Altitude reference for isobaric pressure level labels. |
 | `LegendEntry` | `interface LegendEntry — 3 fields` | — |
 | `Palette` | `type Palette = Readonly<Record<PaletteKey, string>>` | — |
-| `PaletteKey` | `type PaletteKey = …` | Paleta. |
+| `PaletteKey` | `type PaletteKey = …` | Palette configuration. |
 | `ProfileMarks` | `interface ProfileMarks — 3 fields` | — |
 | `RenderOptions` | `interface RenderOptions — 6 fields` | — |
 | `SkewTOptions` | `interface SkewTOptions extends RenderOptions — 10 fields` | — |
@@ -1298,9 +1298,9 @@ void [profile, timeline];
 
 ### `soarwx/i18n/es`
 
-The **only** module with prose. The core returns enums and numbers; this is where
-they are translated. No physics function imports this module, and a test walks
-`src/` to enforce that.
+The Spanish localization module. The core returns enums and numbers; this is where
+they are translated into Spanish for pilots. No physics function imports this module,
+and a test walks `src/` to enforce that.
 
 The predecessor returned Rich markup inside values — `"[green]Bajo[/green]"` —
 and then needed a function to strip it. That is why the verdict carries no text.
@@ -1356,6 +1356,58 @@ es.DISCLAIMER;   // does not replace an official briefing or the pilot's judgmen
 | `DISCLAIMER` | `const DISCLAIMER = "Previsi\u00F3n orientativa. No sustituye al briefing meteorol\u00F3gico oficial ni a la decisi\u00F3n del piloto al mando."` | Aviso que el consumidor debe mostrar junto a cualquier previsión. |
 
 
+### `soarwx/i18n/en`
+
+The English localization module. Turns numbers and enums from the core into natural
+English for pilots.
+
+Uses glider pilot terminology rather than meteorologist jargon. Date formatting
+uses the site's timezone with standard British English conventions (en-GB, 24h clock).
+
+```ts
+import * as en from "soarwx/i18n/en";
+
+en.describeLevel(4);                       // "Good"
+en.describeCeilingLimit("hcrit");          // "limited by thermal strength"
+en.describeVeto("stable_atmosphere");      // "Stable atmosphere above a shallow convective layer"
+en.describeThermalQuality("organised");    // "Well-organised thermals"
+en.describeConfidence("medium");           // "Medium confidence"
+
+en.formatHour("2026-08-19T14:00", site.timezone);      // "16:00"
+en.formatInstant("2026-08-19T14:00", site.timezone);   // "19 August at 16:00"
+
+en.DISCLAIMER;   // "Advisory forecast only. This does not replace..."
+```
+
+**Functions**
+
+| Signature | What it does |
+|---|---|
+| `const describeCapeBand: (band: CapeBand) => string` | — |
+| `const describeCeilingLimit: (limit: CeilingLimit) => string` | — |
+| `const describeConfidence: (level: ConfidenceLevel) => string` | — |
+| `const describeFactor: (id: FactorId) => string` | — |
+| `const describeHeatFluxSource: (source: HeatFluxSource) => string` | — |
+| `const describeLayer: (kind: StableLayerKind) => string` | — |
+| `const describeLevel: (level: SoaringLevel) => string` | — |
+| `const describeLiftedIndex: (band: LiftedIndexBand) => string` | — |
+| `const describeLiftedIndexSource: (source: LiftedIndexSource) => string` | — |
+| `const describeOverdevelopment: (l: OverdevelopmentLevel) => string` | — |
+| `const describeRidgeLift: (band: RidgeLiftBand) => string` | — |
+| `const describeThermalQuality: (q: ThermalQuality) => string` | — |
+| `const describeVeto: (id: VetoId) => string` | — |
+| `const describeWave: (potential: WavePotential) => string` | — |
+| `const describeWaveMethod: (method: WaveMethod) => string` | — |
+| `function formatHour(iso: string, timezone: string): string` | Local time only, for compact labels. |
+| `function formatInstant(iso: string, timezone: string): string` | Site-local date and time, formatted in English. |
+
+**Constants**
+
+| Name | Declaration | What it is |
+|---|---|---|
+| `DISCLAIMER` | `const DISCLAIMER = "Advisory forecast only. This does not replace an official weather briefing or the pilot in command's judgment."` | Disclaimer the consumer must display alongside any forecast. |
+
+
 ---
 
-This reference covers the **379 exported symbols** across the fifteen entry points of the package. It is generated from the published `.d.ts` files, so it cannot deviate from what compiles.
+This reference covers the **397 exported symbols** across the fifteen entry points of the package. It is generated from the published `.d.ts` files, so it cannot deviate from what compiles.

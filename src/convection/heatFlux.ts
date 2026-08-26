@@ -1,18 +1,17 @@
 /**
- * Flujo de calor sensible en superficie.
+ * Surface sensible heat flux.
  *
- * Orden de preferencia, siempre declarado en el resultado:
+ * Precedence order, always declared in the result:
  *
- * 1. **`sensible_heat_flux` del modelo**, con el signo normalizado. Es el mejor
- *    dato disponible: sale del esquema de superficie del modelo, con su albedo,
- *    su humedad de suelo y su tipo de terreno reales.
- * 2. **Reconstrucción por balance energético** cuando el modelo no lo sirve.
+ * 1. **Model `sensible_heat_flux`**, with sign normalised. This is the highest
+ *    fidelity input: computed from model surface schemes with real albedo,
+ *    soil moisture, and land cover.
+ * 2. **Energy balance reconstruction** when model flux is unavailable.
  *
- * Lo que **no** se hace es tomar una fracción fija de la radiación global. En
- * Fuentemilanos, el cociente real al mediodía es 0.26 en ICON-EU y 0.46 en GFS:
- * una constante acierta con uno por casualidad y falla con el otro, y en
- * cualquier caso varía con la hora, la estación, la humedad del suelo y el
- * modelo.
+ * Fixed fractions of global solar radiation are **never** used. At Fuentemilanos,
+ * the actual midday ratio is 0.26 in ICON-EU and 0.46 in GFS: a constant
+ * matches one only by coincidence, and varies by time of day, season,
+ * soil moisture, and model physics.
  */
 
 import { kgkg } from "../units/branded.js";
@@ -29,10 +28,10 @@ import {
 import { normaliseUpwardFlux } from "./heatFluxSign.js";
 import type { FluxSignConvention } from "./heatFluxSign.js";
 
-/** Constante de Stefan-Boltzmann, W/(m²·K⁴). */
+/** Stefan-Boltzmann constant, W/(m²·K⁴). */
 const STEFAN_BOLTZMANN = 5.670374419e-8;
 
-/** Fracción de la radiación neta que se va al suelo (Stull, método del porcentaje). */
+/** Fraction of net radiation entering the ground (Stull percentage method). */
 export const GROUND_FLUX_FRACTION = 0.1;
 
 export type HeatFluxSource = "model" | "energy_balance";
@@ -43,25 +42,25 @@ export interface HeatFluxInput {
   readonly surfaceDewpointK: Kelvin;
   readonly surfacePressurePa: Pascal;
   readonly cloudCoverFrac: number;
-  /** Valor crudo del modelo, con su signo sin normalizar. */
+  /** Raw model value with unnormalised sign convention. */
   readonly modelFluxWm2?: number | null;
   readonly fluxConvention?: FluxSignConvention;
   readonly surfaceType?: SurfaceType;
   readonly albedoFrac?: number;
   readonly bowenRatio?: number;
   readonly soilMoistureFrac?: number;
-  /** Onda larga neta ascendente. Si falta, se parametriza y se declara. */
+  /** Net upward longwave radiation. If omitted, parameterised and declared. */
   readonly netLongwaveWm2?: number;
 }
 
 export interface HeatFluxResult {
   readonly netRadiationWm2: number;
   readonly groundFluxWm2: number;
-  /** Flujo de calor sensible, **positivo hacia arriba**. */
+  /** Sensible heat flux, **positive upward**. */
   readonly sensibleHeatWm2: number;
-  /** Flujo cinemático, QH = H/(ρ·cp), en K·m/s. */
+  /** Kinematic heat flux, QH = H/(ρ·cp), in K·m/s. */
   readonly kinematicHeatFluxKMs: number;
-  /** Flujo virtual, Qov = QH·(1 + 0.61·w), en K·m/s. Es el que alimenta `w*`. */
+  /** Virtual heat flux, Qov = QH·(1 + 0.61·w), in K·m/s. Drives `w*`. */
   readonly virtualHeatFluxKMs: number;
   readonly bowenRatio: number;
   readonly albedoFrac: number;
@@ -71,13 +70,13 @@ export interface HeatFluxResult {
 }
 
 /**
- * Onda larga neta ascendente en superficie, parametrización de FAO-56 con la
- * nubosidad en lugar del cociente de radiación medida frente a cielo claro.
+ * Net upward surface longwave radiation, FAO-56 parameterisation adapted
+ * with cloud cover fraction instead of clear-sky solar ratio.
  *
- *     Rnl = σ·T⁴·(0.34 − 0.14·√ea)·(1 − 0.9·nubosidad)
+ *     Rnl = σ·T⁴·(0.34 − 0.14·√ea)·(1 − 0.9·cloudCover)
  *
  * @source Allen, R. G. et al. (1998), FAO Irrigation and Drainage Paper 56,
- *         ec. 39 (adaptada para usar cobertura nubosa).
+ *         eq. 39 (adapted for cloud cover fraction).
  */
 export function netLongwaveUpWm2(
   tempK: Kelvin,
@@ -91,16 +90,16 @@ export function netLongwaveUpWm2(
 }
 
 /**
- * Flujo de calor sensible y su forma cinemática y virtual.
+ * Sensible heat flux, along with kinematic and virtual representations.
  *
  *     Rn = (1 − α)·SW↓ − Rnl
  *     G  = 0.1 · Rn                                      Stull
- *     H  = β/(1 + β) · (Rn − G)                           Allen ec. 2-3
- *     QH = H / (ρ·cp)                                     Allen ec. 4
- *     Qov= QH · (1 + 0.61·w)                              Allen ec. 5
+ *     H  = β/(1 + β) · (Rn − G)                           Allen eq. 2-3
+ *     QH = H / (ρ·cp)                                     Allen eq. 4
+ *     Qov= QH · (1 + 0.61·w)                              Allen eq. 5
  *
- * @source Allen, M. J. (2006), AIAA 2006-1510, ec. 2-5;
- *         Stull, Practical Meteorology, cap. 3 (flujo al suelo).
+ * @source Allen, M. J. (2006), AIAA 2006-1510, eq. 2-5;
+ *         Stull, Practical Meteorology, ch. 3 (ground flux).
  */
 export function surfaceHeatFlux(input: HeatFluxInput): HeatFluxResult {
   const estimated: string[] = [];
@@ -157,10 +156,10 @@ export function surfaceHeatFlux(input: HeatFluxInput): HeatFluxResult {
 }
 
 /**
- * Razón de Bowen implícita en el flujo que da el modelo, para poder contrastar
- * la tabla de respaldo contra lo que el modelo realmente hace.
+ * Implied Bowen ratio from model sensible heat flux, allowing comparison
+ * between fallback tables and actual model behavior.
  *
- * @source Definición de la razón de Bowen; Stull, cap. 3.
+ * @source Bowen ratio definition; Stull, ch. 3.
  */
 function impliedBowen(sensibleHeatWm2: number, netRadiationWm2: number): number {
   const available = netRadiationWm2 * (1 - GROUND_FLUX_FRACTION);

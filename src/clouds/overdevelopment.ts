@@ -1,12 +1,12 @@
 /**
- * Riesgo de sobredesarrollo.
+ * Overdevelopment and convective storm risk.
  *
- * **Ordinal, nunca binario.** El sobredesarrollo no es un umbral que se cruza:
- * es una tendencia que crece con el espesor del cumulus, la humedad en niveles
- * medios y la energía disponible por encima de la capa límite.
+ * **Ordinal, never binary.** Overdevelopment represents an escalating tendency
+ * that grows with cumulus vertical depth, mid-level moisture, and available
+ * convective energy above the boundary layer.
  *
- * Los pesos son empíricos y así se declaran. Lo que no se hace es puntuar la
- * CAPE como algo bueno: aquí solo suma riesgo.
+ * Scoring weights are empirical and declared explicitly. CAPE is never scored
+ * as favorable for soaring: here it contributes strictly to overdevelopment risk.
  */
 
 import type { Metres } from "../units/branded.js";
@@ -19,7 +19,7 @@ export type OverdevelopmentDriver =
 
 export interface OverdevelopmentInput {
   readonly cumulusDepthM: Metres;
-  /** Humedad relativa media entre 700 y 500 hPa, fracción 0..1. */
+  /** Mean relative humidity between 700 and 500 hPa, fraction 0..1. */
   readonly midLevelHumidityFrac?: number;
   readonly capeBand?: CapeBand;
   readonly convectiveInhibitionJkg?: number | null;
@@ -28,20 +28,20 @@ export interface OverdevelopmentInput {
 
 export interface OverdevelopmentResult {
   readonly level: OverdevelopmentLevel;
-  /** Puntos acumulados por los indicadores. Adimensional, empírico. */
+  /** Accumulated empirical risk points. Dimensionless. */
   readonly riskPoints: number;
   readonly drivers: readonly OverdevelopmentDriver[];
 }
 
-/** Espesores de cumulus, en metros, a partir de los que empieza a preocupar. */
+/** Cumulus vertical depth thresholds in metres triggering elevated risk. */
 export const DEPTH_THRESHOLDS_M = [1000, 2000, 3000] as const;
 
-/** Inhibición por debajo de la cual nada frena el desarrollo, en J/kg. */
+/** Convective inhibition (CIN) threshold in J/kg below which development is uninhibited. */
 export const WEAK_INHIBITION_JKG = 25;
 
 /**
- * @source Indicadores clásicos de desarrollo convectivo; bandas de CAPE de
- *         Glendening (DrJack); ponderación empírica declarada.
+ * @source Classic convective development indicators; Glendening (DrJack) CAPE bands;
+ *         explicit empirical weighting.
  */
 export function overdevelopmentRisk(input: OverdevelopmentInput): OverdevelopmentResult {
   const drivers: OverdevelopmentDriver[] = [];

@@ -1,24 +1,22 @@
 /**
- * Calidad de la térmica: boyancia frente a cizalladura.
+ * Thermal quality: buoyancy versus shear.
  *
- * DrJack define B/S como «la relación entre la producción boyante y la
- * producción por cizalladura de turbulencia», y da dos umbrales empíricos:
- * **B/S ≤ 5** las térmicas se rompen y no son utilizables; **B/S ≥ 10** la
- * cizalladura deja de ser un factor. Él mismo advierte de que «el criterio de
- * separación entre utilizable e inutilizable hay que determinarlo
- * empíricamente».
+ * DrJack defines B/S as "the ratio of buoyant to shear production of
+ * turbulence", giving two empirical thresholds: **B/S ≤ 5** thermals are
+ * broken up and unusable; **B/S ≥ 10** shear ceases to be a factor.
+ * DrJack himself cautions that "the usable/unusable separation criterion must
+ * be determined empirically".
  *
- * Aquí se usa el **cociente de escalas de velocidad `w* / u*`**, que es la
- * magnitud adimensional estándar para separar capas límite dominadas por
- * boyancia de las dominadas por cizalladura, y se le aplican los umbrales de
- * DrJack. Se expone también `obukhovStabilityIndex`, el parámetro de estabilidad de
- * Obukhov, para que la aproximación quede a la vista:
+ * Here we use the **velocity scale ratio `w* / u*`**, which is the standard
+ * dimensionless parameter distinguishing buoyancy-driven from shear-driven
+ * boundary layers, applying DrJack's empirical thresholds. We also expose
+ * `obukhovStabilityIndex`, the Obukhov stability parameter, making the
+ * approximation explicit:
  *
  *     −zi/L = κ · (w* / u*)³
  *
- * **Esta correspondencia no está verificada contra la implementación original
- * de RASP**, que no es pública. Queda anotada en docs/AUDIT.md como
- * aproximación pendiente de validar.
+ * **This mapping has not been verified against RASP's private implementation.**
+ * It is noted in docs/AUDIT.md as an approximation awaiting validation.
  */
 
 import { mps } from "../units/branded.js";
@@ -26,15 +24,15 @@ import type { MPerS, Metres } from "../units/branded.js";
 import { err, ok } from "../types/result.js";
 import type { Result } from "../types/result.js";
 
-/** Constante de von Kármán. */
+/** Von Kármán constant. */
 export const VON_KARMAN = 0.4;
 
-/** Altura de referencia del viento de superficie. */
+/** Reference height for surface wind. */
 export const SURFACE_WIND_HEIGHT_M = 10;
 
 export type ThermalQuality = "broken" | "tilted" | "organised";
 
-/** Umbrales empíricos de DrJack. */
+/** DrJack's empirical thresholds. */
 export const BROKEN_THRESHOLD = 5;
 export const ORGANISED_THRESHOLD = 10;
 
@@ -46,23 +44,23 @@ export interface BuoyancyShearInput {
 }
 
 export interface BuoyancyShearResult {
-  /** Cociente w* / u*. Es sobre este valor sobre el que se aplican los umbrales. */
+  /** Velocity ratio w* / u*. Thresholds are evaluated against this value. */
   readonly ratio: number;
   readonly frictionVelocityMs: MPerS;
-  /** Parámetro de estabilidad de Obukhov, κ·(w* / u*)³. Expuesto para no ocultar la aproximación. */
+  /** Obukhov stability parameter, κ·(w* / u*)³. Exposed for transparency. */
   readonly obukhovStabilityIndex: number;
   readonly quality: ThermalQuality;
 }
 
 /**
- * Velocidad de fricción por la ley logarítmica del viento.
+ * Friction velocity from logarithmic wind profile law.
  *
  *     u* = κ·U(z) / ln(z/z0)
  *
- * Vale para condiciones neutras. En una capa límite convectiva la ley se
- * desvía, así que esto es una estimación y no una medida.
+ * Strictly valid for neutral conditions. In a convective boundary layer the
+ * profile deviates, so this is an estimate rather than a direct measurement.
  *
- * @source Ley logarítmica del perfil de viento; Stull, Practical Meteorology, cap. 18.
+ * @source Logarithmic wind profile law; Stull, Practical Meteorology, ch. 18.
  */
 export function frictionVelocity(
   surfaceWindMs: MPerS,
@@ -75,10 +73,10 @@ export function frictionVelocity(
 }
 
 /**
- * Relación boyancia/cizalladura y calidad resultante de la térmica.
+ * Buoyancy to shear ratio and resulting thermal organisation quality.
  *
- * @source Glendening (DrJack), RASP BLIPMAP, parámetro B/S y sus umbrales;
- *         Stull, Practical Meteorology, cap. 18 (escalas w* y u*, longitud de Obukhov).
+ * @source Glendening (DrJack), RASP BLIPMAP, B/S parameter and thresholds;
+ *         Stull, Practical Meteorology, ch. 18 (w* and u* scales, Obukhov length).
  */
 export function buoyancyShearRatio(
   input: BuoyancyShearInput,
@@ -96,7 +94,7 @@ export function buoyancyShearRatio(
   );
 
   if (uStar <= 1e-6) {
-    // Viento en calma: la cizalladura no puede romper nada.
+    // Calm wind: shear cannot disrupt thermals.
     return ok({
       ratio: Infinity,
       frictionVelocityMs: mps(uStar),

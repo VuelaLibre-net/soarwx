@@ -1,5 +1,5 @@
 /**
- * Ascenso de parcela: adiabático seco y pseudoadiabático saturado.
+ * Parcel ascent: dry adiabatic and saturated pseudoadiabatic.
  */
 
 import { K, Pa } from "../units/branded.js";
@@ -10,13 +10,13 @@ import type { Result } from "../types/result.js";
 import { latentHeatOfVaporisation, saturationMixingRatio } from "./saturation.js";
 
 export interface IntegrationOptions {
-  /** Paso inicial y máximo, en pascales. Por defecto 500 Pa. */
+  /** Initial and maximum step size in pascals. Default 500 Pa. */
   readonly maxStepPa?: Pascal;
-  /** Tolerancia de error local, en kelvin. Por defecto 0.01 K. */
+  /** Local error tolerance in kelvin. Default 0.01 K. */
   readonly tolK?: number;
-  /** Paso mínimo antes de declarar NOT_CONVERGED, en pascales. Por defecto 1 Pa. */
+  /** Minimum step before returning NOT_CONVERGED in pascals. Default 1 Pa. */
   readonly minStepPa?: Pascal;
-  /** Tope de iteraciones. Por defecto 100 000. Protege de parámetros absurdos. */
+  /** Maximum iterations. Default 100,000. Guards against divergent parameters. */
   readonly maxIterations?: number;
 }
 
@@ -28,27 +28,27 @@ const DEFAULTS = {
 } as const;
 
 /**
- * Ascenso adiabático seco: temperatura al llevar la parcela a otra presión
- * conservando la temperatura potencial.
+ * Dry adiabatic lift: temperature when moving a parcel to a different pressure
+ * while conserving potential temperature.
  *
  *     T2 = T1 · (p2/p1)^(Rd/cp)
  *
- * @source Poisson; Wallace & Hobbs, Atmospheric Science, ec. 3.54.
+ * @source Poisson; Wallace & Hobbs, Atmospheric Science, eq. 3.54.
  */
 export function dryAdiabaticLift(tempK: Kelvin, fromPa: Pascal, toPa: Pascal): Kelvin {
   return K(tempK * Math.pow(toPa / fromPa, KAPPA));
 }
 
 /**
- * Gradiente pseudoadiabático en coordenadas de presión.
+ * Pseudoadiabatic lapse rate in pressure coordinates.
  *
  *     dT/dp = (1/p) · (Rd·T + Lv·rs) / (cp + Lv²·rs·ε / (Rd·T²))
  *
- * Lv se evalúa a la temperatura de la parcela, no se toma constante: con Lv
- * fijo la θe de Bolton deriva hasta 2.4 K en un ascenso de 900 a 500 hPa desde
- * 30 °C.
+ * Lv is evaluated at the parcel temperature rather than treated as constant:
+ * with fixed Lv Bolton's θe drifts up to 2.4 K in an ascent from 900 to 500 hPa
+ * starting at 30 °C.
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.71 (forma en presión).
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.71 (pressure form).
  */
 function dTdp(tempK: number, pressurePa: number): number {
   const rs = saturationMixingRatio(K(tempK), Pa(pressurePa));
@@ -58,7 +58,7 @@ function dTdp(tempK: number, pressurePa: number): number {
   return numerator / (denominator * pressurePa);
 }
 
-/** Un paso de Runge-Kutta de cuarto orden sobre dT/dp. */
+/** Runge-Kutta 4th order step on dT/dp. */
 function rk4Step(tempK: number, pressurePa: number, stepPa: number): number {
   const k1 = dTdp(tempK, pressurePa);
   const k2 = dTdp(tempK + (stepPa * k1) / 2, pressurePa + stepPa / 2);
@@ -68,14 +68,14 @@ function rk4Step(tempK: number, pressurePa: number, stepPa: number): number {
 }
 
 /**
- * Ascenso pseudoadiabático saturado por integración numérica con paso
- * adaptativo. El error local se estima por duplicación de paso (Richardson) y
- * el resultado se extrapola.
+ * Saturated pseudoadiabatic ascent via adaptive-step numerical integration.
+ * Local truncation error is estimated using step doubling (Richardson) and
+ * the result is extrapolated.
  *
- * Devuelve `NOT_CONVERGED` en vez de un número silenciosamente malo cuando el
- * paso necesario cae por debajo de `minStepPa`.
+ * Returns `NOT_CONVERGED` instead of a silently inaccurate number when the
+ * required step falls below `minStepPa`.
  *
- * @source Wallace & Hobbs, Atmospheric Science, ec. 3.71; Richardson (extrapolación).
+ * @source Wallace & Hobbs, Atmospheric Science, eq. 3.71; Richardson (extrapolation).
  */
 export function moistAdiabaticLift(
   tempK: Kelvin,
@@ -101,18 +101,18 @@ export function moistAdiabaticLift(
   let h = direction * Math.min(maxStep, Math.abs(total));
 
   for (let i = 0; i < maxIterations; i++) {
-    // No sobrepasar el objetivo.
+    // Do not overshoot the target.
     if (Math.abs(toPa - p) < Math.abs(h)) h = toPa - p;
 
     const coarse = rk4Step(t, p, h);
     const mid = rk4Step(t, p, h / 2);
     const fine = rk4Step(mid, p + h / 2, h / 2);
 
-    // Estimación de error local de RK4 por duplicación de paso.
+    // RK4 local error estimation via step doubling.
     const errorEst = Math.abs(fine - coarse) / 15;
 
-    // No se acepta nunca un paso fuera de tolerancia: si no se puede cumplir
-    // con el paso mínimo, el resultado es NOT_CONVERGED, no un número malo.
+    // Never accept a step outside tolerance: if it cannot be met
+    // with minimum step size, the result is NOT_CONVERGED.
     if (errorEst <= tol) {
       t = fine + (fine - coarse) / 15;
       p += h;

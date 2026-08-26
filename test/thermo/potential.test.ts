@@ -9,9 +9,9 @@ import { dryAdiabaticLift } from "../../src/thermo/parcel.js";
 import { celsiusToK, hPaToPa } from "../../src/units/convert.js";
 import { kgkg } from "../../src/units/branded.js";
 
-describe("temperatura potencial", () => {
+describe("potential temperature", () => {
   // T-04
-  it("se conserva a lo largo de un ascenso adiabático seco (deriva < 0.01 K)", () => {
+  it("is conserved along a dry adiabatic ascent (drift < 0.01 K)", () => {
     const p0 = hPaToPa(1000);
     const t0 = celsiusToK(25);
     const theta0 = potentialTemperature(t0, p0);
@@ -23,32 +23,32 @@ describe("temperatura potencial", () => {
     }
   });
 
-  it("es la identidad a la presión de referencia", () => {
+  it("is identity at reference pressure", () => {
     const t = celsiusToK(15);
     expect(potentialTemperature(t, hPaToPa(1000))).toBeCloseTo(t, 10);
   });
 
-  it("va y vuelve con temperatureFromPotential", () => {
+  it("round-trips with temperatureFromPotential", () => {
     const t = celsiusToK(12);
     const p = hPaToPa(850);
     expect(temperatureFromPotential(potentialTemperature(t, p), p)).toBeCloseTo(t, 10);
   });
 
-  it("θ supera a T por encima del nivel de referencia", () => {
+  it("θ exceeds T above the reference level", () => {
     const t = celsiusToK(5);
     expect(potentialTemperature(t, hPaToPa(700))).toBeGreaterThan(t);
   });
 });
 
-describe("temperatura virtual", () => {
+describe("virtual temperature", () => {
   // T-09
-  it("Tv > T con humedad, y Tv = T sin ella", () => {
+  it("Tv > T with moisture, and Tv = T without", () => {
     const t = celsiusToK(20);
     expect(virtualTemperature(t, kgkg(0.01))).toBeGreaterThan(t);
     expect(virtualTemperature(t, kgkg(0))).toBeCloseTo(t, 12);
   });
 
-  it("θv se construye sobre θ, no sobre T", () => {
+  it("θv is built on θ, not on T", () => {
     const t = celsiusToK(20);
     const p = hPaToPa(850);
     const w = kgkg(0.008);
