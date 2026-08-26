@@ -56,14 +56,8 @@ in [`docs/API.md`](docs/API.md).
 
 ## Documentation
 
-| Document | Contents |
-|---|---|
-| [`docs/API.md`](docs/API.md) | Reference for every exported symbol, with signatures and examples |
-| [`docs/SPEC.md`](docs/SPEC.md) | Public contract: types, units, errors |
-| [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) | Functional scope and traceability |
-| [`docs/OPEN_METEO_INTEGRATION.md`](docs/OPEN_METEO_INTEGRATION.md) | Open-Meteo variables, models and verified traps |
-| [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) | Acceptance criteria and golden values |
-| [`docs/REFERENCES.md`](docs/REFERENCES.md) | Primary sources |
+- **[`docs/API.md`](docs/API.md)** — Complete API reference for every exported symbol across all 15 modules, with TypeScript signatures, parameter descriptions, and verified examples.
+- **[`docs/diagrams/soarwx-architecture.html`](docs/diagrams/soarwx-architecture.html)** — Interactive architecture and data flow diagram.
 
 ## Principles
 
