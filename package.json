@@ -2,6 +2,21 @@
   "name": "soarwx",
   "version": "0.12.0",
   "description": "Soaring weather conditions derived from numerical models",
+  "keywords": [
+    "soaring",
+    "gliding",
+    "paragliding",
+    "thermals",
+    "weather",
+    "forecast",
+    "meteorology",
+    "open-meteo",
+    "sounding",
+    "skew-t",
+    "rasp",
+    "convection"
+  ],
+  "author": "Ramon G. Camus",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -14,14 +29,18 @@
   "homepage": "https://github.com/VuelaLibre-net/soarwx#readme",
   "sideEffects": false,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=20.11.0"
   },
   "packageManager": "pnpm@11.21.0",
   "files": [
     "dist",
     "README.md",
-    "docs"
+    "CHANGELOG.md",
+    "docs/API.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -82,7 +101,8 @@
     "./report": {
       "types": "./dist/report/index.d.ts",
       "default": "./dist/report/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "lint": "eslint .",
