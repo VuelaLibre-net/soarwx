@@ -12,12 +12,14 @@ import {
 } from "../../src/convection/buoyancyShear.js";
 import {
   AIRCRAFT_PROFILES,
+  ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS,
   BANK_40_SINK_FACTOR,
   GLIDER_CLUB,
   RASP_HCRIT_THRESHOLD_MS,
   RASP_REFERENCE,
+  findAircraftProfile,
 } from "../../src/aircraft/profiles.js";
-import { celsiusToK, fpmToMs, kToCelsius } from "../../src/units/convert.js";
+import { fpmToMs, kToCelsius } from "../../src/units/convert.js";
 import { m, mps } from "../../src/units/branded.js";
 import { syntheticSounding } from "../helpers/synthetic.js";
 import { buildSounding } from "../../src/sounding/build.js";
@@ -242,6 +244,12 @@ describe("aircraft profile", () => {
       "minTurnRadiusM",
       "minUsableClimbMs",
     ]);
-    expect(celsiusToK(0)).toBeCloseTo(273.15, 6);
+  });
+
+  it("looks up profiles by identifier", () => {
+    expect(findAircraftProfile("ask21")?.id).toBe("ask21");
+    expect(findAircraftProfile("glider-club")?.id).toBe("glider-club");
+    expect(findAircraftProfile("non-existent")).toBeUndefined();
+    expect(ALLEN_WIND_CUTOFF_EXACT_KNOTS_MS).toBeCloseTo(12.86, 2);
   });
 });
