@@ -1,0 +1,41 @@
+node_modules/
+dist/
+coverage/
+*.log
+.gstack/
+
+# Secretos y config local — nunca subir
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.npmrc
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Build/tooling
+*.tsbuildinfo
+.eslintcache
+
+# Rastro de agentes IA — configs y sesiones locales, nunca compartidas
+.claude/settings.local.json
+.claude/**/*.session.json
+CLAUDE.local.md
+.cursor/
+.windsurf/
+.aider*
+.cline/
+.codex/
+.copilot/
+.continue/
+*.agent.log
+
+# Intermedios del generador de docs/API.md (se regeneran con `pnpm docs:api`)
+tools/api-docs/api.json
+tools/api-docs/prose.json

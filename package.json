@@ -1,0 +1,144 @@
+{
+  "name": "soarwx",
+  "version": "0.11.0",
+  "description": "Soaring weather conditions derived from numerical models",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12"
+  },
+  "packageManager": "pnpm@11.21.0",
+  "files": [
+    "dist",
+    "README.md",
+    "docs"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./units": {
+      "types": "./dist/units/index.d.ts",
+      "default": "./dist/units/index.js"
+    },
+    "./thermo": {
+      "types": "./dist/thermo/index.d.ts",
+      "default": "./dist/thermo/index.js"
+    },
+    "./sounding": {
+      "types": "./dist/sounding/index.d.ts",
+      "default": "./dist/sounding/index.js"
+    },
+    "./convection": {
+      "types": "./dist/convection/index.d.ts",
+      "default": "./dist/convection/index.js"
+    },
+    "./clouds": {
+      "types": "./dist/clouds/index.d.ts",
+      "default": "./dist/clouds/index.js"
+    },
+    "./stability": {
+      "types": "./dist/stability/index.d.ts",
+      "default": "./dist/stability/index.js"
+    },
+    "./orographic": {
+      "types": "./dist/orographic/index.d.ts",
+      "default": "./dist/orographic/index.js"
+    },
+    "./forecast": {
+      "types": "./dist/forecast/index.d.ts",
+      "default": "./dist/forecast/index.js"
+    },
+    "./openmeteo": {
+      "types": "./dist/openmeteo/index.d.ts",
+      "default": "./dist/openmeteo/index.js"
+    },
+    "./render": {
+      "types": "./dist/render/index.d.ts",
+      "default": "./dist/render/index.js"
+    },
+    "./i18n/es": {
+      "types": "./dist/i18n/es.d.ts",
+      "default": "./dist/i18n/es.js"
+    },
+    "./i18n/en": {
+      "types": "./dist/i18n/en.d.ts",
+      "default": "./dist/i18n/en.js"
+    },
+    "./aircraft": {
+      "types": "./dist/aircraft/index.d.ts",
+      "default": "./dist/aircraft/index.js"
+    },
+    "./report": {
+      "types": "./dist/report/index.d.ts",
+      "default": "./dist/report/index.js"
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "docs:examples": "node --experimental-strip-types tools/checkApiExamples.ts",
+    "docs:api": "node tools/api-docs/extract.mjs && python3 tools/api-docs/prose.py && python3 tools/api-docs/gen.py",
+    "test": "vitest run --exclude '**/*.network.test.ts'",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --exclude '**/*.network.test.ts'",
+    "test:network": "vitest run test/openmeteo/contract.network.test.ts",
+    "build": "tsup",
+    "size": "size-limit",
+    "check": "pnpm format:check && pnpm lint && pnpm docs:examples && pnpm typecheck && pnpm test && pnpm build && pnpm size",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@size-limit/preset-small-lib": "^11.2.0",
+    "@types/node": "^26.2.0",
+    "@typescript-eslint/rule-tester": "^8.46.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.39.0",
+    "prettier": "^3.6.2",
+    "size-limit": "^11.2.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^3.2.4"
+  },
+  "size-limit": [
+    {
+      "name": "core: convection, clouds and stability",
+      "path": [
+        "dist/convection/index.js",
+        "dist/clouds/index.js",
+        "dist/stability/index.js",
+        "dist/orographic/index.js",
+        "dist/forecast/index.js",
+        "dist/report/index.js"
+      ],
+      "import": "*",
+      "limit": "20 kB"
+    },
+    {
+      "name": "core: thermodynamics and sounding",
+      "path": [
+        "dist/thermo/index.js",
+        "dist/sounding/index.js"
+      ],
+      "import": "*",
+      "limit": "20 kB"
+    },
+    {
+      "name": "Open-Meteo client",
+      "path": "dist/openmeteo/index.js",
+      "import": "*",
+      "limit": "20 kB"
+    },
+    {
+      "name": "render",
+      "path": "dist/render/index.js",
+      "import": "*",
+      "limit": "15 kB"
+    }
+  ]
+}

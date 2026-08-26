@@ -1,0 +1,23 @@
+name: Contrato Open-Meteo
+
+# Verifica que Open-Meteo sigue cumpliendo lo documentado en
+# docs/OPEN_METEO_INTEGRATION.md §7 (CT-1 a CT-9).
+# Un fallo abre incidencia; NO bloquea el build.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22.12
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:network

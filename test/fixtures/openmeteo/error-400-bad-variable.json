@@ -1,0 +1,4 @@
+{
+  "reason": "Data corrupted at path ''. Cannot initialize SurfacePressureAndHeightVariable<VariableAndPreviousDay, VariableOrSpread<ForecastPressureVariable>, ForecastHeightVariable> from invalid String value aerosol_optical_depth_550nm.",
+  "error": true
+}
