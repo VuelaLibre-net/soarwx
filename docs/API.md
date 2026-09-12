@@ -1,6 +1,6 @@
 # API reference for `soarwx`
 
-**Version 0.12.0.** The API is unstable until 1.0.0.
+**Version 0.12.1.** The API is unstable until 1.0.0.
 
 `SPEC.md` defines the contract and what falls outside it. This document lists
 **everything the package exports**, with the actual signature and one example per
@@ -209,7 +209,7 @@ function height<T extends { aglM: number }>(r: Result<T>): number | null {
 | `isOk` | `const isOk: <T, E>(r: Result<T, E>) => r is { ok: true; value: T; }` | Narrows the type to the success case. |
 | `ok` | `const ok: <T>(value: T) => Result<T, never>` | Wraps a value as a successful result. |
 | `OPEN_METEO_ATTRIBUTION` | `const OPEN_METEO_ATTRIBUTION = "Weather data from Open-Meteo.com (https://open-meteo.com), CC BY 4.0 licence."` | Attribution required by the CC BY 4.0 licence for Open-Meteo data. |
-| `SOARWX_VERSION` | `const SOARWX_VERSION = "0.12.0"` | Library version. |
+| `SOARWX_VERSION` | `const SOARWX_VERSION = "0.12.1"` | Library version. |
 | `unwrapOr` | `const unwrapOr: <T, E>(r: Result<T, E>, fallback: T) => T` | Returns the value or fallback. |
 
 **Types**
