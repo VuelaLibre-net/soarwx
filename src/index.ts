@@ -15,6 +15,6 @@ export * from "./types/site.js";
  * because consumers saving results need to know which formula version
  * produced them (NF-12).
  */
-export const SOARWX_VERSION = "0.12.0";
+export const SOARWX_VERSION = "0.12.1";
 
 export * from "./attribution.js";

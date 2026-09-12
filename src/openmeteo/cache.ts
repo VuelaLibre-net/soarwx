@@ -32,10 +32,23 @@ export function memoryCache(now: () => number = Date.now): CacheAdapter {
   };
 }
 
-/** Browser `sessionStorage` cache adapter. Degrades gracefully if unavailable. */
+/** Reads `sessionStorage`, returning null when it is absent or its access is blocked. */
+function readSessionStorage(): Storage | null {
+  try {
+    // `typeof` is not enough: the property access itself throws when the browser blocks
+    // storage (Chrome "block all cookies", some private modes, cross-origin iframes).
+    // Read as `unknown`: the ambient declaration is non-nullable, but the global is
+    // absent outside the browser.
+    const candidate: unknown = globalThis.sessionStorage;
+    return (candidate ?? null) as Storage | null;
+  } catch {
+    return null;
+  }
+}
+
+/** Browser `sessionStorage` cache adapter. Degrades gracefully if absent or blocked. */
 export function sessionCache(): CacheAdapter {
-  const storage: Storage | null =
-    typeof globalThis.sessionStorage === "undefined" ? null : globalThis.sessionStorage;
+  const storage: Storage | null = readSessionStorage();
 
   if (storage === null) return noopCache();
 
