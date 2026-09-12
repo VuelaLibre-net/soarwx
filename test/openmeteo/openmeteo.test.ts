@@ -499,6 +499,20 @@ describe("session cache", () => {
     }
   }
 
+  function withThrowingSessionStorage<T>(run: () => T): T {
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      get(): never {
+        throw new Error("SecurityError");
+      },
+    });
+    try {
+      return run();
+    } finally {
+      Reflect.deleteProperty(globalThis, "sessionStorage");
+    }
+  }
+
   it("degrades gracefully to noop without sessionStorage", async () => {
     const cache = sessionCache();
     await cache.set("k", "v", 10);
@@ -529,6 +543,12 @@ describe("session cache", () => {
       globalThis.sessionStorage.setItem("k", "not valid json");
       expect(await sessionCache().get("k")).toBeNull();
     });
+  });
+
+  it("degrades to noop when reading sessionStorage throws", async () => {
+    const cache = withThrowingSessionStorage(() => sessionCache());
+    await cache.set("k", "v", 10);
+    expect(await cache.get("k")).toBeNull();
   });
 });
 

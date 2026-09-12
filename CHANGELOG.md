@@ -11,6 +11,20 @@ not just the delta.
 
 ## [Unreleased]
 
+### Fixed
+
+- `sessionCache()` no longer throws when the browser blocks storage. The guard read
+  `typeof globalThis.sessionStorage === "undefined"`, but `typeof` only suppresses the
+  `ReferenceError` of an undeclared identifier: on a property access it still evaluates the
+  property, and that evaluation is what throws. Chrome with "block all cookies", some
+  private modes and cross-origin iframes raise `SecurityError` on reading
+  `window.sessionStorage`, before any method is called, so the `try/catch` blocks inside
+  `get`/`set` were unreachable and the exception escaped the constructor. The read now
+  happens inside a `try/catch` and falls back to `noopCache()`, which is what the module
+  header has always promised: cache failures never abort a request workflow. Consumers that
+  called `sessionCache()` during render — `vuelalibre.net` creates it once per tab from a
+  React island — lost the whole island with no message.
+
 ## [0.12.0] - 2026-08-26
 
 ### Added
