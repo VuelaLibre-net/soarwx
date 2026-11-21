@@ -11,6 +11,8 @@ not just the delta.
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-11-21
+
 ### Fixed
 
 - `MODEL_CAPABILITIES` matches what Open-Meteo serves again. A live check of all nine
@@ -113,7 +115,8 @@ same functions; here the physics core is pure and the network lives in a single 
 - **The thermal top comes from the parcel method**, not from `boundary_layer_height`: ICON
   does not serve that variable, and in GFS it peaks at 18:00 local, after thermals have died.
 
-[Unreleased]: https://github.com/VuelaLibre-net/soarwx/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/VuelaLibre-net/soarwx/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/VuelaLibre-net/soarwx/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/VuelaLibre-net/soarwx/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/VuelaLibre-net/soarwx/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/VuelaLibre-net/soarwx/releases/tag/v0.11.0
