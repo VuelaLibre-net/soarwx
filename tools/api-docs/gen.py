@@ -108,7 +108,10 @@ def tables(sub):
 
 MODULES = json.loads((HERE / "prose.json").read_text())
 
-HEADER = (HERE / "header.md").read_text()
+# The version comes from package.json: header.md once carried it by hand and the
+# 0.12.1 release had to patch docs/API.md directly, so regenerating moved it back.
+VERSION = json.loads((ROOT / "package.json").read_text())["version"]
+HEADER = (HERE / "header.md").read_text().replace("{{VERSION}}", VERSION)
 
 parts = [HEADER.rstrip(), "", "---", "", "## Module reference", ""]
 for sub, meta in MODULES.items():

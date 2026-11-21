@@ -20,7 +20,8 @@ import {
   detectFluxSign,
 } from "../../src/convection/heatFluxSign.js";
 import { FUENTEMILANOS_SITE } from "../helpers/sites.js";
-import type { OpenMeteoModel } from "../../src/openmeteo/models.js";
+import { MODEL_CAPABILITIES, type OpenMeteoModel } from "../../src/openmeteo/models.js";
+import { HEIGHT_LEVELS_M } from "../../src/openmeteo/variables.js";
 import type { HourlySeries, OpenMeteoResponse } from "../../src/openmeteo/types.js";
 
 /**
@@ -177,4 +178,47 @@ describe("Open-Meteo API contract", () => {
     },
     TIMEOUT_MS,
   );
+
+  // CT-10: every catalogue entry against what the model serves today. Open-Meteo
+  // changes this without notice; on 2026-11-21 six entries had drifted.
+  describe("MODEL_CAPABILITIES matches the live API", () => {
+    const FLAGS = {
+      sensible_heat_flux: "hasSensibleHeatFlux",
+      boundary_layer_height: "hasBoundaryLayerHeight",
+      lifted_index: "hasLiftedIndex",
+      convective_inhibition: "hasConvectiveInhibition",
+    } as const;
+
+    it.each(Object.values(MODEL_CAPABILITIES))(
+      "$id",
+      async (capabilities) => {
+        const response = await live(capabilities.id);
+        const request = buildForecastRequest(FUENTEMILANOS_SITE, {
+          model: capabilities.id,
+          forecastDays: 1,
+        });
+
+        const flags = Object.fromEntries(
+          Object.entries(FLAGS).map(([variable, flag]) => [
+            flag,
+            hasData(response, variable),
+          ]),
+        );
+        expect(flags).toEqual(
+          Object.fromEntries(
+            Object.values(FLAGS).map((flag) => [flag, capabilities[flag]]),
+          ),
+        );
+
+        // Same criterion as normalize.ts: a height level counts when its temperature arrives.
+        const heights = HEIGHT_LEVELS_M.filter((z) =>
+          hasData(response, `temperature_${String(z)}m`),
+        );
+        expect(heights).toEqual(capabilities.heightLevelsM);
+
+        expect(usableLevels(response, request.levelsHpa)).toEqual(request.levelsHpa);
+      },
+      TIMEOUT_MS,
+    );
+  });
 });
