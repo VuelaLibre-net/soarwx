@@ -14,17 +14,44 @@ import {
   validateEcho,
   validateUnits,
 } from "../../src/openmeteo/validate.js";
-import { detectFluxSign } from "../../src/convection/heatFluxSign.js";
+import {
+  DAYTIME_RADIATION_THRESHOLD_WM2,
+  MIN_SAMPLES_FOR_DETECTION,
+  detectFluxSign,
+} from "../../src/convection/heatFluxSign.js";
 import { FUENTEMILANOS_SITE } from "../helpers/sites.js";
 import type { OpenMeteoModel } from "../../src/openmeteo/models.js";
 import type { HourlySeries, OpenMeteoResponse } from "../../src/openmeteo/types.js";
 
-const TIMEOUT_MS = 30_000;
+/**
+ * The scheduled run once lost ~100 s of Open-Meteo slowness to the library
+ * defaults (10 s, one retry), failing five tests on timeouts that said nothing
+ * about the contract. The suite waits longer than a consumer would.
+ */
+const REQUEST_TIMEOUT_MS = 20_000;
+const REQUEST_RETRIES = 3;
+/** Worst case for one `live()` call, with margin for backoff; CT-4 makes two. */
+const TIMEOUT_MS = 2 * (REQUEST_RETRIES + 1) * REQUEST_TIMEOUT_MS + 10_000;
+
+const REQUEST_OPTIONS = {
+  timeoutMs: REQUEST_TIMEOUT_MS,
+  retries: REQUEST_RETRIES,
+} as const;
+
+/** Error text with `detail` attached, so a timeout reads as one in the CI log. */
+function describeError(error: {
+  message: string;
+  detail?: Readonly<Record<string, unknown>>;
+}) {
+  return error.detail === undefined
+    ? error.message
+    : `${error.message} ${JSON.stringify(error.detail)}`;
+}
 
 async function live(model: OpenMeteoModel): Promise<OpenMeteoResponse> {
   const request = buildForecastRequest(FUENTEMILANOS_SITE, { model, forecastDays: 1 });
-  const result = await sendRequest(request, { retries: 1 });
-  if (!result.ok) throw new Error(`${model}: ${result.error.message}`);
+  const result = await sendRequest(request, REQUEST_OPTIONS);
+  if (!result.ok) throw new Error(`${model}: ${describeError(result.error)}`);
   return result.value;
 }
 
@@ -70,18 +97,29 @@ describe("Open-Meteo API contract", () => {
   // CT-4: flux sign inversion check
   it(
     "heat flux signs remain inverted between ICON and GFS",
-    async () => {
+    async (context) => {
       const icon = await live("icon_eu");
       const gfs = await live("gfs_seamless");
-      const sign = (response: OpenMeteoResponse) =>
+      const detect = (response: OpenMeteoResponse) =>
         detectFluxSign(
           numbers(response, "shortwave_radiation").map((radiation, index) => ({
             shortwaveWm2: radiation ?? 0,
             fluxWm2: numbers(response, "sensible_heat_flux")[index] ?? null,
           })),
-        ).convention;
-      expect(sign(icon)).toBe("down_positive");
-      expect(sign(gfs)).toBe("up_positive");
+        );
+      const iconSign = detect(icon);
+      const gfsSign = detect(gfs);
+      // An overcast day leaves no hour above the radiation threshold, and the
+      // detector rightly answers "unknown". That says nothing about the
+      // contract, so the test is skipped rather than failed.
+      const fewest = Math.min(iconSign.samplesUsed, gfsSign.samplesUsed);
+      if (fewest < MIN_SAMPLES_FOR_DETECTION) {
+        context.skip(
+          `only ${String(fewest)} hour(s) above ${String(DAYTIME_RADIATION_THRESHOLD_WM2)} W/m² today`,
+        );
+      }
+      expect(iconSign.convention).toBe("down_positive");
+      expect(gfsSign.convention).toBe("up_positive");
     },
     TIMEOUT_MS,
   );
@@ -114,9 +152,8 @@ describe("Open-Meteo API contract", () => {
       );
       withUnderground.body.append("hourly", "temperature_1000hPa");
       withUnderground.body.append("hourly", "geopotential_height_1000hPa");
-      const result = await sendRequest(withUnderground, { retries: 1 });
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
+      const result = await sendRequest(withUnderground, REQUEST_OPTIONS);
+      if (!result.ok) throw new Error(`icon_eu: ${describeError(result.error)}`);
       expect(hasData(result.value, "temperature_1000hPa")).toBe(true);
       const heights = numbers(result.value, "geopotential_height_1000hPa");
       expect(Math.max(...heights.map((h) => h ?? 0))).toBeLessThan(
