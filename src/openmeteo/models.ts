@@ -35,6 +35,13 @@ const ARPEGE_LEVELS = [1000, 950, 925, 900, 850, 800, 700, 600, 500] as const;
 
 /**
  * Model capability catalog verified against live API responses.
+ *
+ * Last verified at Fuentemilanos on 2026-11-21. Open-Meteo changes what a model serves
+ * without notice, so contract test CT-10 (`test/openmeteo/contract.network.test.ts`)
+ * re-checks every entry weekly. The core never reads the `has*` flags or
+ * `heightLevelsM`: `normalize.ts` decides by content, so a stale flag misleads consumers
+ * that read the catalogue but does not move a number. `pressureLevelsHpa` does feed the
+ * request and `soundingModels()`.
  */
 export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabilities>> = {
   icon_eu: {
@@ -53,7 +60,7 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
   gfs_seamless: {
     id: "gfs_seamless",
     pressureLevelsHpa: FULL_LEVELS,
-    heightLevelsM: [80],
+    heightLevelsM: [80, 120],
     hasSensibleHeatFlux: true,
     hasBoundaryLayerHeight: true,
     hasLiftedIndex: true,
@@ -70,7 +77,7 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
     hasSensibleHeatFlux: true,
     hasBoundaryLayerHeight: false,
     hasLiftedIndex: false,
-    hasConvectiveInhibition: true,
+    hasConvectiveInhibition: false,
     resolutionKm: 11,
     updateIntervalHours: 6,
     coverage: "global",
@@ -83,7 +90,7 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
     hasSensibleHeatFlux: false,
     hasBoundaryLayerHeight: false,
     hasLiftedIndex: false,
-    hasConvectiveInhibition: false,
+    hasConvectiveInhibition: true,
     resolutionKm: 10,
     updateIntervalHours: 1,
     coverage: "global",
@@ -92,7 +99,7 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
   meteofrance_arpege_europe: {
     id: "meteofrance_arpege_europe",
     pressureLevelsHpa: ARPEGE_LEVELS,
-    heightLevelsM: [],
+    heightLevelsM: [80, 120, 180],
     hasSensibleHeatFlux: false,
     hasBoundaryLayerHeight: false,
     hasLiftedIndex: false,
@@ -118,7 +125,7 @@ export const MODEL_CAPABILITIES: Readonly<Record<OpenMeteoModel, ModelCapabiliti
   gfs_global: {
     id: "gfs_global",
     pressureLevelsHpa: FULL_LEVELS,
-    heightLevelsM: [80],
+    heightLevelsM: [80, 120],
     hasSensibleHeatFlux: true,
     hasBoundaryLayerHeight: true,
     hasLiftedIndex: true,

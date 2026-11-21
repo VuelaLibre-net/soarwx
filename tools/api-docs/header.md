@@ -1,6 +1,6 @@
 # API reference for `soarwx`
 
-**Version 0.12.0.** The API is unstable until 1.0.0.
+**Version {{VERSION}}.** The API is unstable until 1.0.0.
 
 `SPEC.md` defines the contract and what falls outside it. This document lists
 **everything the package exports**, with the actual signature and one example per

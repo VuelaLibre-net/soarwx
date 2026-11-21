@@ -78,8 +78,8 @@ describe("model capabilities catalog", () => {
     expect(soundingModels()[0]).toBe("icon_eu");
   });
 
-  it("GFS only serves 80 m height level", () => {
-    expect(MODEL_CAPABILITIES.gfs_seamless.heightLevelsM).toEqual([80]);
+  it("GFS serves the 80 m and 120 m height levels, not 180 m", () => {
+    expect(MODEL_CAPABILITIES.gfs_seamless.heightLevelsM).toEqual([80, 120]);
     expect(MODEL_CAPABILITIES.icon_eu.heightLevelsM).toEqual([80, 120, 180]);
   });
 

@@ -11,6 +11,27 @@ not just the delta.
 
 ## [Unreleased]
 
+### Fixed
+
+- `MODEL_CAPABILITIES` matches what Open-Meteo serves again. A live check of all nine
+  models at Fuentemilanos on 2026-11-21 found six entries out of date:
+  - `icon_global` no longer serves `convective_inhibition`, which now arrives all `null`.
+  - `ukmo_seamless` now serves `convective_inhibition`.
+  - `meteofrance_arpege_europe` serves the 80, 120 and 180 m height levels.
+  - `gfs_seamless` and `gfs_global` serve the 120 m height level as well as 80 m.
+
+  No number the pilot reads moves. The core never reads the `has*` flags or
+  `heightLevelsM`, because `normalize.ts` decides by content. ARPEGE's height levels and
+  the empty CIN were already being handled correctly. Only consumers that read the
+  catalogue directly were misled. `pressureLevelsHpa`, which feeds the request and
+  `soundingModels()`, was correct for all nine models.
+
+### Added
+
+- Contract test CT-10 checks every `MODEL_CAPABILITIES` entry against the live API every
+  week: the four `has*` flags, the height levels and the pressure levels. Against the
+  previous catalogue it fails on exactly the five drifted models.
+
 ## [0.12.1] - 2026-09-12
 
 ### Fixed
